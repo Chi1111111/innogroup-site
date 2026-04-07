@@ -67,7 +67,7 @@ export function Navbar() {
               {!logoError ? (
                 <img
                   src={logoImage}
-                  alt="INNO GROUP"
+                  alt="Inno Group Ltd"
                   className="h-10 transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-90 sm:h-11 md:h-12"
                   onError={() => setLogoError(true)}
                 />
@@ -75,7 +75,7 @@ export function Navbar() {
                 <div className="flex items-center gap-3">
                   <GlobeIcon />
                   <span className="text-2xl font-bold tracking-tight text-foreground">
-                    INNO <span className="text-primary">GROUP</span>
+                    Inno Group <span className="text-primary">Ltd</span>
                   </span>
                 </div>
               )}

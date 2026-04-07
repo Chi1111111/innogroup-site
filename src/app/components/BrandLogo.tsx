@@ -86,7 +86,7 @@ export function BrandLogo({ variant = 'hero', className = '', eyebrow }: BrandLo
           <span
             className={`${titleClasses[variant]} ${isLightPillVariant ? 'brand-logo-title' : ''}`.trim()}
           >
-            INNO GROUP
+            Inno Group Ltd
           </span>
           <span
             className={`${subtitleClasses[variant]} ${isLightPillVariant ? 'brand-logo-subtitle' : ''}`.trim()}

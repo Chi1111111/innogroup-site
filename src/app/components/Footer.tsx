@@ -33,7 +33,7 @@ export function Footer() {
                 <div className="inline-flex items-center rounded-2xl bg-white/95 p-3 shadow-lg ring-1 ring-white/10">
                   <img
                     src={logoImage}
-                    alt="INNO GROUP"
+                    alt="Inno Group Ltd"
                     className="h-12 w-auto max-w-[220px] object-contain transition-opacity duration-300 hover:opacity-80"
                     onError={() => setLogoError(true)}
                   />
@@ -42,7 +42,7 @@ export function Footer() {
                 <div className="flex items-center gap-2">
                   <GlobeIconWhite />
                   <span className="text-xl font-bold tracking-tight text-white">
-                    INNO <span className="text-primary">GROUP</span>
+                    Inno Group <span className="text-primary">Ltd</span>
                   </span>
                 </div>
               )}
@@ -115,7 +115,7 @@ export function Footer() {
 
         <div className="flex flex-col items-start justify-between gap-4 pt-8 text-sm text-white/42 md:flex-row md:items-center">
           <div>
-            <p>&copy; 2026 INNO GROUP. All rights reserved.</p>
+            <p>&copy; 2026 Inno Group Ltd. All rights reserved.</p>
             <p className="mt-1">Japan direct sourcing, Auckland support, and overseas export capability.</p>
           </div>
 
