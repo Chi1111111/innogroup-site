@@ -27,13 +27,13 @@ export function StickyCTA() {
   return (
     <>
       <div
-        className="fixed bottom-3 left-3 right-3 z-50 animate-fadeIn rounded-[24px] border border-white/70 bg-white/92 p-3 shadow-[0_20px_50px_rgba(17,17,17,0.18)] backdrop-blur-xl md:hidden"
+        className="fixed bottom-3 left-3 right-3 z-50 animate-fadeIn rounded-[22px] border border-white/70 bg-white/92 p-2.5 shadow-[0_20px_50px_rgba(17,17,17,0.18)] backdrop-blur-xl md:hidden"
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/42">
           Quick Actions
         </p>
-        <div className="flex gap-2.5">
+        <div className="flex flex-col gap-2.5 sm:flex-row">
           {showCalculatorCta ? (
             <a
               href="#calculator"

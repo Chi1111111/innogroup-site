@@ -8,11 +8,11 @@ import { tradeMeMakes, tradeMeVehicleCatalog } from '../../data/tradeMeVehicleCa
 const carBrands = [...tradeMeMakes];
 const carModels = tradeMeVehicleCatalog;
 
-const fieldLabelClass = 'flex items-center gap-2 text-base font-bold text-foreground md:text-lg';
+const fieldLabelClass = 'flex items-center gap-2 text-sm font-bold text-foreground sm:text-base md:text-lg';
 const fieldClass =
-  'w-full rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 px-5 py-3.5 text-base font-medium shadow-sm transition-all hover:shadow-md focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/30 md:px-6 md:py-4 md:text-lg';
+  'w-full rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 px-4 py-3 text-base font-medium shadow-sm transition-all hover:shadow-md focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/30 sm:px-5 sm:py-3.5 md:px-6 md:py-4 md:text-lg';
 const helperCardClass =
-  'group rounded-[24px] border border-white/10 bg-white/5 p-5 backdrop-blur-md transition-all hover:border-primary/50 md:p-6';
+  'group rounded-[22px] border border-white/10 bg-white/5 p-4 backdrop-blur-md transition-all hover:border-primary/50 sm:p-5 md:rounded-[24px] md:p-6';
 
 function FieldDot() {
   return <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />;
@@ -164,13 +164,13 @@ export function QuoteFormSection() {
       </div>
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="mb-12 space-y-5 text-center md:mb-16 md:space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/20 px-5 py-2.5 backdrop-blur-sm">
+        <div className="mb-12 space-y-4 text-center md:mb-16 md:space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/20 px-4 py-2.5 backdrop-blur-sm sm:px-5">
             <Sparkles className="h-4 w-4 text-primary md:h-5 md:w-5" />
             <span className="text-sm font-semibold text-primary">Start Your Vehicle Brief</span>
           </div>
 
-          <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl md:mb-6 md:text-5xl">
+          <h2 className="mb-4 text-[2rem] font-bold text-white sm:text-4xl md:mb-6 md:text-5xl">
             Tell Us What You Want
             <span className="mt-2 block bg-gradient-to-r from-primary via-yellow-300 to-primary bg-clip-text text-transparent">
               to Drive
@@ -183,7 +183,7 @@ export function QuoteFormSection() {
           </p>
         </div>
 
-        <div className="mx-auto mb-10 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3 md:mb-16 md:gap-6">
+        <div className="mx-auto mb-10 grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-3 md:mb-16 md:gap-6">
           <div className={helperCardClass}>
             <div className="flex items-center gap-4">
               <div className="rounded-xl bg-primary/20 p-3">
@@ -228,7 +228,7 @@ export function QuoteFormSection() {
             <div className="relative overflow-hidden rounded-3xl bg-white shadow-2xl">
               <div className="h-2 bg-gradient-to-r from-primary via-yellow-300 to-primary" />
 
-              <div className="p-6 sm:p-8 md:p-14">
+              <div className="p-4 sm:p-8 md:p-14">
                 <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                   <div className="space-y-3">
                     <label className={fieldLabelClass}>
@@ -267,7 +267,7 @@ export function QuoteFormSection() {
                   )}
 
                   {formData.inquiryType === 'sell' && (
-                    <div className="animate-fadeIn rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 md:p-6">
+                    <div className="animate-fadeIn rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 md:p-6">
                       <p className="font-medium leading-relaxed text-foreground">
                         We buy quality vehicles for local stock and export channels. Tell us about
                         your car and we will get back to you with a valuation.
@@ -455,7 +455,7 @@ export function QuoteFormSection() {
                       />
                       <label
                         htmlFor="imageUpload"
-                        className="group flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-transparent px-5 py-6 transition-all hover:border-primary hover:bg-primary/10 md:px-6 md:py-8"
+                        className="group flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-transparent px-4 py-5 transition-all hover:border-primary hover:bg-primary/10 md:px-6 md:py-8"
                       >
                         <Upload className="h-7 w-7 text-primary transition-transform group-hover:scale-110 md:h-8 md:w-8" />
                         <div className="text-center">
@@ -465,13 +465,13 @@ export function QuoteFormSection() {
                       </label>
 
                       {uploadedImages.length > 0 && (
-                        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
                           {uploadedImages.map((image, index) => (
                             <div key={index} className="group relative">
                               <img
                                 src={URL.createObjectURL(image)}
                                 alt={`Vehicle ${index + 1}`}
-                                className="h-32 w-full rounded-xl border-2 border-gray-200 object-cover transition-all group-hover:border-primary"
+                                className="h-28 w-full rounded-xl border-2 border-gray-200 object-cover transition-all group-hover:border-primary sm:h-32"
                               />
                               <button
                                 type="button"
@@ -499,7 +499,7 @@ export function QuoteFormSection() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-yellow-400 to-primary py-4 text-lg font-bold text-white shadow-2xl transition-all hover:scale-[1.01] hover:shadow-primary/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 md:py-6 md:text-xl"
+                    className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-yellow-400 to-primary py-4 text-base font-bold text-white shadow-2xl transition-all hover:scale-[1.01] hover:shadow-primary/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 sm:text-lg md:py-6 md:text-xl"
                   >
                     <div className="absolute inset-0 translate-x-[-200%] bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-[200%]" />
                     <span className="relative flex items-center justify-center gap-3">

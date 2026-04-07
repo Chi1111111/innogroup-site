@@ -142,6 +142,7 @@
   html {
     font-size: var(--font-size);
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
@@ -156,6 +157,7 @@
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 
   ::selection {
@@ -244,12 +246,28 @@
   }
 
   @media (max-width: 768px) {
+    :root {
+      --text-base: 0.975rem;
+      --text-lg: 1.05rem;
+      --text-xl: 1.25rem;
+      --text-2xl: 1.75rem;
+      --text-3xl: 2.1rem;
+      --text-4xl: 2.5rem;
+      --text-5xl: 3rem;
+    }
+
     h1 {
       font-size: var(--text-3xl);
+      line-height: 1;
     }
 
     h2 {
       font-size: var(--text-2xl);
+      line-height: 1.08;
+    }
+
+    p {
+      line-height: 1.65;
     }
   }
 
@@ -435,5 +453,18 @@
 
   .button-secondary-dark {
     @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.08] px-7 py-4 font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/35 hover:bg-white/[0.12];
+  }
+
+  @media (max-width: 640px) {
+    .section-card,
+    .section-card-dark {
+      border-radius: 24px;
+    }
+
+    .button-primary,
+    .button-secondary,
+    .button-secondary-dark {
+      @apply min-h-12 rounded-[18px] px-5 py-3.5 text-sm;
+    }
   }
 }

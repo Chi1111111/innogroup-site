@@ -47,16 +47,16 @@ export function Finance() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pt-20">
+    <div className="min-h-screen overflow-x-hidden bg-black pt-20 text-white">
       {/* Hero Section */}
-      <section className="relative py-24 px-4 overflow-hidden">
+      <section className="relative overflow-hidden px-4 py-16 sm:py-20 md:py-24">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="max-w-4xl mx-auto text-center relative z-10 animate-fadeIn">
-          <h1 className="mb-8 text-5xl font-light tracking-tight text-white md:text-7xl lg:text-8xl">
+          <h1 className="mb-6 text-4xl font-light tracking-tight text-white sm:text-5xl md:mb-8 md:text-7xl lg:text-8xl">
             Get Approved.<br />
             <span className="text-primary">Drive Sooner.</span>
           </h1>
-          <p className="text-xl md:text-2xl text-gray-400 font-light mb-4">
+          <p className="mb-3 text-lg font-light text-gray-400 sm:text-xl md:mb-4 md:text-2xl">
             Simple finance tailored to your situation.
           </p>
           <p className="text-lg text-gray-500">
@@ -66,8 +66,8 @@ export function Finance() {
       </section>
 
       {/* Trust Strip */}
-      <section className="py-16 px-4 border-y border-white/10 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+      <section className="animate-fadeIn border-y border-white/10 px-4 py-12 sm:py-16" style={{ animationDelay: '0.2s' }}>
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4 md:gap-8">
           <div className="text-center group">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 group-hover:bg-primary/20 transition-all duration-500">
               <Clock className="w-8 h-8 text-primary" />
@@ -103,13 +103,13 @@ export function Finance() {
       </section>
 
       {/* How It Works */}
-      <section className="py-24 px-4">
+      <section className="px-4 py-16 sm:py-20 md:py-24">
         <div className="max-w-6xl mx-auto">
-          <h2 className="mb-20 text-center text-4xl font-light text-white animate-fadeIn md:text-5xl">
+          <h2 className="mb-12 text-center text-3xl font-light text-white animate-fadeIn sm:mb-16 md:mb-20 md:text-5xl">
             How It <span className="text-primary">Works</span>
           </h2>
 
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid gap-8 md:grid-cols-4">
             {[
               { num: '1', title: 'Submit Details', desc: 'Fill out our simple form' },
               { num: '2', title: 'We Match You', desc: 'Connect with best lenders' },
@@ -134,17 +134,17 @@ export function Finance() {
       </section>
 
       {/* Finance Calculator */}
-      <section className="py-24 px-4 bg-gradient-to-b from-transparent via-primary/5 to-transparent">
+      <section className="bg-gradient-to-b from-transparent via-primary/5 to-transparent px-4 py-16 sm:py-20 md:py-24">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="mb-6 text-4xl font-light text-white md:text-5xl">
+            <h2 className="mb-6 text-3xl font-light text-white sm:text-4xl md:text-5xl">
               Estimate Your <span className="text-primary">Repayments</span>
             </h2>
             <p className="text-gray-400">Get an idea before you apply</p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10">
-            <div className="space-y-8">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl sm:p-8 md:p-12">
+            <div className="space-y-6 sm:space-y-8">
               {/* Vehicle Price */}
               <div>
                 <label className="block text-white mb-3 text-lg">Vehicle Price</label>
@@ -157,7 +157,7 @@ export function Finance() {
                   onChange={(e) => setFormData({ ...formData, vehiclePrice: parseInt(e.target.value) })}
                   className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer slider"
                 />
-                <div className="text-right text-3xl font-light text-primary mt-2">
+                <div className="mt-2 text-right text-2xl font-light text-primary sm:text-3xl">
                   ${formData.vehiclePrice.toLocaleString()}
                 </div>
               </div>
@@ -174,7 +174,7 @@ export function Finance() {
                   onChange={(e) => setFormData({ ...formData, deposit: parseInt(e.target.value) })}
                   className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer slider"
                 />
-                <div className="text-right text-3xl font-light text-primary mt-2">
+                <div className="mt-2 text-right text-2xl font-light text-primary sm:text-3xl">
                   ${formData.deposit.toLocaleString()}
                 </div>
               </div>
@@ -182,7 +182,7 @@ export function Finance() {
               {/* Term */}
               <div>
                 <label className="block text-white mb-3 text-lg">Term (months)</label>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[24, 36, 48, 60].map((term) => (
                     <button
                       key={term}
@@ -200,9 +200,9 @@ export function Finance() {
               </div>
 
               {/* Result */}
-              <div className="bg-gradient-to-r from-primary/20 to-yellow-500/20 rounded-2xl p-8 text-center border border-primary/30">
+              <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/20 to-yellow-500/20 p-5 text-center sm:p-8">
                 <p className="text-gray-300 mb-2">Estimated Weekly Payment</p>
-                <div className="text-5xl md:text-6xl font-light text-white mb-2">
+                <div className="mb-2 text-4xl font-light text-white sm:text-5xl md:text-6xl">
                   ${calculateWeeklyPayment()}
                 </div>
                 <p className="text-sm text-gray-400">Based on 7.99% p.a. rate*</p>
@@ -213,22 +213,22 @@ export function Finance() {
       </section>
 
       {/* Multi-Step Application Form */}
-      <section className="py-24 px-4" id="apply">
+      <section className="px-4 py-16 sm:py-20 md:py-24" id="apply">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="mb-6 text-4xl font-light text-white md:text-5xl">
+            <h2 className="mb-6 text-3xl font-light text-white sm:text-4xl md:text-5xl">
               Start Your <span className="text-primary">Application</span>
             </h2>
             <p className="text-gray-400">Takes less than 5 minutes</p>
           </div>
 
           {/* Progress Bar */}
-          <div className="mb-12">
-            <div className="flex justify-between mb-4">
+          <div className="mb-10 sm:mb-12">
+            <div className="mb-4 flex justify-between gap-2 sm:gap-0">
               {[1, 2, 3, 4].map((step) => (
-                <div key={step} className="flex items-center">
+                <div key={step} className="flex min-w-0 flex-1 items-center justify-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all duration-500 ${
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-semibold transition-all duration-500 sm:h-10 sm:w-10 ${
                       step <= currentStep
                         ? 'bg-primary text-white'
                         : 'bg-white/10 text-gray-500'
@@ -238,7 +238,7 @@ export function Finance() {
                   </div>
                   {step < 4 && (
                     <div
-                      className={`h-1 w-12 md:w-24 mx-2 transition-all duration-500 ${
+                      className={`mx-2 h-1 w-full max-w-12 transition-all duration-500 sm:max-w-16 md:max-w-24 ${
                         step < currentStep ? 'bg-primary' : 'bg-white/10'
                       }`}
                     />
@@ -250,7 +250,7 @@ export function Finance() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10">
+          <form onSubmit={handleSubmit} className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl sm:p-8 md:p-12">
             {/* Step 1: Personal Details */}
             {currentStep === 1 && (
               <div className="space-y-6 animate-fadeIn">

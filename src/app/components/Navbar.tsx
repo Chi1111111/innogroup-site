@@ -61,14 +61,14 @@ export function Navbar() {
       <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
 
       <div className="section-shell px-4 sm:px-6 lg:px-8">
-        <div className="flex h-[4.5rem] items-center justify-between gap-4 md:h-20 md:gap-6">
+        <div className="flex h-[4.15rem] items-center justify-between gap-3 sm:h-[4.5rem] md:h-20 md:gap-6">
           <div className="flex items-center">
             <Link to="/" className="group">
               {!logoError ? (
                 <img
                   src={logoImage}
                   alt="Inno Group Ltd"
-                  className="h-10 transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-90 sm:h-11 md:h-12"
+                  className="h-8 w-auto max-w-[170px] object-contain transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-90 sm:h-10 sm:max-w-none md:h-12"
                   onError={() => setLogoError(true)}
                 />
               ) : (
@@ -105,7 +105,7 @@ export function Navbar() {
           </div>
 
           <button
-            className="rounded-full border border-black/8 bg-white/60 p-2.5 text-foreground md:hidden"
+            className="rounded-full border border-black/8 bg-white/60 p-2.5 text-foreground shadow-sm md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -114,7 +114,7 @@ export function Navbar() {
 
         {isMenuOpen && (
           <div className="pb-4 md:hidden">
-            <div className="section-card space-y-2 p-3">
+            <div className="section-card space-y-2 p-2.5 sm:p-3">
               {navigationLinks.map((link) => (
                 <Link
                   key={link.to}
