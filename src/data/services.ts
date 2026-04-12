@@ -89,8 +89,8 @@ export const partnerPlaceholders: PartnerPlaceholder[] = [
     hours: 'Mon - Fri: 8:30am - 5:00pm',
     logoSrc: partnerVipWheelTyreImage,
     logoAlt: 'V.I.P Wheel & Tyre',
-    logoPanel: 'dark',
-    logoFit: 'contain',
+    logoPanel: 'light',
+    logoFit: 'cover',
   },
   {
     id: 'partner-02',
