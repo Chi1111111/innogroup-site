@@ -58,4 +58,10 @@ export const SEO_ROUTES = {
     description:
       'Read client stories and testimonials about Japan direct vehicle sourcing, transparent landed pricing, and support from Inno Group Ltd.',
   },
+  '/zh': {
+    title: '奥克兰二手车与日本进口车 | 新西兰买车服务 | Inno Group Ltd',
+    description:
+      'Inno Group Ltd 提供奥克兰二手车、日本进口车、新西兰买车咨询、进口车落地价估算、车源代找和售后伙伴支持。',
+    lang: 'zh-NZ',
+  },
 } as const;

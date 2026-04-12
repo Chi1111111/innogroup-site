@@ -53,7 +53,9 @@ export function SEO() {
     const meta = getRouteMeta(location.pathname);
     const canonicalUrl = `${SEO_CONFIG.siteUrl}${location.pathname === '/' ? '' : location.pathname}`;
     const imageUrl = new URL(SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href;
+    const lang = 'lang' in meta ? meta.lang : 'en-NZ';
 
+    document.documentElement.lang = lang;
     document.title = meta.title;
     setMeta('description', meta.description);
     setMeta('robots', 'index, follow');
@@ -100,7 +102,7 @@ export function SEO() {
       '@type': 'WebSite',
       name: SEO_CONFIG.siteName,
       url: SEO_CONFIG.siteUrl,
-      inLanguage: 'en-NZ',
+      inLanguage: lang,
     });
   }, [location.pathname]);
 

@@ -7,6 +7,7 @@ import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { Finance } from './pages/Finance';
 import { Stories } from './pages/Stories';
+import { ChineseLanding } from './pages/ChineseLanding';
 import { SITE_FEATURES } from '../config/siteFeatures';
 
 function StoriesRedirect() {
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
       { path: 'contact', Component: Contact },
       { path: 'ownership', Component: Services },
       { path: 'finance', Component: Finance },
+      { path: 'zh', Component: ChineseLanding },
     ],
   },
 ]);
