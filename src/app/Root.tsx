@@ -3,10 +3,12 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ScrollToTop } from './components/ScrollToTop';
 import { StickyCTA } from './components/StickyCTA';
+import { SEO } from './components/SEO';
 
 export function Root() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO />
       <ScrollToTop />
       <Navbar />
       <Outlet />
