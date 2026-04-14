@@ -28,8 +28,8 @@ import {
 import { Link } from 'react-router';
 import { BrandLogo } from '../components/BrandLogo';
 import { VehicleCard } from '../components/VehicleCard';
+import { useVehiclesCatalog } from '../hooks/useVehiclesCatalog';
 import { heroGalleryImages } from '../../data/pic';
-import { vehicles } from '../../data';
 
 const vehicleCardLabels = {
   viewLarger: '查看大图',
@@ -333,6 +333,8 @@ export function ChineseHome() {
 }
 
 export function ChineseVehicles() {
+  const { vehicles } = useVehiclesCatalog();
+
   return (
     <div className="pt-20">
       <PageHeader

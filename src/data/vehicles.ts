@@ -65,7 +65,7 @@ export interface Vehicle {
   availability: string;
 }
 
-export const vehicles: Vehicle[] = [
+export const defaultVehicles: Vehicle[] = [
   {
     image: vehicleToyotaAlphardHybridZImage,
     images: [
@@ -178,3 +178,5 @@ export const vehicles: Vehicle[] = [
     availability: 'Pre Order',
   },
 ];
+
+export const vehicles: Vehicle[] = defaultVehicles;

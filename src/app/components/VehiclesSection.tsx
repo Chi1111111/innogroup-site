@@ -1,8 +1,10 @@
 import { VehicleCard } from './VehicleCard';
-import { vehicles } from '../../data';
 import { Link } from 'react-router';
+import { useVehiclesCatalog } from '../hooks/useVehiclesCatalog';
 
 export function VehiclesSection() {
+  const { vehicles } = useVehiclesCatalog();
+
   return (
     <section id="vehicles" className="py-24 px-4 bg-white">
       <div className="max-w-7xl mx-auto">
