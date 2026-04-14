@@ -1,10 +1,4 @@
 import aboutAuctionYardImage from './about-auction-yard.jpg';
-import caseHondaOdysseyImage from './case-honda-odyssey.jpg';
-import caseMazdaCx5Image from './case-mazda-cx5.jpg';
-import caseSubaruOutbackImage from './case-subaru-outback.jpg';
-import bmw5SeriesImage from './deal-bmw-5-series.jpg';
-import lexusRx450hImage from './deal-lexus-rx450h.jpg';
-import toyotaHarrierImage from './deal-toyota-harrier.jpg';
 import heroAuctionYardImage from './hero-auction-yard.jpg';
 import heroHondaCivicTypeRImage from './hero-honda-civic-type-r.jpg';
 import heroMazdaRx7Image from './hero-mazda-rx7.jpg';
@@ -85,10 +79,6 @@ export const heroGalleryImages = [
 
 export {
   aboutAuctionYardImage,
-  bmw5SeriesImage,
-  caseHondaOdysseyImage,
-  caseMazdaCx5Image,
-  caseSubaruOutbackImage,
   heroAuctionYardImage,
   heroHondaCivicTypeRImage,
   heroMazdaRx7Image,
@@ -96,7 +86,6 @@ export {
   heroSportsCollectionImage,
   heroToyotaSupraImage,
   japanLuxurySedanImage,
-  lexusRx450hImage,
   logoImage,
   logoMarkImage,
   partnerAsnetImage,
@@ -116,7 +105,6 @@ export {
   vehicleAudiA6Avant40TdiScreenImage,
   vehicleAudiA6Avant40TdiSeatsImage,
   vehicleAudiA6Avant40TdiSideImage,
-  toyotaHarrierImage,
   vehicleMercedesG350dAuctionSheet2Image,
   vehicleMercedesAmgC63CoupeAuctionSheetImage,
   vehicleMercedesAmgC63CoupeCockpitImage,

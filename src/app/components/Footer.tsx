@@ -1,7 +1,6 @@
 import { Link } from 'react-router';
 import { useState } from 'react';
 import { logoImage } from '../../data/pic';
-import { SITE_FEATURES } from '../../config/siteFeatures';
 
 const GlobeIconWhite = () => (
   <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -66,7 +65,6 @@ export function Footer() {
               <li><Link to="/vehicles" className="inline-block transition-colors hover:text-primary">Vehicles</Link></li>
               <li><Link to="/about" className="inline-block transition-colors hover:text-primary">About</Link></li>
               <li><Link to="/services" className="inline-block transition-colors hover:text-primary">Services</Link></li>
-              {SITE_FEATURES.stories ? <li><Link to="/stories" className="inline-block transition-colors hover:text-primary">Success Stories</Link></li> : null}
               <li><Link to="/finance" className="inline-block transition-colors hover:text-primary">Finance</Link></li>
               <li><Link to="/contact" className="inline-block transition-colors hover:text-primary">Contact</Link></li>
             </ul>

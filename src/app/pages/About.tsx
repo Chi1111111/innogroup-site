@@ -4,7 +4,6 @@ import { AboutSection } from '../components/AboutSection';
 import { ExportExperienceSection } from '../components/ExportExperienceSection';
 import { SourcingCredentialsSection } from '../components/SourcingCredentialsSection';
 import { WhyChooseUsSection } from '../components/WhyChooseUsSection';
-import { SITE_FEATURES } from '../../config/siteFeatures';
 
 export function About() {
   return (
@@ -38,14 +37,6 @@ export function About() {
             perfect vehicle from Japan.
           </p>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            {SITE_FEATURES.stories ? (
-              <Link
-                to="/stories"
-                className="inline-block rounded-2xl border border-white/15 bg-white/10 px-10 py-4 text-lg font-bold text-white transition-all hover:scale-105 hover:bg-white/15"
-              >
-                Real Stories from Happy Clients
-              </Link>
-            ) : null}
             <Link
               to="/contact"
               className="inline-block rounded-2xl bg-gradient-to-r from-primary via-yellow-400 to-primary px-10 py-4 text-lg font-bold text-white shadow-xl transition-all hover:scale-105 hover:shadow-primary/50"

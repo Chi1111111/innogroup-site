@@ -2,7 +2,6 @@ import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { logoImage } from '../../data/pic';
-import { SITE_FEATURES } from '../../config/siteFeatures';
 
 const navigationLinks = [
   { to: '/', label: 'Home' },
@@ -88,11 +87,6 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
-            {SITE_FEATURES.stories ? (
-              <Link to="/stories" className={navLinkClass('/stories')}>
-                Success Stories
-              </Link>
-            ) : null}
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
@@ -126,16 +120,6 @@ export function Navbar() {
                   <span className="text-current/55">/</span>
                 </Link>
               ))}
-              {SITE_FEATURES.stories ? (
-                <Link
-                  to="/stories"
-                  className={mobileNavLinkClass('/stories')}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span>Success Stories</span>
-                  <span className="text-current/55">/</span>
-                </Link>
-              ) : null}
 
               <Link
                 to="/contact"
