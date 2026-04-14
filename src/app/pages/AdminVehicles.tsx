@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import type { Vehicle } from '../../data/vehicles';
 import { useVehiclesCatalog } from '../hooks/useVehiclesCatalog';
+import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 
 const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'inno-admin-2026';
@@ -75,6 +76,8 @@ export function AdminVehicles() {
   const [loginError, setLoginError] = useState('');
   const [drafts, setDrafts] = useState<VehicleDraft[]>([]);
   const [saveMessage, setSaveMessage] = useState('');
+  const [uploadingMainMap, setUploadingMainMap] = useState<Record<string, boolean>>({});
+  const [uploadingGalleryMap, setUploadingGalleryMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setDrafts(vehicles.map((vehicle) => toDraft(vehicle)));
@@ -127,6 +130,63 @@ export function AdminVehicles() {
 
     setVehicles(nextVehicles);
     setSaveMessage('Vehicle catalog saved.');
+  };
+
+  const handleUploadMainImage = async (id: string, files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setUploadingMainMap((current) => ({ ...current, [id]: true }));
+    setSaveMessage('');
+
+    try {
+      const imageUrl = await uploadImageToCloudinary(file);
+      updateDraftField(id, 'image', imageUrl);
+      setSaveMessage('Main image uploaded.');
+    } catch {
+      setSaveMessage('Main image upload failed. Please try again.');
+    } finally {
+      setUploadingMainMap((current) => ({ ...current, [id]: false }));
+    }
+  };
+
+  const handleUploadGalleryImages = async (id: string, files: FileList | null) => {
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    setUploadingGalleryMap((current) => ({ ...current, [id]: true }));
+    setSaveMessage('');
+
+    try {
+      const uploadTasks = Array.from(files).map((file) => uploadImageToCloudinary(file));
+      const uploadedUrls = await Promise.all(uploadTasks);
+
+      setDrafts((current) =>
+        current.map((draft) => {
+          if (draft.id !== id) {
+            return draft;
+          }
+
+          const merged = [draft.imagesText.trim(), ...uploadedUrls]
+            .filter(Boolean)
+            .join('\n');
+
+          return {
+            ...draft,
+            imagesText: merged,
+          };
+        })
+      );
+
+      setSaveMessage(`Uploaded ${uploadedUrls.length} gallery image(s).`);
+    } catch {
+      setSaveMessage('Gallery image upload failed. Please try again.');
+    } finally {
+      setUploadingGalleryMap((current) => ({ ...current, [id]: false }));
+    }
   };
 
   const handleResetDefaults = () => {
@@ -296,6 +356,48 @@ export function AdminVehicles() {
                   />
                 </label>
               </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20">
+                  {uploadingMainMap[draft.id] ? 'Uploading main image...' : 'Upload Main Image'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingMainMap[draft.id] || uploadingGalleryMap[draft.id]}
+                    onChange={(event) => {
+                      void handleUploadMainImage(draft.id, event.target.files);
+                      event.target.value = '';
+                    }}
+                  />
+                </label>
+                <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20">
+                  {uploadingGalleryMap[draft.id]
+                    ? 'Uploading gallery images...'
+                    : 'Upload Gallery Images'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={uploadingMainMap[draft.id] || uploadingGalleryMap[draft.id]}
+                    onChange={(event) => {
+                      void handleUploadGalleryImages(draft.id, event.target.files);
+                      event.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+
+              {draft.image ? (
+                <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/25 p-2">
+                  <img
+                    src={draft.image}
+                    alt={draft.name || 'Vehicle image preview'}
+                    className="h-44 w-full rounded-lg object-cover"
+                  />
+                </div>
+              ) : null}
 
               <label className="mt-4 block space-y-1.5">
                 <span className="text-sm text-white/75">Gallery Image URLs (one per line or comma)</span>
