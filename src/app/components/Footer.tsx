@@ -63,13 +63,22 @@ export function Footer() {
             <h4 className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Quick Links</h4>
             <ul className="space-y-3 text-white/62">
               <li><Link to="/" className="inline-block transition-colors hover:text-primary">Home</Link></li>
+              <li><Link to="/vehicles" className="inline-block transition-colors hover:text-primary">Vehicles</Link></li>
               <li><Link to="/about" className="inline-block transition-colors hover:text-primary">About</Link></li>
               <li><Link to="/services" className="inline-block transition-colors hover:text-primary">Services</Link></li>
-              <li><Link to="/vehicles" className="inline-block transition-colors hover:text-primary">Vehicles</Link></li>
-              <li><Link to="/zh" className="inline-block transition-colors hover:text-primary">中文服务</Link></li>
               {SITE_FEATURES.stories ? <li><Link to="/stories" className="inline-block transition-colors hover:text-primary">Success Stories</Link></li> : null}
               <li><Link to="/finance" className="inline-block transition-colors hover:text-primary">Finance</Link></li>
               <li><Link to="/contact" className="inline-block transition-colors hover:text-primary">Contact</Link></li>
+            </ul>
+
+            <h4 className="mb-5 mt-8 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Chinese</h4>
+            <ul className="space-y-3 text-white/62">
+              <li><Link to="/zh" className="inline-block transition-colors hover:text-primary">中文首页</Link></li>
+              <li><Link to="/zh/vehicles" className="inline-block transition-colors hover:text-primary">买车找车</Link></li>
+              <li><Link to="/zh/services" className="inline-block transition-colors hover:text-primary">进口售后</Link></li>
+              <li><Link to="/zh/finance" className="inline-block transition-colors hover:text-primary">车辆贷款</Link></li>
+              <li><Link to="/zh/about" className="inline-block transition-colors hover:text-primary">关于我们</Link></li>
+              <li><Link to="/zh/contact" className="inline-block transition-colors hover:text-primary">联系咨询</Link></li>
             </ul>
           </div>
 

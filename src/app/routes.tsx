@@ -7,7 +7,14 @@ import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { Finance } from './pages/Finance';
 import { Stories } from './pages/Stories';
-import { ChineseLanding } from './pages/ChineseLanding';
+import {
+  ChineseAbout,
+  ChineseContact,
+  ChineseFinance,
+  ChineseHome,
+  ChineseServices,
+  ChineseVehicles,
+} from './pages/ChinesePages';
 import { SITE_FEATURES } from '../config/siteFeatures';
 
 function StoriesRedirect() {
@@ -30,7 +37,12 @@ export const router = createBrowserRouter([
       { path: 'contact', Component: Contact },
       { path: 'ownership', Component: Services },
       { path: 'finance', Component: Finance },
-      { path: 'zh', Component: ChineseLanding },
+      { path: 'zh', Component: ChineseHome },
+      { path: 'zh/vehicles', Component: ChineseVehicles },
+      { path: 'zh/services', Component: ChineseServices },
+      { path: 'zh/finance', Component: ChineseFinance },
+      { path: 'zh/about', Component: ChineseAbout },
+      { path: 'zh/contact', Component: ChineseContact },
     ],
   },
 ]);
