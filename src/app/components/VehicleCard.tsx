@@ -19,6 +19,15 @@ interface VehicleCardProps {
   year: string;
   mileage: string;
   availability: string;
+  labels?: {
+    viewLarger?: string;
+    enquireNow?: string;
+    openGallery?: string;
+    closeGallery?: string;
+    previousImage?: string;
+    nextImage?: string;
+    whatsappMessage?: (vehicle: { name: string; year: string; mileage: string }) => string;
+  };
 }
 
 export function VehicleCard({
@@ -29,6 +38,7 @@ export function VehicleCard({
   year,
   mileage,
   availability,
+  labels,
 }: VehicleCardProps) {
   const galleryImages = images?.length ? images : [image];
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -68,7 +78,8 @@ export function VehicleCard({
 
   const handleEnquire = () => {
     const message = encodeURIComponent(
-      `Hi, I'm interested in the ${name} (${year}, ${mileage}). Could you provide more details?`
+      labels?.whatsappMessage?.({ name, year, mileage }) ??
+        `Hi, I'm interested in the ${name} (${year}, ${mileage}). Could you provide more details?`
     );
     window.open(`https://wa.me/642885307225?text=${message}`, '_blank');
   };
@@ -90,7 +101,7 @@ export function VehicleCard({
           type="button"
           onClick={() => setIsLightboxOpen(true)}
           className="relative block h-64 w-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 text-left"
-          aria-label={`Open ${name} image gallery`}
+          aria-label={labels?.openGallery ?? `Open ${name} image gallery`}
         >
           <ImageWithFallback
             key={`${name}-${currentImageIndex}`}
@@ -113,7 +124,7 @@ export function VehicleCard({
 
           <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/50 px-3 py-2 text-xs font-medium text-white backdrop-blur-sm">
             <Expand className="h-3.5 w-3.5" />
-            <span>View larger</span>
+            <span>{labels?.viewLarger ?? 'View larger'}</span>
           </div>
 
           {showGalleryControls ? (
@@ -124,7 +135,7 @@ export function VehicleCard({
                   event.stopPropagation();
                   showPreviousImage();
                 }}
-                aria-label={`Show previous ${name} image`}
+                aria-label={labels?.previousImage ?? `Show previous ${name} image`}
                 className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-all hover:bg-black/60"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -136,7 +147,7 @@ export function VehicleCard({
                   event.stopPropagation();
                   showNextImage();
                 }}
-                aria-label={`Show next ${name} image`}
+                aria-label={labels?.nextImage ?? `Show next ${name} image`}
                 className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-all hover:bg-black/60"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -183,7 +194,7 @@ export function VehicleCard({
             onClick={handleEnquire}
             className="group/btn flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 py-3 text-primary transition-all duration-300 hover:bg-primary hover:text-primary-foreground"
           >
-            Enquire Now
+            {labels?.enquireNow ?? 'Enquire Now'}
             <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
           </button>
         </div>
@@ -196,7 +207,7 @@ export function VehicleCard({
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
                 className="fixed inset-0 z-[90] bg-black/82 backdrop-blur-md"
-                aria-label={`Close ${name} image gallery`}
+                aria-label={labels?.closeGallery ?? `Close ${name} image gallery`}
               />
 
               <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-8 sm:px-8">
@@ -205,7 +216,7 @@ export function VehicleCard({
                     type="button"
                     onClick={() => setIsLightboxOpen(false)}
                     className="absolute right-0 top-0 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-                    aria-label={`Close ${name} image gallery`}
+                    aria-label={labels?.closeGallery ?? `Close ${name} image gallery`}
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -223,7 +234,7 @@ export function VehicleCard({
                       <button
                         type="button"
                         onClick={showPreviousImage}
-                        aria-label={`Show previous ${name} image`}
+                        aria-label={labels?.previousImage ?? `Show previous ${name} image`}
                         className="absolute left-0 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
                       >
                         <ChevronLeft className="h-6 w-6" />
@@ -243,7 +254,7 @@ export function VehicleCard({
                       <button
                         type="button"
                         onClick={showNextImage}
-                        aria-label={`Show next ${name} image`}
+                        aria-label={labels?.nextImage ?? `Show next ${name} image`}
                         className="absolute right-0 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/12 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
                       >
                         <ChevronRight className="h-6 w-6" />
