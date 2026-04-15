@@ -5,7 +5,7 @@ import { useVehiclesCatalog } from '../hooks/useVehiclesCatalog';
 import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 
 const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'inno-admin-2026';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'innogroup2026';
 
 interface VehicleDraft extends Vehicle {
   id: string;
