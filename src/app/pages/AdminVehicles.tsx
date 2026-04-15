@@ -12,6 +12,11 @@ interface VehicleDraft extends Vehicle {
   imagesText: string;
 }
 
+interface AdminNotice {
+  type: 'success' | 'error' | 'info';
+  text: string;
+}
+
 function createId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -63,6 +68,18 @@ const EMPTY_DRAFT: VehicleDraft = {
   availability: 'Pre Order',
 };
 
+function getNoticeClass(type: AdminNotice['type']) {
+  if (type === 'success') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  }
+
+  if (type === 'error') {
+    return 'border-red-200 bg-red-50 text-red-700';
+  }
+
+  return 'border-blue-200 bg-blue-50 text-blue-700';
+}
+
 export function AdminVehicles() {
   const { vehicles, setVehicles, resetVehicles } = useVehiclesCatalog();
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -75,19 +92,22 @@ export function AdminVehicles() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [drafts, setDrafts] = useState<VehicleDraft[]>([]);
-  const [saveMessage, setSaveMessage] = useState('');
+  const [notice, setNotice] = useState<AdminNotice | null>(null);
   const [uploadingMainMap, setUploadingMainMap] = useState<Record<string, boolean>>({});
   const [uploadingGalleryMap, setUploadingGalleryMap] = useState<Record<string, boolean>>({});
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
   useEffect(() => {
-    setDrafts(vehicles.map((vehicle) => toDraft(vehicle)));
+    const nextDrafts = vehicles.map((vehicle) => toDraft(vehicle));
+    setDrafts(nextDrafts);
+    setExpandedCardId((current) => current ?? nextDrafts[0]?.id ?? null);
   }, [vehicles]);
 
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (password.trim() !== ADMIN_PASSWORD) {
-      setLoginError('Password not correct. Please try again.');
+      setLoginError('密码不正确，请重试。');
       return;
     }
 
@@ -101,7 +121,7 @@ export function AdminVehicles() {
     window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
     setIsAuthenticated(false);
     setLoginError('');
-    setSaveMessage('');
+    setNotice(null);
   };
 
   const updateDraftField = (id: string, key: keyof VehicleDraft, value: string) => {
@@ -111,11 +131,15 @@ export function AdminVehicles() {
   };
 
   const addVehicleDraft = () => {
-    setDrafts((current) => [...current, { ...EMPTY_DRAFT, id: createId() }]);
+    const nextId = createId();
+    setDrafts((current) => [...current, { ...EMPTY_DRAFT, id: nextId }]);
+    setExpandedCardId(nextId);
+    setNotice({ type: 'info', text: '已新增一条空白车辆，请填写后保存。' });
   };
 
   const removeVehicleDraft = (id: string) => {
     setDrafts((current) => current.filter((draft) => draft.id !== id));
+    setExpandedCardId((current) => (current === id ? null : current));
   };
 
   const handleSave = () => {
@@ -124,12 +148,12 @@ export function AdminVehicles() {
       .filter((vehicle): vehicle is Vehicle => vehicle !== null);
 
     if (nextVehicles.length !== drafts.length) {
-      setSaveMessage('Some items are missing name or main image. Please fill them before saving.');
+      setNotice({ type: 'error', text: '保存失败：请确认每条车辆都填写了“名称”和“主图 URL”。' });
       return;
     }
 
     setVehicles(nextVehicles);
-    setSaveMessage('Vehicle catalog saved.');
+    setNotice({ type: 'success', text: '保存成功，前台车辆页面已同步更新。' });
   };
 
   const handleUploadMainImage = async (id: string, files: FileList | null) => {
@@ -139,14 +163,14 @@ export function AdminVehicles() {
     }
 
     setUploadingMainMap((current) => ({ ...current, [id]: true }));
-    setSaveMessage('');
+    setNotice(null);
 
     try {
       const imageUrl = await uploadImageToCloudinary(file);
       updateDraftField(id, 'image', imageUrl);
-      setSaveMessage('Main image uploaded.');
+      setNotice({ type: 'success', text: '主图上传成功。' });
     } catch {
-      setSaveMessage('Main image upload failed. Please try again.');
+      setNotice({ type: 'error', text: '主图上传失败，请重试。' });
     } finally {
       setUploadingMainMap((current) => ({ ...current, [id]: false }));
     }
@@ -158,7 +182,7 @@ export function AdminVehicles() {
     }
 
     setUploadingGalleryMap((current) => ({ ...current, [id]: true }));
-    setSaveMessage('');
+    setNotice(null);
 
     try {
       const uploadTasks = Array.from(files).map((file) => uploadImageToCloudinary(file));
@@ -181,52 +205,52 @@ export function AdminVehicles() {
         })
       );
 
-      setSaveMessage(`Uploaded ${uploadedUrls.length} gallery image(s).`);
+      setNotice({ type: 'success', text: `相册上传成功，共 ${uploadedUrls.length} 张。` });
     } catch {
-      setSaveMessage('Gallery image upload failed. Please try again.');
+      setNotice({ type: 'error', text: '相册上传失败，请重试。' });
     } finally {
       setUploadingGalleryMap((current) => ({ ...current, [id]: false }));
     }
   };
 
   const handleResetDefaults = () => {
-    const confirmed = window.confirm('Reset all vehicles back to defaults?');
+    const confirmed = window.confirm('确定恢复为默认车辆列表吗？');
     if (!confirmed) {
       return;
     }
 
     resetVehicles();
-    setSaveMessage('Vehicle catalog reset to default list.');
+    setNotice({ type: 'success', text: '已恢复默认车辆列表。' });
   };
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#111111] px-4 py-10">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/40 p-8 text-white shadow-2xl">
-          <h1 className="text-3xl font-bold">Admin Login</h1>
-          <p className="mt-2 text-sm text-white/70">Vehicle editor access</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <h1 className="text-2xl font-semibold text-slate-900">Admin 登录</h1>
+          <p className="mt-2 text-sm text-slate-600">车辆管理后台 / Vehicle Editor</p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <label className="block space-y-2">
-              <span className="text-sm font-medium text-white/80">Password</span>
+              <span className="text-sm font-medium text-slate-700">密码 Password</span>
               <input
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-white/15 bg-white/8 px-4 py-3 text-white outline-none transition-all focus:border-primary/70 focus:ring-2 focus:ring-primary/25"
-                placeholder="Enter admin password"
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                placeholder="请输入后台密码"
                 autoComplete="current-password"
               />
             </label>
-            {loginError ? <p className="text-sm text-red-300">{loginError}</p> : null}
+            {loginError ? <p className="text-sm text-red-600">{loginError}</p> : null}
             <button
               type="submit"
-              className="w-full rounded-xl bg-primary px-4 py-3 font-semibold text-black transition-colors hover:bg-primary/90"
+              className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
             >
-              Sign in
+              登录 / Sign In
             </button>
           </form>
-          <Link to="/" className="mt-4 inline-flex text-sm text-primary hover:text-primary/80">
-            Back to site
+          <Link to="/" className="mt-4 inline-flex text-sm text-slate-700 hover:text-slate-900">
+            返回网站首页
           </Link>
         </div>
       </div>
@@ -234,180 +258,211 @@ export function AdminVehicles() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] px-4 py-8 text-white">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/12 bg-black/35 p-4 sm:p-6">
-          <div>
-            <h1 className="text-3xl font-bold">Admin Vehicle Editor</h1>
-            <p className="mt-1 text-sm text-white/70">
-              Add, edit, or remove vehicles shown on both English and Chinese vehicle pages.
-            </p>
+    <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900 sm:py-8">
+      <div className="mx-auto max-w-6xl space-y-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">车辆管理后台</h1>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                操作步骤：1) 上传图片并填写信息 2) 点击“保存全部修改” 3) 前台英文/中文车辆页自动同步。
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                返回登录页
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={addVehicleDraft}
-              className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
+              className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
             >
-              Add Vehicle
+              + 新增车辆
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+              className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
             >
-              Save Changes
+              保存全部修改
             </button>
             <button
               type="button"
               onClick={handleResetDefaults}
-              className="rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+              className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100"
             >
-              Reset Defaults
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-xl border border-red-300/30 bg-red-300/10 px-4 py-2.5 text-sm font-semibold text-red-200 transition-colors hover:bg-red-300/20"
-            >
-              Logout
+              恢复默认数据
             </button>
           </div>
         </div>
 
-        {saveMessage ? (
-          <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
-            {saveMessage}
+        {notice ? (
+          <div className={`rounded-xl border px-4 py-3 text-sm ${getNoticeClass(notice.type)}`}>
+            {notice.text}
           </div>
         ) : null}
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {drafts.map((draft, index) => (
-            <div key={draft.id} className="rounded-2xl border border-white/10 bg-black/30 p-5 sm:p-6">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold">Vehicle #{index + 1}</h2>
-                <button
-                  type="button"
-                  onClick={() => removeVehicleDraft(draft.id)}
-                  className="rounded-lg border border-red-300/30 bg-red-300/10 px-3 py-1.5 text-sm text-red-200 transition-colors hover:bg-red-300/20"
-                >
-                  Delete
-                </button>
+            <div key={draft.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">
+                    车辆 #{index + 1} {draft.name ? `- ${draft.name}` : ''}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {draft.priceRange || '未填写价格'} · {draft.year || '未填写年份'} ·{' '}
+                    {draft.mileage || '未填写里程'}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedCardId((current) => (current === draft.id ? null : draft.id))
+                    }
+                    className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                  >
+                    {expandedCardId === draft.id ? '收起' : '展开编辑'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeVehicleDraft(draft.id)}
+                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
+                  >
+                    删除
+                  </button>
+                </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+
+              {expandedCardId !== draft.id ? null : (
+                <>
+              <div className="grid gap-3 md:grid-cols-2">
                 <label className="space-y-1.5">
-                  <span className="text-sm text-white/75">Name</span>
+                  <span className="text-sm font-medium text-slate-700">车辆名称 *</span>
                   <input
                     value={draft.name}
                     onChange={(event) => updateDraftField(draft.id, 'name', event.target.value)}
-                    className="w-full rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm text-white"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
                     placeholder="Toyota Alphard Hybrid Z"
                   />
                 </label>
                 <label className="space-y-1.5">
-                  <span className="text-sm text-white/75">Price</span>
+                  <span className="text-sm font-medium text-slate-700">价格 Price</span>
                   <input
                     value={draft.priceRange}
                     onChange={(event) =>
                       updateDraftField(draft.id, 'priceRange', event.target.value)
                     }
-                    className="w-full rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm text-white"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
                     placeholder="$80,000 NZD"
                   />
                 </label>
                 <label className="space-y-1.5">
-                  <span className="text-sm text-white/75">Year</span>
+                  <span className="text-sm font-medium text-slate-700">年份 Year</span>
                   <input
                     value={draft.year}
                     onChange={(event) => updateDraftField(draft.id, 'year', event.target.value)}
-                    className="w-full rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm text-white"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
                     placeholder="2023"
                   />
                 </label>
                 <label className="space-y-1.5">
-                  <span className="text-sm text-white/75">Mileage</span>
+                  <span className="text-sm font-medium text-slate-700">公里数 Mileage</span>
                   <input
                     value={draft.mileage}
                     onChange={(event) =>
                       updateDraftField(draft.id, 'mileage', event.target.value)
                     }
-                    className="w-full rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm text-white"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
                     placeholder="9k km"
                   />
                 </label>
                 <label className="space-y-1.5">
-                  <span className="text-sm text-white/75">Availability</span>
+                  <span className="text-sm font-medium text-slate-700">状态 Availability</span>
                   <input
                     value={draft.availability}
                     onChange={(event) =>
                       updateDraftField(draft.id, 'availability', event.target.value)
                     }
-                    className="w-full rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm text-white"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
                     placeholder="Pre Order"
                   />
                 </label>
                 <label className="space-y-1.5">
-                  <span className="text-sm text-white/75">Main Image URL</span>
+                  <span className="text-sm font-medium text-slate-700">主图 URL *</span>
                   <input
                     value={draft.image}
                     onChange={(event) => updateDraftField(draft.id, 'image', event.target.value)}
-                    className="w-full rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm text-white"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
                     placeholder="https://..."
                   />
                 </label>
               </div>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20">
-                  {uploadingMainMap[draft.id] ? 'Uploading main image...' : 'Upload Main Image'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingMainMap[draft.id] || uploadingGalleryMap[draft.id]}
-                    onChange={(event) => {
-                      void handleUploadMainImage(draft.id, event.target.files);
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
-                <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20">
-                  {uploadingGalleryMap[draft.id]
-                    ? 'Uploading gallery images...'
-                    : 'Upload Gallery Images'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    disabled={uploadingMainMap[draft.id] || uploadingGalleryMap[draft.id]}
-                    onChange={(event) => {
-                      void handleUploadGalleryImages(draft.id, event.target.files);
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
+              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                <p className="text-sm font-medium text-slate-700">图片上传</p>
+                <p className="mt-1 text-xs text-slate-500">建议先上传主图，再上传相册图片。</p>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100">
+                    {uploadingMainMap[draft.id] ? '主图上传中...' : '上传主图'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingMainMap[draft.id] || uploadingGalleryMap[draft.id]}
+                      onChange={(event) => {
+                        void handleUploadMainImage(draft.id, event.target.files);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                  <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100">
+                    {uploadingGalleryMap[draft.id] ? '相册上传中...' : '上传相册（可多选）'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      disabled={uploadingMainMap[draft.id] || uploadingGalleryMap[draft.id]}
+                      onChange={(event) => {
+                        void handleUploadGalleryImages(draft.id, event.target.files);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
 
               {draft.image ? (
-                <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/25 p-2">
+                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
                   <img
                     src={draft.image}
                     alt={draft.name || 'Vehicle image preview'}
-                    className="h-44 w-full rounded-lg object-cover"
+                    className="h-28 w-full rounded-lg object-cover sm:h-32"
                   />
                 </div>
               ) : null}
 
               <label className="mt-4 block space-y-1.5">
-                <span className="text-sm text-white/75">Gallery Image URLs (one per line or comma)</span>
+                <span className="text-sm font-medium text-slate-700">相册 URL（每行一个或逗号分隔）</span>
                 <textarea
                   value={draft.imagesText}
                   onChange={(event) => updateDraftField(draft.id, 'imagesText', event.target.value)}
-                  className="min-h-28 w-full rounded-xl border border-white/15 bg-white/8 px-3 py-2.5 text-sm text-white"
+                  className="min-h-24 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
                   placeholder="https://.../photo-1.jpg&#10;https://.../photo-2.jpg"
                 />
               </label>
+                </>
+              )}
             </div>
           ))}
         </div>
