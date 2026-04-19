@@ -13,12 +13,12 @@ export function Vehicles() {
             <span className="text-primary font-semibold">Sample Selection</span>
           </div>
           <h1 className="text-5xl md:text-6xl font-bold text-foreground">
-            Vehicles We <span className="text-primary">Can Source</span>
+            Import Cars We <span className="text-primary">Can Source</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            These are example pre-order vehicles to show the type of Japan-import stock we can
-            source. If you want more recommendations, contact us and we will suggest options that
-            fit your budget and needs.
+            These are example pre-order import cars to show the type of Japan-sourced stock we can
+            help with. If you want more car recommendations, contact us and we will suggest options
+            that fit your budget and needs.
           </p>
         </div>
       </section>

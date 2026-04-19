@@ -4,7 +4,7 @@ import { heroGalleryImages } from '../../data/pic';
 import { BrandLogo } from './BrandLogo';
 
 const heroHighlights = [
-  'Japan auction and dealer sourcing',
+  'Import car and Japan auction sourcing',
   'NZ compliance and delivery handled',
   'After-sales support through trusted partners',
 ];
@@ -74,25 +74,25 @@ export function Hero() {
               <span className="h-2 w-2 rounded-full bg-primary" />
               Auckland Based
               <span className="text-white/35">|</span>
-              Japan Direct Sourcing
+              Import Car Sourcing
             </div>
 
             <h1
               className="animate-slideUp text-[2.55rem] leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[5.75rem]"
               style={{ animationDelay: '0.2s' }}
             >
-              Direct from <span className="text-primary">Japan</span>.
+              Your next <span className="text-primary">import car</span>.
               <br />
-              Clearer sourcing for New Zealand.
+              Sourced clearly from Japan.
             </h1>
 
             <p
               className="mt-4 max-w-2xl animate-slideUp text-[0.98rem] leading-7 text-white/72 sm:mt-6 md:text-xl md:leading-8"
               style={{ animationDelay: '0.3s' }}
             >
-              We help you choose the right model, grade, colour, and features through Japanese
-              auctions, dealer networks, and selected local stock, with clear landed pricing and
-              practical support after delivery.
+              We help Auckland and New Zealand buyers source Japanese import cars, compare car
+              options, and choose the right model, grade, colour, and features with clear landed
+              pricing and practical support after delivery.
             </p>
 
             <div

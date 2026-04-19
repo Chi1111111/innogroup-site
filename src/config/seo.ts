@@ -3,15 +3,15 @@ export const SEO_CONFIG = {
   siteUrl: 'https://www.innogroup.co.nz',
   locale: 'en_NZ',
   zhLocale: 'zh_NZ',
-  defaultTitle: 'Japanese Import Cars NZ | Used Cars Auckland | Inno Group Ltd',
+  defaultTitle: 'Import Car Auckland NZ | Japanese Import Cars | Inno Group',
   defaultDescription:
-    'Buy the right used car or Japanese import in Auckland with Inno Group Ltd. Japan direct sourcing, landed price estimates, finance guidance, compliance, and after-sales support.',
+    'Looking for an import car in Auckland? Inno Group helps New Zealand buyers source Japanese import cars, compare car options, and arrange landed cost, compliance, finance, and after-sales support.',
   defaultImage: '/og-image.png',
   phone: '+642885307225',
   email: 'innogroup.shawn@gmail.com',
   priceRange: '$$',
   openingHours: ['Mo-Fr 10:00-17:00'],
-  areaServed: ['Auckland', 'Albany', 'North Shore', 'New Zealand'],
+  areaServed: ['Auckland', 'Albany', 'North Shore', 'Wairau Valley', 'New Zealand'],
   address: {
     streetAddress: 'Unit 1A, 331 Rosedale Road',
     addressLocality: 'Albany',
@@ -32,52 +32,53 @@ export const SEO_ROUTE_PAIRS = {
 
 export const SEO_ROUTES = {
   '/': {
-    title: 'Japanese Import Cars NZ | Used Cars Auckland | Inno Group Ltd',
+    title: 'Import Car Auckland NZ | Japanese Import Cars | Inno Group',
     description:
-      'Buy the right used car or Japanese import in Auckland with Inno Group Ltd. Japan direct sourcing, landed price estimates, finance guidance, compliance, and after-sales support.',
+      'Looking for an import car in Auckland? Inno Group helps New Zealand buyers source Japanese import cars, compare car options, and arrange landed cost, compliance, finance, and after-sales support.',
     keywords:
-      'Japanese import cars NZ, used cars Auckland, import cars New Zealand, buy a car Auckland, Japan car auctions NZ, Inno Group',
+      'import car Auckland, import car NZ, import cars Auckland, Japanese import cars Auckland, Japanese import cars NZ, car dealer Auckland, buy car Auckland, car sourcing NZ, Japan car auctions NZ, car import agent NZ, used cars Auckland, import cars New Zealand, Inno Group Ltd',
   },
   '/vehicles': {
-    title: 'Japanese Import Cars & Used Cars Auckland | Vehicles We Can Source',
+    title: 'Import Cars Auckland | Japanese Cars We Can Source',
     description:
-      'Browse example Japanese import cars and used vehicles we can source for Auckland and New Zealand buyers. Request recommendations by budget, model, year, mileage, and use case.',
+      'Browse example import cars and Japanese pre-order vehicles including Toyota, Mercedes-Benz, Audi, Porsche, and Subaru options. Ask Inno Group for tailored car recommendations in Auckland.',
     keywords:
-      'Japanese import cars Auckland, used cars Auckland, import vehicles NZ, Japan pre-order cars, Toyota Alphard NZ, Porsche Taycan import',
+      'import cars Auckland, import car examples NZ, Japanese import vehicles Auckland, Japan pre-order cars NZ, Toyota Alphard import NZ, Mercedes G350d NZ, Porsche Taycan import, Audi A6 Avant import, Subaru BRZ NZ',
   },
   '/services': {
-    title: 'Japan Car Import Services Auckland | Ownership Support',
+    title: 'Car Import Service Auckland | Japan Import Support',
     description:
-      'Japan car import and ownership support in Auckland, including landed cost guidance, compliance advice, repair referrals, parts support, bodywork, paint, and partner help.',
+      'Car import service and ownership support in Auckland, including Japan sourcing guidance, landed cost estimates, compliance advice, repair referrals, parts, bodywork, and paint partners.',
     keywords:
-      'Japan car import service Auckland, imported car compliance NZ, car ownership support Auckland, Japanese car parts NZ',
+      'car import service Auckland, import car service NZ, Japan car import service Auckland, Japanese car sourcing NZ, imported car compliance NZ, car ownership support Auckland, Japanese car parts Auckland, panel beating Auckland',
   },
   '/ownership': {
-    title: 'Ownership Support | Inno Group Ltd',
+    title: 'Imported Car Ownership Support Auckland | Inno Group Ltd',
     description:
-      'Practical ownership support after purchase, including partner referrals, repairs, parts support, and help keeping your vehicle on the road.',
-    keywords: 'vehicle ownership support Auckland, imported car repairs NZ, Japanese car parts Auckland',
+      'After-sales ownership support for imported cars in Auckland, including trusted partner referrals, repairs, parts support, tyres, detailing, and practical help after purchase.',
+    keywords:
+      'imported car ownership support Auckland, imported car repairs NZ, Japanese car parts Auckland, vehicle after-sales support NZ',
   },
   '/finance': {
-    title: 'Vehicle Finance Auckland | Used Car & Import Car Finance',
+    title: 'Vehicle Finance Auckland | Used Car & Import Car Loans',
     description:
       'Estimate weekly repayments and start a no-pressure vehicle finance enquiry for used cars, local stock, and Japanese import cars in Auckland, New Zealand.',
     keywords:
-      'vehicle finance Auckland, used car finance NZ, import car finance, car loan Auckland, weekly car repayments',
+      'vehicle finance Auckland, used car finance NZ, import car finance NZ, Japanese import car finance, car loan Auckland, weekly car repayments',
   },
   '/about': {
-    title: 'About Inno Group Ltd | Auckland Japanese Import Car Specialists',
+    title: 'About Inno Group Ltd | Auckland Japanese Import Specialists',
     description:
-      'Learn about Inno Group Ltd, an Auckland-based Japanese import car and used vehicle sourcing partner helping New Zealand drivers buy with clearer information.',
+      'Learn about Inno Group Ltd, an Auckland Japanese import car sourcing company helping New Zealand buyers choose vehicles from Japan with clearer advice and ongoing support.',
     keywords:
-      'Inno Group Ltd, Auckland car dealer, Japanese import specialist Auckland, Albany car dealer',
+      'Inno Group Ltd, Auckland car dealer, Japanese import specialist Auckland, Albany car dealer, Japan vehicle sourcing Auckland',
   },
   '/contact': {
-    title: 'Contact Inno Group Ltd | Used Car & Japanese Import Quote Auckland',
+    title: 'Import Car Quote Auckland | Contact Inno Group Ltd',
     description:
-      'Contact Inno Group Ltd in Albany, Auckland for used car advice, Japanese import quotes, local stock enquiries, WhatsApp support, and tailored sourcing recommendations.',
+      'Contact Inno Group Ltd in Albany, Auckland for an import car quote, Japanese import car sourcing, used car advice, WhatsApp support, finance enquiries, and tailored recommendations.',
     keywords:
-      'contact car dealer Auckland, Japanese import quote NZ, used car quote Auckland, Inno Group contact',
+      'import car quote Auckland, Japanese import car quote Auckland, contact car dealer Auckland, used car quote Auckland, Inno Group contact, car sourcing Auckland',
   },
   '/zh': {
     title: '奥克兰二手车与日本进口车 | 新西兰买车服务 | Inno Group Ltd',

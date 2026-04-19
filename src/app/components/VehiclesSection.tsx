@@ -1,10 +1,8 @@
 import { VehicleCard } from './VehicleCard';
 import { Link } from 'react-router';
-import { useVehiclesCatalog } from '../hooks/useVehiclesCatalog';
+import { vehicles } from '../../data/vehicles';
 
 export function VehiclesSection() {
-  const { vehicles } = useVehiclesCatalog();
-
   return (
     <section id="vehicles" className="py-24 px-4 bg-white">
       <div className="max-w-7xl mx-auto">
@@ -12,9 +10,11 @@ export function VehiclesSection() {
           <div className="inline-block bg-primary/10 px-4 py-2 rounded-full mb-2">
             <span className="text-primary text-sm">Example Vehicles</span>
           </div>
-          <h2 className="text-4xl md:text-5xl text-foreground mb-4">A Few Popular Examples</h2>
+          <h2 className="text-4xl md:text-5xl text-foreground mb-4">
+            Import Cars We Can Source
+          </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            These vehicles are only a few examples of the pre-order stock we can source for you from Japan.
+            These import car examples are only a few of the pre-order vehicles we can source for you from Japan.
             <br className="hidden md:block" />
             For more recommended options based on your budget and needs, please contact us.
           </p>

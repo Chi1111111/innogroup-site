@@ -6,7 +6,6 @@ import { Services } from './pages/Services';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { Finance } from './pages/Finance';
-import { AdminVehicles } from './pages/AdminVehicles';
 import {
   ChineseAbout,
   ChineseContact,
@@ -35,9 +34,5 @@ export const router = createBrowserRouter([
       { path: 'zh/about', Component: ChineseAbout },
       { path: 'zh/contact', Component: ChineseContact },
     ],
-  },
-  {
-    path: '/admin',
-    Component: AdminVehicles,
   },
 ]);

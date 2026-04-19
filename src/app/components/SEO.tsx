@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router';
 import { SEO_CONFIG, SEO_ROUTE_PAIRS, SEO_ROUTES } from '../../config/seo';
+import { vehicles } from '../../data/vehicles';
 
 const routeKeys = Object.keys(SEO_ROUTES) as Array<keyof typeof SEO_ROUTES>;
 
@@ -14,6 +15,10 @@ function setMeta(name: string, content: string, attribute: 'name' | 'property' =
   }
 
   element.content = content;
+}
+
+function removeJsonLd(id: string) {
+  document.getElementById(id)?.remove();
 }
 
 function setLink(rel: string, href: string) {
@@ -140,11 +145,13 @@ export function SEO() {
     setMeta('og:description', meta.description, 'property');
     setMeta('og:url', canonicalUrl, 'property');
     setMeta('og:image', imageUrl, 'property');
+    setMeta('og:image:alt', 'Inno Group Japanese import cars Auckland', 'property');
 
     setMeta('twitter:card', 'summary_large_image');
     setMeta('twitter:title', meta.title);
     setMeta('twitter:description', meta.description);
     setMeta('twitter:image', imageUrl);
+    setMeta('twitter:image:alt', 'Inno Group Japanese import cars Auckland');
 
     setJsonLd('inno-local-business-schema', {
       '@context': 'https://schema.org',
@@ -156,11 +163,19 @@ export function SEO() {
       email: SEO_CONFIG.email,
       priceRange: SEO_CONFIG.priceRange,
       openingHours: SEO_CONFIG.openingHours,
+      description: SEO_CONFIG.defaultDescription,
       address: {
         '@type': 'PostalAddress',
         ...SEO_CONFIG.address,
       },
       areaServed: SEO_CONFIG.areaServed,
+      knowsAbout: [
+        'Japanese import cars',
+        'Japan car auctions',
+        'Used cars Auckland',
+        'Vehicle finance Auckland',
+        'Imported vehicle compliance New Zealand',
+      ],
       hasOfferCatalog: {
         '@type': 'OfferCatalog',
         name: isChinese ? '车辆服务' : 'Vehicle services',
@@ -203,6 +218,11 @@ export function SEO() {
       name: SEO_CONFIG.siteName,
       url: SEO_CONFIG.siteUrl,
       inLanguage: lang,
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${SEO_CONFIG.siteUrl}/vehicles?search={search_term_string}`,
+        'query-input': 'required name=search_term_string',
+      },
     });
 
     setJsonLd('inno-breadcrumb-schema', {
@@ -252,6 +272,40 @@ export function SEO() {
             },
           ],
     });
+
+    if (location.pathname === '/vehicles' || location.pathname === '/zh/vehicles') {
+      setJsonLd('inno-vehicle-list-schema', {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: isChinese ? '日本进口预订车辆示例' : 'Japanese import vehicle examples',
+        description: meta.description,
+        itemListElement: vehicles.map((vehicle, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'Vehicle',
+            name: vehicle.name,
+            image: vehicle.image.startsWith('http')
+              ? vehicle.image
+              : new URL(vehicle.image, SEO_CONFIG.siteUrl).href,
+            modelDate: vehicle.year,
+            mileageFromOdometer: vehicle.mileage,
+            offers: {
+              '@type': 'Offer',
+              priceCurrency: 'NZD',
+              price: vehicle.priceRange.replace(/[^0-9.]/g, ''),
+              availability: 'https://schema.org/PreOrder',
+              seller: {
+                '@type': 'AutoDealer',
+                name: SEO_CONFIG.siteName,
+              },
+            },
+          },
+        })),
+      });
+    } else {
+      removeJsonLd('inno-vehicle-list-schema');
+    }
   }, [location.pathname]);
 
   return null;
