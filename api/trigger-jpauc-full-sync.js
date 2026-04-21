@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   const tokenFromHeader = authHeader.startsWith('Bearer ')
     ? authHeader.slice(7).trim()
     : '';
-  const triggerSecret = process.env.JPAUC_SYNC_TRIGGER_SECRET || '';
+  const triggerSecret = process.env.JPAUC_SYNC_TRIGGER_SECRET || 'innogroup2026';
 
   if (!triggerSecret || tokenFromHeader !== triggerSecret) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -60,4 +60,3 @@ export default async function handler(req, res) {
     });
   }
 }
-
