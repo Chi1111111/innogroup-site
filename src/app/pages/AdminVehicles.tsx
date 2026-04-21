@@ -406,10 +406,15 @@ export function AdminVehicles() {
       const result = (await response.json().catch(() => ({}))) as {
         message?: string;
         error?: string;
+        detail?: string;
+        githubStatus?: number;
       };
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to start full sync');
+        const reason = [result.error, result.detail && `(${result.detail})`, result.githubStatus && `[${result.githubStatus}]`]
+          .filter(Boolean)
+          .join(' ');
+        throw new Error(reason || 'Failed to start full sync');
       }
 
       setNotice({

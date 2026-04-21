@@ -51,9 +51,21 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const text = await response.text();
+      let detail = text.slice(0, 500);
+
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed?.message) {
+          detail = String(parsed.message).slice(0, 500);
+        }
+      } catch {
+        // keep raw text fallback
+      }
+
       return res.status(502).json({
         error: 'GitHub dispatch failed',
-        detail: text.slice(0, 500),
+        detail,
+        githubStatus: response.status,
       });
     }
 
