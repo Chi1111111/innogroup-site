@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "asnet:scrape": "node scripts/asnet-scrape.mjs",
+    "jpauc:scrape": "node scripts/jpauc-scrape.mjs",
+    "jpauc:oneprice:japan:scrape": "node scripts/jpauc-oneprice-japan-scrape.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -17,6 +20,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
+    "playwright": "^1.54.2",
     "tailwindcss": "4.1.12",
     "tw-animate-css": "1.3.8",
     "vite": "^6.4.2"

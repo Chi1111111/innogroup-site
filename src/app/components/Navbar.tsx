@@ -6,6 +6,7 @@ import { logoImage } from '../../data/pic';
 const navigationLinks = [
   { to: '/', label: 'Home' },
   { to: '/vehicles', label: 'Vehicles' },
+  { to: '/jpauc-feed', label: 'Cars Form Japan' },
   { to: '/services', label: 'Services' },
   { to: '/finance', label: 'Finance' },
   { to: '/about', label: 'About' },
@@ -42,7 +43,7 @@ export function Navbar() {
   };
 
   const navLinkClass = (path: string) =>
-    `rounded-full px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.18em] transition-colors ${
+    `whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.18em] transition-colors ${
       isActive(path)
         ? 'bg-primary/10 text-primary'
         : 'text-foreground/72 hover:bg-black/4 hover:text-foreground'
@@ -92,7 +93,7 @@ export function Navbar() {
           <div className="hidden items-center gap-3 md:flex">
             <Link
               to="/contact"
-              className="inline-flex items-center rounded-full bg-[#151515] px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-0.5 hover:bg-primary"
+              className="inline-flex items-center whitespace-nowrap rounded-full bg-[#151515] px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-0.5 hover:bg-primary"
             >
               Request Quote
             </Link>
@@ -123,7 +124,7 @@ export function Navbar() {
 
               <Link
                 to="/contact"
-                className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-[#151515] px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.16em] text-white"
+                className="mt-3 inline-flex w-full items-center justify-center whitespace-nowrap rounded-2xl bg-[#151515] px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.16em] text-white"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Request Quote

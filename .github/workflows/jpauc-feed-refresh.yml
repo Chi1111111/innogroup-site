@@ -1,0 +1,60 @@
+name: JPAUC Feed Refresh
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jpauc-feed-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Scrape Latest JPAUC Data
+        env:
+          JPAUC_HEADLESS: 'true'
+          JPAUC_MAX_PAGES: '12'
+          JPAUC_DETAIL_CONCURRENCY: '3'
+          JPAUC_WAIT_MS: '1000'
+        run: npm run jpauc:scrape
+
+      - name: Scrape Latest JPAUC One Price (Japan)
+        env:
+          JPAUC_ONEPRICE_HEADLESS: 'true'
+          JPAUC_ONEPRICE_MAX_PAGES: '12'
+          JPAUC_ONEPRICE_DETAIL_CONCURRENCY: '3'
+          JPAUC_ONEPRICE_WAIT_MS: '1000'
+        run: npm run jpauc:oneprice:japan:scrape
+
+      - name: Commit Updated Feed
+        run: |
+          if git diff --quiet -- data/imports/jpauc-vehicles.json public/data/jpauc-vehicles.json data/imports/jpauc-oneprice-japan-vehicles.json public/data/jpauc-oneprice-japan-vehicles.json; then
+            echo "No changes in JPAUC feed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/imports/jpauc-vehicles.json public/data/jpauc-vehicles.json data/imports/jpauc-oneprice-japan-vehicles.json public/data/jpauc-oneprice-japan-vehicles.json
+          git commit -m "chore: refresh JPAUC feed data"
+          git push
