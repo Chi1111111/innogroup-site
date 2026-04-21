@@ -61,37 +61,94 @@ jobs:
         if: github.event_name != 'schedule' || steps.nz_midnight_gate.outputs.run_now == 'true'
         run: npx playwright install --with-deps chromium
 
-      - name: Scrape Latest JPAUC Data
+      - name: Configure Git User
+        if: github.event_name != 'schedule' || steps.nz_midnight_gate.outputs.run_now == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Refresh Feed (Quick/Full with checkpoints)
         if: github.event_name != 'schedule' || steps.nz_midnight_gate.outputs.run_now == 'true'
         env:
           JPAUC_HEADLESS: 'true'
-          JPAUC_MAX_PAGES: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '5000' || '12' }}
-          JPAUC_MAX_VEHICLES: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '0' || '0' }}
-          JPAUC_DETAIL_CONCURRENCY: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '2' || '3' }}
-          JPAUC_WAIT_MS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '250' || '1000' }}
-          JPAUC_SKIP_DETAIL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && 'true' || 'false' }}
-        run: npm run jpauc:scrape
-
-      - name: Scrape Latest JPAUC One Price (Japan)
-        if: github.event_name != 'schedule' || steps.nz_midnight_gate.outputs.run_now == 'true'
-        env:
           JPAUC_ONEPRICE_HEADLESS: 'true'
-          JPAUC_ONEPRICE_MAX_PAGES: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '5000' || '12' }}
-          JPAUC_ONEPRICE_MAX_VEHICLES: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '0' || '0' }}
-          JPAUC_ONEPRICE_DETAIL_CONCURRENCY: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '2' || '3' }}
-          JPAUC_ONEPRICE_WAIT_MS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '250' || '1000' }}
-          JPAUC_ONEPRICE_SKIP_DETAIL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && 'true' || 'false' }}
-        run: npm run jpauc:oneprice:japan:scrape
-
-      - name: Commit Updated Feed
-        if: github.event_name != 'schedule' || steps.nz_midnight_gate.outputs.run_now == 'true'
+          SYNC_MODE: ${{ github.event.inputs.sync_mode }}
         run: |
-          if git diff --quiet -- data/imports/jpauc-vehicles.json public/data/jpauc-vehicles.json data/imports/jpauc-oneprice-japan-vehicles.json public/data/jpauc-oneprice-japan-vehicles.json; then
-            echo "No changes in JPAUC feed."
+          MODE="${SYNC_MODE:-quick}"
+          FILES="data/imports/jpauc-vehicles.json public/data/jpauc-vehicles.json data/imports/jpauc-oneprice-japan-vehicles.json public/data/jpauc-oneprice-japan-vehicles.json"
+
+          commit_checkpoint() {
+            local label="$1"
+            if git diff --quiet -- $FILES; then
+              echo "No data change for checkpoint ${label}"
+              return 0
+            fi
+            git add $FILES
+            git commit -m "chore: refresh JPAUC feed data (${label})"
+            git push
+          }
+
+          if [ "$MODE" != "full" ]; then
+            echo "Running quick refresh"
+            JPAUC_MAX_PAGES=12 \
+            JPAUC_MAX_VEHICLES=0 \
+            JPAUC_DETAIL_CONCURRENCY=3 \
+            JPAUC_WAIT_MS=1000 \
+            JPAUC_SKIP_DETAIL=false \
+            npm run jpauc:scrape
+
+            JPAUC_ONEPRICE_MAX_PAGES=12 \
+            JPAUC_ONEPRICE_MAX_VEHICLES=0 \
+            JPAUC_ONEPRICE_DETAIL_CONCURRENCY=3 \
+            JPAUC_ONEPRICE_WAIT_MS=1000 \
+            JPAUC_ONEPRICE_SKIP_DETAIL=false \
+            npm run jpauc:oneprice:japan:scrape
+
+            commit_checkpoint "quick"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/imports/jpauc-vehicles.json public/data/jpauc-vehicles.json data/imports/jpauc-oneprice-japan-vehicles.json public/data/jpauc-oneprice-japan-vehicles.json
-          git commit -m "chore: refresh JPAUC feed data"
-          git push
+
+          echo "Running full refresh in checkpoints"
+
+          # reset files so users can see new data growing batch by batch
+          cat > data/imports/jpauc-vehicles.json <<'JSON'
+          { "source": "jpauc", "scrapedAt": "", "count": 0, "listingBaseUrl": "", "settings": {}, "vehicles": [] }
+          JSON
+          cp data/imports/jpauc-vehicles.json public/data/jpauc-vehicles.json
+          cat > data/imports/jpauc-oneprice-japan-vehicles.json <<'JSON'
+          { "source": "jpauc-oneprice-japan", "scrapedAt": "", "count": 0, "listingBaseUrl": "", "settings": {}, "vehicles": [] }
+          JSON
+          cp data/imports/jpauc-oneprice-japan-vehicles.json public/data/jpauc-oneprice-japan-vehicles.json
+          commit_checkpoint "full-reset"
+
+          MAX_PAGES=5000
+          BATCH_SIZE=20
+
+          for ((start=1; start<=MAX_PAGES; start+=BATCH_SIZE)); do
+            end=$((start + BATCH_SIZE - 1))
+            if [ "$end" -gt "$MAX_PAGES" ]; then
+              end="$MAX_PAGES"
+            fi
+
+            echo "Checkpoint pages ${start}-${end}: auction"
+            JPAUC_START_PAGE="$start" \
+            JPAUC_MAX_PAGES="$end" \
+            JPAUC_MAX_VEHICLES=0 \
+            JPAUC_DETAIL_CONCURRENCY=2 \
+            JPAUC_WAIT_MS=250 \
+            JPAUC_SKIP_DETAIL=true \
+            JPAUC_APPEND=true \
+            npm run jpauc:scrape
+
+            echo "Checkpoint pages ${start}-${end}: oneprice japan"
+            JPAUC_ONEPRICE_START_PAGE="$start" \
+            JPAUC_ONEPRICE_MAX_PAGES="$end" \
+            JPAUC_ONEPRICE_MAX_VEHICLES=0 \
+            JPAUC_ONEPRICE_DETAIL_CONCURRENCY=2 \
+            JPAUC_ONEPRICE_WAIT_MS=250 \
+            JPAUC_ONEPRICE_SKIP_DETAIL=true \
+            JPAUC_ONEPRICE_APPEND=true \
+            npm run jpauc:oneprice:japan:scrape
+
+            commit_checkpoint "full-${start}-${end}"
+          done

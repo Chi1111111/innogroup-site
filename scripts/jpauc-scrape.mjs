@@ -72,6 +72,47 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function readExistingOutput(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.vehicles)) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function mergeVehiclesById(existingVehicles, nextVehicles) {
+  const merged = [];
+  const byId = new Map();
+
+  for (const item of existingVehicles) {
+    if (!item?.id) continue;
+    byId.set(item.id, item);
+    merged.push(item);
+  }
+
+  for (const item of nextVehicles) {
+    if (!item?.id) continue;
+    if (byId.has(item.id)) {
+      const index = merged.findIndex((current) => current.id === item.id);
+      if (index >= 0) merged[index] = item;
+    } else {
+      merged.push(item);
+    }
+    byId.set(item.id, item);
+  }
+
+  return merged;
+}
+
 async function selectAllAndNext(page, scopeSelector, inputSelector, buttonSelector) {
   await page.evaluate(
     ({ scopeSelector: scope, inputSelector: input, buttonSelector: button }) => {
@@ -274,6 +315,7 @@ async function main() {
   const waitMs = Number(process.env.JPAUC_WAIT_MS ?? DEFAULT_WAIT_MS);
   const headless = process.env.JPAUC_HEADLESS !== 'false';
   const skipDetail = process.env.JPAUC_SKIP_DETAIL === 'true';
+  const appendMode = process.env.JPAUC_APPEND === 'true';
 
   ensureDir(IMPORT_DIR);
   ensureDir(PUBLIC_DIR);
@@ -328,18 +370,28 @@ async function main() {
           detailConcurrency
         );
 
+    let vehicles = detailWorkers;
+    if (appendMode) {
+      const existingOutput =
+        readExistingOutput(OUTPUT_IMPORT_FILE) ?? readExistingOutput(OUTPUT_PUBLIC_FILE);
+      if (existingOutput?.vehicles?.length) {
+        vehicles = mergeVehiclesById(existingOutput.vehicles, detailWorkers);
+      }
+    }
+
     const output = {
       source: 'jpauc',
       scrapedAt: nowIso(),
-      count: detailWorkers.length,
+      count: vehicles.length,
       listingBaseUrl,
       settings: {
         maxPages,
         startPage,
         maxVehicles,
         detailConcurrency,
+        appendMode,
       },
-      vehicles: detailWorkers,
+      vehicles,
     };
 
     fs.writeFileSync(OUTPUT_IMPORT_FILE, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
@@ -350,7 +402,10 @@ async function main() {
       fullPage: true,
     });
 
-    console.log(`JPAUC scrape completed: ${output.count} vehicles`);
+    console.log(`JPAUC scrape completed: ${detailWorkers.length} in this batch`);
+    if (appendMode) {
+      console.log(`JPAUC total after append: ${output.count} vehicles`);
+    }
     console.log(`Import output: ${OUTPUT_IMPORT_FILE}`);
     console.log(`Public output: ${OUTPUT_PUBLIC_FILE}`);
   } catch (error) {
