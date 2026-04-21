@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  defaultPartnerPlaceholders,
+  partnerPlaceholders,
   type PartnerPlaceholder,
 } from '../../data/services';
 
@@ -8,17 +8,17 @@ const PARTNERS_STORAGE_KEY = 'inno:partners:v1';
 
 function readPartners(): PartnerPlaceholder[] {
   if (typeof window === 'undefined') {
-    return defaultPartnerPlaceholders;
+    return partnerPlaceholders;
   }
 
   try {
     const raw = window.localStorage.getItem(PARTNERS_STORAGE_KEY);
-    if (!raw) return defaultPartnerPlaceholders;
+    if (!raw) return partnerPlaceholders;
     const parsed = JSON.parse(raw) as PartnerPlaceholder[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return defaultPartnerPlaceholders;
+    if (!Array.isArray(parsed) || parsed.length === 0) return partnerPlaceholders;
     return parsed;
   } catch {
-    return defaultPartnerPlaceholders;
+    return partnerPlaceholders;
   }
 }
 
@@ -35,7 +35,7 @@ export function usePartnersCatalog() {
   };
 
   const resetPartners = () => {
-    setPartnersState(defaultPartnerPlaceholders);
+    setPartnersState(partnerPlaceholders);
   };
 
   return {
@@ -44,4 +44,3 @@ export function usePartnersCatalog() {
     resetPartners,
   };
 }
-
