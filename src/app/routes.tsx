@@ -6,6 +6,7 @@ import { Services } from './pages/Services';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { Finance } from './pages/Finance';
+import { JpaucFeed } from './pages/JpaucFeed';
 import {
   ChineseAbout,
   ChineseContact,
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
       { path: 'contact', Component: Contact },
       { path: 'ownership', Component: Services },
       { path: 'finance', Component: Finance },
+      { path: 'jpauc-feed', Component: JpaucFeed },
       { path: 'zh', Component: ChineseHome },
       { path: 'zh/vehicles', Component: ChineseVehicles },
       { path: 'zh/services', Component: ChineseServices },
