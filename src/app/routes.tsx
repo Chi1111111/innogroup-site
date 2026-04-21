@@ -30,6 +30,7 @@ export const router = createBrowserRouter([
       { path: 'ownership', Component: Services },
       { path: 'finance', Component: Finance },
       { path: 'jpauc-feed', Component: JpaucFeed },
+      { path: 'admin', Component: AdminVehicles },
       { path: 'zh', Component: ChineseHome },
       { path: 'zh/vehicles', Component: ChineseVehicles },
       { path: 'zh/services', Component: ChineseServices },
