@@ -13,12 +13,20 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const repoOwner = process.env.GITHUB_REPO_OWNER || '';
-  const repoName = process.env.GITHUB_REPO_NAME || '';
-  const githubToken = process.env.GITHUB_ACTIONS_TRIGGER_TOKEN || '';
+  const repoOwner = process.env.GITHUB_REPO_OWNER || process.env.VERCEL_GIT_REPO_OWNER || '';
+  const repoName = process.env.GITHUB_REPO_NAME || process.env.VERCEL_GIT_REPO_SLUG || '';
+  const githubToken =
+    process.env.GITHUB_ACTIONS_TRIGGER_TOKEN || process.env.GITHUB_TOKEN || '';
 
-  if (!repoOwner || !repoName || !githubToken) {
-    return res.status(500).json({ error: 'Server env not configured' });
+  const missing = [];
+  if (!repoOwner) missing.push('GITHUB_REPO_OWNER (or VERCEL_GIT_REPO_OWNER)');
+  if (!repoName) missing.push('GITHUB_REPO_NAME (or VERCEL_GIT_REPO_SLUG)');
+  if (!githubToken) missing.push('GITHUB_ACTIONS_TRIGGER_TOKEN (or GITHUB_TOKEN)');
+
+  if (missing.length > 0) {
+    return res.status(500).json({
+      error: `Server env not configured: ${missing.join(', ')}`,
+    });
   }
 
   try {
