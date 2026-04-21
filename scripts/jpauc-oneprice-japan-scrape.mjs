@@ -414,21 +414,39 @@ async function main() {
     console.log(`Import output: ${OUTPUT_IMPORT_FILE}`);
     console.log(`Public output: ${OUTPUT_PUBLIC_FILE}`);
   } catch (error) {
-    fs.writeFileSync(
-      path.join(DEBUG_DIR, 'jpauc-oneprice-error.html'),
-      await listingPage.content(),
-      'utf8'
-    );
-    await listingPage.screenshot({
-      path: path.join(DEBUG_DIR, 'jpauc-oneprice-error.png'),
-      fullPage: true,
-    });
+    if (!listingPage.isClosed()) {
+      try {
+        fs.writeFileSync(
+          path.join(DEBUG_DIR, 'jpauc-oneprice-error.html'),
+          await listingPage.content(),
+          'utf8'
+        );
+        await listingPage.screenshot({
+          path: path.join(DEBUG_DIR, 'jpauc-oneprice-error.png'),
+          fullPage: true,
+        });
+      } catch {
+        // Ignore secondary debug-capture failures when browser/page already closed.
+      }
+    }
 
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
   } finally {
-    await context.close();
-    await browser.close();
+    if (context) {
+      try {
+        await context.close();
+      } catch {
+        // Ignore close race conditions on interrupted runs.
+      }
+    }
+    if (browser) {
+      try {
+        await browser.close();
+      } catch {
+        // Ignore close race conditions on interrupted runs.
+      }
+    }
   }
 }
 

@@ -175,7 +175,6 @@ export function AdminVehicles() {
   const [uploadingPartnerLogoMap, setUploadingPartnerLogoMap] = useState<Record<string, boolean>>(
     {}
   );
-  const [syncingAllCars, setSyncingAllCars] = useState(false);
 
   useEffect(() => {
     let robotsMeta = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
@@ -393,46 +392,6 @@ export function AdminVehicles() {
     setNotice({ type: 'success', text: 'Supplier/partner list reset to defaults.' });
   };
 
-  const handleSyncAllCars = async () => {
-    try {
-      setSyncingAllCars(true);
-      const response = await fetch('/api/trigger-jpauc-full-sync', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer innogroup2026',
-        },
-      });
-
-      const result = (await response.json().catch(() => ({}))) as {
-        message?: string;
-        error?: string;
-        detail?: string;
-        githubStatus?: number;
-      };
-
-      if (!response.ok) {
-        const reason = [result.error, result.detail && `(${result.detail})`, result.githubStatus && `[${result.githubStatus}]`]
-          .filter(Boolean)
-          .join(' ');
-        throw new Error(reason || 'Failed to start full sync');
-      }
-
-      setNotice({
-        type: 'success',
-        text:
-          result.message ??
-          'Full vehicle sync started. Wait a few minutes, then refresh Cars Form Japan.',
-      });
-    } catch (error) {
-      setNotice({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to trigger full sync.',
-      });
-    } finally {
-      setSyncingAllCars(false);
-    }
-  };
-
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
@@ -512,16 +471,9 @@ export function AdminVehicles() {
             </button>
           </div>
 
-          <div className="mt-4">
-            <button
-              type="button"
-              onClick={handleSyncAllCars}
-              disabled={syncingAllCars}
-              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {syncingAllCars ? 'Starting Full Sync...' : 'Sync All Cars (Full)'}
-            </button>
-          </div>
+          <p className="mt-4 text-xs text-slate-500">
+            Vehicle feed sync is now managed by the cloud server schedule.
+          </p>
         </div>
 
         {notice ? (
