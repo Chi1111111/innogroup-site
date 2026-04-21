@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Database, Gauge, Mail, MapPin, MessageCircle, Search, Tag, X } from 'lucide-react';
+import { Database, Gauge, Mail, MapPin, MessageCircle, RefreshCw, Search, Tag, X } from 'lucide-react';
 
 interface JpaucVehicle {
   id: string;
@@ -136,6 +136,7 @@ export function JpaucFeed() {
   const [activeFeed, setActiveFeed] = useState<FeedType>('auction');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [openEnquiryId, setOpenEnquiryId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const [draftFilters, setDraftFilters] = useState<FeedFilters>(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<FeedFilters>(DEFAULT_FILTERS);
 
@@ -307,6 +308,30 @@ export function JpaucFeed() {
     });
   };
 
+  const triggerFullSync = async () => {
+    const secret = window.prompt('Enter sync password');
+    if (!secret) return;
+
+    try {
+      setSyncing(true);
+      const response = await fetch('/api/trigger-jpauc-full-sync', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${secret}`,
+        },
+      });
+      const result = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to trigger full sync');
+      }
+      window.alert(result.message || 'Full sync started. Please wait and refresh in a few minutes.');
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to trigger full sync');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="pt-20">
       <section className="bg-gradient-to-br from-primary/8 via-white to-primary/12 px-4 py-16">
@@ -345,6 +370,15 @@ export function JpaucFeed() {
               One Price (Japan)
             </button>
           </div>
+          <button
+            type="button"
+            onClick={triggerFullSync}
+            disabled={syncing}
+            className="inline-flex items-center gap-2 rounded-full border border-primary/35 bg-primary/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Sync All Cars'}
+          </button>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="section-card p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Total</p>

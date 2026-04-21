@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      sync_mode:
+        description: 'quick or full scrape mode'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - quick
+          - full
 
 permissions:
   contents: write
@@ -34,17 +43,21 @@ jobs:
       - name: Scrape Latest JPAUC Data
         env:
           JPAUC_HEADLESS: 'true'
-          JPAUC_MAX_PAGES: '12'
-          JPAUC_DETAIL_CONCURRENCY: '3'
-          JPAUC_WAIT_MS: '1000'
+          JPAUC_MAX_PAGES: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '5000' || '12' }}
+          JPAUC_MAX_VEHICLES: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '0' || '0' }}
+          JPAUC_DETAIL_CONCURRENCY: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '2' || '3' }}
+          JPAUC_WAIT_MS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '250' || '1000' }}
+          JPAUC_SKIP_DETAIL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && 'true' || 'false' }}
         run: npm run jpauc:scrape
 
       - name: Scrape Latest JPAUC One Price (Japan)
         env:
           JPAUC_ONEPRICE_HEADLESS: 'true'
-          JPAUC_ONEPRICE_MAX_PAGES: '12'
-          JPAUC_ONEPRICE_DETAIL_CONCURRENCY: '3'
-          JPAUC_ONEPRICE_WAIT_MS: '1000'
+          JPAUC_ONEPRICE_MAX_PAGES: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '5000' || '12' }}
+          JPAUC_ONEPRICE_MAX_VEHICLES: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '0' || '0' }}
+          JPAUC_ONEPRICE_DETAIL_CONCURRENCY: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '2' || '3' }}
+          JPAUC_ONEPRICE_WAIT_MS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && '250' || '1000' }}
+          JPAUC_ONEPRICE_SKIP_DETAIL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync_mode == 'full') && 'true' || 'false' }}
         run: npm run jpauc:oneprice:japan:scrape
 
       - name: Commit Updated Feed

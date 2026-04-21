@@ -278,6 +278,7 @@ async function main() {
   );
   const waitMs = Number(process.env.JPAUC_ONEPRICE_WAIT_MS ?? DEFAULT_WAIT_MS);
   const headless = process.env.JPAUC_ONEPRICE_HEADLESS !== 'false';
+  const skipDetail = process.env.JPAUC_ONEPRICE_SKIP_DETAIL === 'true';
 
   ensureDir(IMPORT_DIR);
   ensureDir(PUBLIC_DIR);
@@ -317,18 +318,20 @@ async function main() {
     }
 
     const trimmedList = maxVehicles > 0 ? listRecords.slice(0, maxVehicles) : listRecords;
-    const detailWorkers = await runWithConcurrency(
-      trimmedList,
-      async (record) => {
-        const page = await context.newPage();
-        try {
-          return await scrapeDetail(page, record);
-        } finally {
-          await page.close();
-        }
-      },
-      detailConcurrency
-    );
+    const detailWorkers = skipDetail
+      ? trimmedList
+      : await runWithConcurrency(
+          trimmedList,
+          async (record) => {
+            const page = await context.newPage();
+            try {
+              return await scrapeDetail(page, record);
+            } finally {
+              await page.close();
+            }
+          },
+          detailConcurrency
+        );
 
     const output = {
       source: 'jpauc-oneprice-japan',
