@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { heroGalleryImages } from '../../data/pic';
+import {
+  heroGalleryImages,
+  partnerAsnetImage,
+  partnerNichiboImage,
+  partnerPekemaImage,
+  partnerUssImage,
+} from '../../data/pic';
 import { BrandLogo } from './BrandLogo';
 
 const heroHighlights = [
@@ -25,6 +31,13 @@ const heroStats = [
     value: 'After Purchase',
     note: 'Parts, repairs, workshop referrals, and practical help',
   },
+];
+
+const supplierBadges = [
+  { name: 'PEKEMA', image: partnerPekemaImage },
+  { name: 'USS Japan', image: partnerUssImage },
+  { name: 'Nichibo', image: partnerNichiboImage },
+  { name: 'ASNET', image: partnerAsnetImage },
 ];
 
 export function Hero() {
@@ -83,7 +96,7 @@ export function Hero() {
             >
               Your next <span className="text-primary">import car</span>.
               <br />
-              Sourced clearly from Japan.
+              Sourced directly from Japan.
             </h1>
 
             <p
@@ -129,6 +142,22 @@ export function Hero() {
             className="section-card-dark animate-slideUp p-5 sm:p-8 md:p-10"
             style={{ animationDelay: '0.45s' }}
           >
+            <div className="mb-4 flex items-center gap-2 sm:mb-5 sm:gap-3">
+              {supplierBadges.map((supplier) => (
+                <div
+                  key={supplier.name}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-white p-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.3)] sm:h-12 sm:w-12"
+                  title={supplier.name}
+                >
+                  <img
+                    src={supplier.image}
+                    alt={supplier.name}
+                    className="h-full w-full rounded-full object-contain"
+                  />
+                </div>
+              ))}
+            </div>
+
             <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
