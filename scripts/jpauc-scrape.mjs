@@ -14,6 +14,7 @@ const DEFAULT_START_PAGE = 1;
 const DEFAULT_MAX_VEHICLES = 0;
 const DEFAULT_DETAIL_CONCURRENCY = 4;
 const DEFAULT_WAIT_MS = 1200;
+const MULTI_WORD_MAKES = ['MERCEDES BENZ', 'LAND ROVER', 'ALFA ROMEO', 'ASTON MARTIN', 'ROLLS ROYCE'];
 
 function ensureDir(target) {
   if (!fs.existsSync(target)) {
@@ -23,6 +24,30 @@ function ensureDir(target) {
 
 function normalizeText(value) {
   return (value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function parseMakerModel(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return { maker: '', model: '' };
+
+  const upper = normalized.toUpperCase();
+  const multiWordMake = MULTI_WORD_MAKES.find(
+    (make) => upper === make || upper.startsWith(`${make} `)
+  );
+
+  if (multiWordMake) {
+    return {
+      maker: multiWordMake,
+      model: normalizeText(normalized.slice(multiWordMake.length)),
+    };
+  }
+
+  const [maker = '', ...modelParts] = normalized.split(' ');
+  const model = normalizeText(modelParts.join(' '));
+  return {
+    maker: normalizeText(maker),
+    model: model.startsWith(`${maker} `) ? normalizeText(model.slice(maker.length)) : model,
+  };
 }
 
 function parsePrice(value) {
@@ -192,8 +217,7 @@ function mapListingRecord(raw, pageUrl) {
   const parsedColorTitle = parseColorAndTitle(colorTitle);
 
   const [location, lotNo] = locationLot.split('|').map((item) => normalizeText(item));
-  const [maker, ...modelParts] = makerModel.split(' ').map((item) => normalizeText(item));
-  const model = normalizeText(modelParts.join(' '));
+  const parsedMakerModel = parseMakerModel(makerModel);
 
   return {
     id: raw.id,
@@ -206,8 +230,8 @@ function mapListingRecord(raw, pageUrl) {
     dateTime: normalizeText(cols[2] ?? ''),
     location,
     lotNo,
-    maker,
-    model,
+    maker: parsedMakerModel.maker,
+    model: parsedMakerModel.model,
     year: parseYearOnly(yearGrade),
     modelGrade: parseModelGrade(yearGrade),
     cc: normalizeText(ccModelCode.split('|')[0] ?? ''),

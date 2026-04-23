@@ -16,14 +16,18 @@ const feeds = [
     sourceFile: path.join(IMPORT_DIR, 'jpauc-vehicles.json'),
     sourceName: 'jpauc',
     fallbackBaseUrl: 'https://jpauc.com',
+    makerModelColumn: 4,
   },
   {
     key: 'oneprice_japan',
     sourceFile: path.join(IMPORT_DIR, 'jpauc-oneprice-japan-vehicles.json'),
     sourceName: 'jpauc-oneprice-japan',
     fallbackBaseUrl: 'https://jpauc.com/oneprice',
+    makerModelColumn: 3,
   },
 ];
+
+const MULTI_WORD_MAKES = ['MERCEDES BENZ', 'LAND ROVER', 'ALFA ROMEO', 'ASTON MARTIN', 'ROLLS ROYCE'];
 
 function normalizeText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -33,6 +37,39 @@ function uniq(items) {
   return Array.from(new Set(items.map(normalizeText).filter(Boolean))).sort((a, b) =>
     a.localeCompare(b)
   );
+}
+
+function parseMakerModel(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return { maker: '', model: '' };
+
+  const upper = normalized.toUpperCase();
+  const multiWordMake = MULTI_WORD_MAKES.find(
+    (make) => upper === make || upper.startsWith(`${make} `)
+  );
+
+  if (multiWordMake) {
+    return {
+      maker: multiWordMake,
+      model: normalizeText(normalized.slice(multiWordMake.length)),
+    };
+  }
+
+  const [maker = '', ...modelParts] = normalized.split(' ');
+  const model = normalizeText(modelParts.join(' '));
+  return {
+    maker: normalizeText(maker),
+    model: model.startsWith(`${maker} `) ? normalizeText(model.slice(maker.length)) : model,
+  };
+}
+
+function normalizeVehicle(vehicle, makerModelColumn) {
+  const parsed = parseMakerModel(vehicle.rawColumns?.[makerModelColumn] || `${vehicle.maker || ''} ${vehicle.model || ''}`);
+  return {
+    ...vehicle,
+    maker: parsed.maker || vehicle.maker || '',
+    model: parsed.model || vehicle.model || '',
+  };
 }
 
 function addNestedOption(target, firstKey, secondKey, value) {
@@ -64,7 +101,9 @@ for (const feed of feeds) {
   }
 
   const sourcePayload = JSON.parse(fs.readFileSync(feed.sourceFile, 'utf8'));
-  const sourceVehicles = Array.isArray(sourcePayload.vehicles) ? sourcePayload.vehicles : [];
+  const sourceVehicles = Array.isArray(sourcePayload.vehicles)
+    ? sourcePayload.vehicles.map((vehicle) => normalizeVehicle(vehicle, feed.makerModelColumn))
+    : [];
   const vehicles =
     publicMaxVehicles > 0 ? sourceVehicles.slice(0, publicMaxVehicles) : sourceVehicles;
   const feedOutputDir = path.join(OUTPUT_DIR, feed.key);
