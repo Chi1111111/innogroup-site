@@ -80,6 +80,8 @@ const DEFAULT_FILTERS: FeedFilters = {
   startPriceTo: '',
 };
 
+const VEHICLES_PER_PAGE = 20;
+
 const MILEAGE_SELECT_OPTIONS = [
   0, 5000, 10000, 20000, 30000, 40000, 50000, 70000, 90000, 120000, 150000, 180000,
   220000, 260000, 300000, 400000, 500000,
@@ -138,39 +140,41 @@ export function JpaucFeed() {
   const [openEnquiryId, setOpenEnquiryId] = useState<string | null>(null);
   const [draftFilters, setDraftFilters] = useState<FeedFilters>(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<FeedFilters>(DEFAULT_FILTERS);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let active = true;
+
+    const feedPath =
+      activeFeed === 'auction'
+        ? '/data/jpauc-vehicles-slim.json'
+        : '/data/jpauc-oneprice-japan-vehicles-slim.json';
+    const emptyPayload: JpaucPayload = {
+      source: activeFeed === 'auction' ? 'jpauc' : 'jpauc-oneprice-japan',
+      scrapedAt: '',
+      count: 0,
+      listingBaseUrl: activeFeed === 'auction' ? 'https://jpauc.com' : 'https://jpauc.com/oneprice',
+      settings: { maxPages: 0, maxVehicles: 0, detailConcurrency: 0 },
+      vehicles: [],
+    };
+
     const loadData = async (isInitialLoad: boolean) => {
       try {
-        if (isInitialLoad) {
+        if (isInitialLoad && !payloads[activeFeed]) {
           setLoading(true);
         }
 
         const cacheBuster = Date.now();
-        const [auctionRes, onePriceRes] = await Promise.all([
-          fetch(`/data/jpauc-vehicles.json?t=${cacheBuster}`, { cache: 'no-store' }),
-          fetch(`/data/jpauc-oneprice-japan-vehicles.json?t=${cacheBuster}`, { cache: 'no-store' }),
-        ]);
-        if (!auctionRes.ok) throw new Error(`Cannot load auction data: ${auctionRes.status}`);
+        const response = await fetch(`${feedPath}?t=${cacheBuster}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Cannot load ${activeFeed} data: ${response.status}`);
 
-        const auctionData = (await auctionRes.json()) as JpaucPayload;
-        const onePriceData = onePriceRes.ok
-          ? ((await onePriceRes.json()) as JpaucPayload)
-          : {
-              source: 'jpauc-oneprice-japan',
-              scrapedAt: '',
-              count: 0,
-              listingBaseUrl: 'https://jpauc.com/oneprice',
-              settings: { maxPages: 0, maxVehicles: 0, detailConcurrency: 0 },
-              vehicles: [],
-            };
+        const feedData = (await response.json()) as JpaucPayload;
 
         if (!active) return;
-        setPayloads({
-          auction: auctionData,
-          oneprice_japan: onePriceData,
-        });
+        setPayloads((current) => ({
+          ...current,
+          [activeFeed]: feedData ?? emptyPayload,
+        }));
         setError('');
       } catch (err) {
         if (!active) return;
@@ -182,15 +186,11 @@ export function JpaucFeed() {
     };
 
     void loadData(true);
-    const intervalId = window.setInterval(() => {
-      void loadData(false);
-    }, 120000);
 
     return () => {
       active = false;
-      window.clearInterval(intervalId);
     };
-  }, []);
+  }, [activeFeed]);
 
   const payload = payloads[activeFeed];
 
@@ -289,6 +289,24 @@ export function JpaucFeed() {
     });
   }, [payload, appliedFilters]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / VEHICLES_PER_PAGE));
+  const pageStartIndex = (currentPage - 1) * VEHICLES_PER_PAGE;
+  const paginatedVehicles = useMemo(
+    () => filtered.slice(pageStartIndex, pageStartIndex + VEHICLES_PER_PAGE),
+    [filtered, pageStartIndex]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setOpenEnquiryId(null);
+  }, [activeFeed, appliedFilters]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const applyFilters = () => setAppliedFilters(draftFilters);
   const resetFilters = () => {
     setDraftFilters(DEFAULT_FILTERS);
@@ -353,8 +371,10 @@ export function JpaucFeed() {
               </p>
             </div>
             <div className="section-card p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Showing</p>
-              <p className="mt-1 text-xl font-semibold text-foreground">{filtered.length}</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Matched</p>
+              <p className="mt-1 text-xl font-semibold text-foreground">
+                {filtered.length.toLocaleString()}
+              </p>
             </div>
             <div className="section-card p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Scraped</p>
@@ -562,7 +582,35 @@ export function JpaucFeed() {
             </div>
           ) : (
             <div className="space-y-5">
-              {filtered.map((vehicle) => {
+              <div className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {pageStartIndex + 1}-{Math.min(pageStartIndex + VEHICLES_PER_PAGE, filtered.length)} of{' '}
+                  {filtered.length.toLocaleString()} vehicles. 20 vehicles per page.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span className="rounded-lg bg-black/[0.04] px-3 py-2 text-sm font-semibold text-foreground">
+                    Page {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+
+              {paginatedVehicles.map((vehicle) => {
                 const images = getVehicleImages(vehicle);
                 const mainImage = images[0] ?? '';
                 const vehicleTitle = vehicle.model || vehicle.titleFull || `${vehicle.maker} ${vehicle.id}`;
@@ -727,6 +775,36 @@ export function JpaucFeed() {
                   </article>
                 );
               })}
+
+              <div className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentPage((page) => Math.max(1, page - 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === 1}
+                    className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentPage((page) => Math.min(totalPages, page + 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
