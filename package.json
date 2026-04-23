@@ -8,7 +8,9 @@
     "dev": "vite",
     "asnet:scrape": "node scripts/asnet-scrape.mjs",
     "jpauc:scrape": "node scripts/jpauc-scrape.mjs",
-    "jpauc:oneprice:japan:scrape": "node scripts/jpauc-oneprice-japan-scrape.mjs"
+    "jpauc:oneprice:japan:scrape": "node scripts/jpauc-oneprice-japan-scrape.mjs",
+    "jpauc:build:paged": "node scripts/build-jpauc-paged-data.mjs",
+    "jpauc:update": "npm run jpauc:scrape && npm run jpauc:oneprice:japan:scrape && npm run jpauc:build:paged"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

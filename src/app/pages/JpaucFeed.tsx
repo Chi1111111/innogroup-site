@@ -63,6 +63,8 @@ interface FeedManifest {
     maker: string[];
     model: string[];
     modelCode: string[];
+    modelByMake?: Record<string, string[]>;
+    modelCodeByMakeModel?: Record<string, Record<string, string[]>>;
     year: string[];
     color: string[];
     cc: string[];
@@ -310,17 +312,27 @@ export function JpaucFeed() {
   const activeFilters = hasActiveFilters(appliedFilters);
 
   const options = useMemo(() => {
+    const allModels = manifest?.options.model ?? [];
+    const modelByMake = manifest?.options.modelByMake ?? {};
+    const modelCodeByMakeModel = manifest?.options.modelCodeByMakeModel ?? {};
+    const modelOptions =
+      draftFilters.maker === 'all' ? allModels : modelByMake[draftFilters.maker] ?? [];
+    const modelCodeOptions =
+      draftFilters.maker !== 'all' && draftFilters.model !== 'all'
+        ? modelCodeByMakeModel[draftFilters.maker]?.[draftFilters.model] ?? []
+        : manifest?.options.modelCode ?? [];
+
     return {
       maker: manifest?.options.maker ?? [],
-      model: manifest?.options.model ?? [],
-      modelCode: manifest?.options.modelCode ?? [],
+      model: modelOptions,
+      modelCode: modelCodeOptions,
       year: manifest?.options.year ?? [],
       transmission: ['AT', 'MT'],
       color: manifest?.options.color ?? [],
       cc: manifest?.options.cc ?? [],
       auctionGrade: manifest?.options.auctionGrade ?? [],
     };
-  }, [manifest]);
+  }, [draftFilters.maker, draftFilters.model, manifest]);
 
   const totalPages = Math.max(1, Math.ceil(matchedCount / VEHICLES_PER_PAGE));
   const pageStartIndex = (currentPage - 1) * VEHICLES_PER_PAGE;

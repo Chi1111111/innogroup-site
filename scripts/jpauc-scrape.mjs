@@ -6,7 +6,6 @@ const ROOT = process.cwd();
 const IMPORT_DIR = path.join(ROOT, 'data', 'imports');
 const PUBLIC_DIR = path.join(ROOT, 'public', 'data');
 const OUTPUT_IMPORT_FILE = path.join(IMPORT_DIR, 'jpauc-vehicles.json');
-const OUTPUT_PUBLIC_FILE = path.join(PUBLIC_DIR, 'jpauc-vehicles.json');
 const DEBUG_DIR = path.join(ROOT, 'tmp', 'jpauc-debug');
 
 const START_URL = 'https://jpauc.com/auction';
@@ -193,7 +192,8 @@ function mapListingRecord(raw, pageUrl) {
   const parsedColorTitle = parseColorAndTitle(colorTitle);
 
   const [location, lotNo] = locationLot.split('|').map((item) => normalizeText(item));
-  const [maker, model] = makerModel.split(' ').map((item) => normalizeText(item));
+  const [maker, ...modelParts] = makerModel.split(' ').map((item) => normalizeText(item));
+  const model = normalizeText(modelParts.join(' '));
 
   return {
     id: raw.id,
@@ -315,7 +315,6 @@ async function main() {
   const waitMs = Number(process.env.JPAUC_WAIT_MS ?? DEFAULT_WAIT_MS);
   const headless = process.env.JPAUC_HEADLESS !== 'false';
   const skipDetail = process.env.JPAUC_SKIP_DETAIL === 'true';
-  const appendMode = process.env.JPAUC_APPEND === 'true';
 
   ensureDir(IMPORT_DIR);
   ensureDir(PUBLIC_DIR);
@@ -370,14 +369,7 @@ async function main() {
           detailConcurrency
         );
 
-    let vehicles = detailWorkers;
-    if (appendMode) {
-      const existingOutput =
-        readExistingOutput(OUTPUT_IMPORT_FILE) ?? readExistingOutput(OUTPUT_PUBLIC_FILE);
-      if (existingOutput?.vehicles?.length) {
-        vehicles = mergeVehiclesById(existingOutput.vehicles, detailWorkers);
-      }
-    }
+    const vehicles = detailWorkers;
 
     const output = {
       source: 'jpauc',
@@ -389,13 +381,12 @@ async function main() {
         startPage,
         maxVehicles,
         detailConcurrency,
-        appendMode,
+        updateMode: 'replace',
       },
       vehicles,
     };
 
     fs.writeFileSync(OUTPUT_IMPORT_FILE, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
-    fs.writeFileSync(OUTPUT_PUBLIC_FILE, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
 
     await listingPage.screenshot({
       path: path.join(DEBUG_DIR, 'jpauc-listing.png'),
@@ -403,11 +394,7 @@ async function main() {
     });
 
     console.log(`JPAUC scrape completed: ${detailWorkers.length} in this batch`);
-    if (appendMode) {
-      console.log(`JPAUC total after append: ${output.count} vehicles`);
-    }
     console.log(`Import output: ${OUTPUT_IMPORT_FILE}`);
-    console.log(`Public output: ${OUTPUT_PUBLIC_FILE}`);
   } catch (error) {
     if (!listingPage.isClosed()) {
       try {
