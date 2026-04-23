@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Database, Gauge, Mail, MapPin, MessageCircle, Search, Tag, X } from 'lucide-react';
 
 interface JpaucVehicle {
+  absoluteIndex?: number;
   id: string;
   source: string;
   scrapedAt: string;
@@ -48,6 +49,55 @@ interface JpaucPayload {
 
 type FeedType = 'auction' | 'oneprice_japan';
 
+interface FeedManifest {
+  source: string;
+  scrapedAt: string;
+  count: number;
+  listingBaseUrl: string;
+  shardSize: number;
+  pageSize: number;
+  shardCount: number;
+  pageCount: number;
+  settings: JpaucPayload['settings'];
+  options: {
+    maker: string[];
+    model: string[];
+    modelCode: string[];
+    year: string[];
+    color: string[];
+    cc: string[];
+    auctionGrade: string[];
+  };
+}
+
+interface SearchIndexEntry {
+  absoluteIndex: number;
+  id: string;
+  maker: string;
+  model: string;
+  modelGrade: string;
+  year: string;
+  modelCode: string;
+  transmission: string;
+  mileage: string;
+  color: string;
+  cc: string;
+  auctionGrade: string;
+  startPrice: string;
+  endPrice: string;
+  status: string;
+  location: string;
+  lotNo: string;
+  titleFull?: string;
+}
+
+interface SearchIndexPayload {
+  count: number;
+  shardSize: number;
+  pageSize: number;
+  vehicles: SearchIndexEntry[];
+}
+
 interface FeedFilters {
   keyword: string;
   maker: string;
@@ -81,6 +131,11 @@ const DEFAULT_FILTERS: FeedFilters = {
 };
 
 const VEHICLES_PER_PAGE = 20;
+
+const FEED_PATHS: Record<FeedType, string> = {
+  auction: '/data/jpauc-paged/auction',
+  oneprice_japan: '/data/jpauc-paged/oneprice_japan',
+};
 
 const MILEAGE_SELECT_OPTIONS = [
   0, 5000, 10000, 20000, 30000, 40000, 50000, 70000, 90000, 120000, 150000, 180000,
@@ -128,14 +183,83 @@ function getVehicleImages(vehicle: JpaucVehicle) {
   ).filter(Boolean);
 }
 
+function hasActiveFilters(filters: FeedFilters) {
+  return Object.entries(filters).some(([key, value]) => {
+    if (key === 'keyword' || key === 'mileageMin' || key === 'mileageMax' || key === 'startPriceFrom' || key === 'startPriceTo') {
+      return value.trim() !== '';
+    }
+    return value !== 'all';
+  });
+}
+
+function matchesFilters(item: SearchIndexEntry, filters: FeedFilters) {
+  const q = filters.keyword.trim().toLowerCase();
+  const mileageMin = filters.mileageMin ? Number(filters.mileageMin) : null;
+  const mileageMax = filters.mileageMax ? Number(filters.mileageMax) : null;
+  const priceFrom = filters.startPriceFrom ? Number(filters.startPriceFrom) : null;
+  const priceTo = filters.startPriceTo ? Number(filters.startPriceTo) : null;
+  const yearFrom = filters.year !== 'all' ? Number(filters.year) : null;
+  const gradeFrom = filters.auctionGrade !== 'all' ? parseAuctionGradeScore(filters.auctionGrade) : null;
+
+  if (filters.maker !== 'all' && item.maker !== filters.maker) return false;
+  if (filters.model !== 'all' && item.model !== filters.model) return false;
+  if (filters.modelCode !== 'all' && item.modelCode !== filters.modelCode) return false;
+  if (yearFrom !== null) {
+    const itemYear = Number(item.year);
+    if (Number.isFinite(itemYear) && itemYear < yearFrom) return false;
+  }
+  if (filters.transmission !== 'all' && normalizeTransmission(item.transmission) !== filters.transmission) {
+    return false;
+  }
+  if (filters.color !== 'all' && item.color !== filters.color) return false;
+  if (filters.cc !== 'all' && item.cc !== filters.cc) return false;
+  if (gradeFrom !== null) {
+    const itemGrade = parseAuctionGradeScore(item.auctionGrade);
+    if (itemGrade !== null && itemGrade < gradeFrom) return false;
+  }
+
+  const mileage = parseMileageNumber(item.mileage);
+  if (mileageMin !== null && mileage !== null && mileage < mileageMin) return false;
+  if (mileageMax !== null && mileage !== null && mileage > mileageMax) return false;
+
+  const startPrice = parsePriceNumber(item.startPrice);
+  if (priceFrom !== null && startPrice !== null && startPrice < priceFrom) return false;
+  if (priceTo !== null && startPrice !== null && startPrice > priceTo) return false;
+
+  if (!q) return true;
+  return [
+    item.id,
+    item.maker,
+    item.model,
+    item.modelGrade,
+    item.year,
+    item.location,
+    item.lotNo,
+    item.modelCode,
+    item.startPrice,
+    item.endPrice,
+    item.status,
+  ]
+    .join(' ')
+    .toLowerCase()
+    .includes(q);
+}
+
 export function JpaucFeed() {
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
   const [error, setError] = useState('');
-  const [payloads, setPayloads] = useState<Record<FeedType, JpaucPayload | null>>({
+  const [manifests, setManifests] = useState<Record<FeedType, FeedManifest | null>>({
+    auction: null,
+    oneprice_japan: null,
+  });
+  const [searchIndexes, setSearchIndexes] = useState<Record<FeedType, SearchIndexPayload | null>>({
     auction: null,
     oneprice_japan: null,
   });
   const [activeFeed, setActiveFeed] = useState<FeedType>('auction');
+  const [visibleVehicles, setVisibleVehicles] = useState<JpaucVehicle[]>([]);
+  const [matchedCount, setMatchedCount] = useState(0);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [openEnquiryId, setOpenEnquiryId] = useState<string | null>(null);
   const [draftFilters, setDraftFilters] = useState<FeedFilters>(DEFAULT_FILTERS);
@@ -145,156 +269,145 @@ export function JpaucFeed() {
   useEffect(() => {
     let active = true;
 
-    const feedPath =
-      activeFeed === 'auction'
-        ? '/data/jpauc-vehicles-slim.json'
-        : '/data/jpauc-oneprice-japan-vehicles-slim.json';
-    const emptyPayload: JpaucPayload = {
-      source: activeFeed === 'auction' ? 'jpauc' : 'jpauc-oneprice-japan',
-      scrapedAt: '',
-      count: 0,
-      listingBaseUrl: activeFeed === 'auction' ? 'https://jpauc.com' : 'https://jpauc.com/oneprice',
-      settings: { maxPages: 0, maxVehicles: 0, detailConcurrency: 0 },
-      vehicles: [],
-    };
+    if (manifests[activeFeed]) {
+      setLoading(false);
+      return () => {
+        active = false;
+      };
+    }
 
-    const loadData = async (isInitialLoad: boolean) => {
+    const loadManifest = async () => {
       try {
-        if (isInitialLoad && !payloads[activeFeed]) {
-          setLoading(true);
-        }
+        setLoading(true);
 
-        const cacheBuster = Date.now();
-        const response = await fetch(`${feedPath}?t=${cacheBuster}`, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Cannot load ${activeFeed} data: ${response.status}`);
-
-        const feedData = (await response.json()) as JpaucPayload;
+        const response = await fetch(`${FEED_PATHS[activeFeed]}/manifest.json`);
+        if (!response.ok) throw new Error(`Cannot load ${activeFeed} manifest: ${response.status}`);
+        const manifest = (await response.json()) as FeedManifest;
 
         if (!active) return;
-        setPayloads((current) => ({
+        setManifests((current) => ({
           ...current,
-          [activeFeed]: feedData ?? emptyPayload,
+          [activeFeed]: manifest,
         }));
         setError('');
       } catch (err) {
         if (!active) return;
         setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
-        if (!active || !isInitialLoad) return;
+        if (!active) return;
         setLoading(false);
       }
     };
 
-    void loadData(true);
+    void loadManifest();
 
     return () => {
       active = false;
     };
   }, [activeFeed]);
 
-  const payload = payloads[activeFeed];
+  const manifest = manifests[activeFeed];
+  const activeFilters = hasActiveFilters(appliedFilters);
 
   const options = useMemo(() => {
-    const source = payload?.vehicles ?? [];
-    const uniq = (items: string[]) =>
-      Array.from(new Set(items.filter(Boolean).map((item) => normalizeText(item)))).sort((a, b) =>
-        a.localeCompare(b)
+    return {
+      maker: manifest?.options.maker ?? [],
+      model: manifest?.options.model ?? [],
+      modelCode: manifest?.options.modelCode ?? [],
+      year: manifest?.options.year ?? [],
+      transmission: ['AT', 'MT'],
+      color: manifest?.options.color ?? [],
+      cc: manifest?.options.cc ?? [],
+      auctionGrade: manifest?.options.auctionGrade ?? [],
+    };
+  }, [manifest]);
+
+  const totalPages = Math.max(1, Math.ceil(matchedCount / VEHICLES_PER_PAGE));
+  const pageStartIndex = (currentPage - 1) * VEHICLES_PER_PAGE;
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchShardVehicles = async (shardNumbers: number[]) => {
+      const uniqueShards = Array.from(new Set(shardNumbers)).filter((shard) => shard > 0);
+      const shardPayloads = await Promise.all(
+        uniqueShards.map(async (shard) => {
+          const response = await fetch(`${FEED_PATHS[activeFeed]}/shards/${shard}.json`);
+          if (!response.ok) throw new Error(`Cannot load vehicle page: ${response.status}`);
+          return (await response.json()) as { vehicles: JpaucVehicle[] };
+        })
       );
 
-    const makerOptions = uniq(source.map((item) => item.maker));
-    const modelSource =
-      draftFilters.maker === 'all'
-        ? source
-        : source.filter((item) => normalizeText(item.maker) === draftFilters.maker);
-    const modelOptions = uniq(modelSource.map((item) => item.model));
-    const codeSource =
-      draftFilters.model === 'all'
-        ? modelSource
-        : modelSource.filter((item) => normalizeText(item.model) === draftFilters.model);
-    const modelCodeOptions = uniq(codeSource.map((item) => item.modelCode));
-    const yearOptions = uniq(source.map((item) => item.year)).sort(
-      (a, b) => Number(b || 0) - Number(a || 0)
-    );
-
-    return {
-      maker: makerOptions,
-      model: modelOptions,
-      modelCode: modelCodeOptions,
-      year: yearOptions,
-      transmission: ['AT', 'MT'],
-      color: uniq(source.map((item) => item.color)),
-      cc: uniq(source.map((item) => item.cc)),
-      auctionGrade: uniq(source.map((item) => item.auctionGrade)),
+      return shardPayloads.flatMap((payload) => payload.vehicles);
     };
-  }, [payload, draftFilters.maker, draftFilters.model]);
 
-  const filtered = useMemo(() => {
-    const source = payload?.vehicles ?? [];
-    const f = appliedFilters;
-    const q = f.keyword.trim().toLowerCase();
-    const mileageMin = f.mileageMin ? Number(f.mileageMin) : null;
-    const mileageMax = f.mileageMax ? Number(f.mileageMax) : null;
-    const priceFrom = f.startPriceFrom ? Number(f.startPriceFrom) : null;
-    const priceTo = f.startPriceTo ? Number(f.startPriceTo) : null;
-    const yearFrom = f.year !== 'all' ? Number(f.year) : null;
-    const gradeFrom = f.auctionGrade !== 'all' ? parseAuctionGradeScore(f.auctionGrade) : null;
+    const loadVehicles = async () => {
+      if (!manifest) return;
 
-    return source.filter((item) => {
-      if (f.maker !== 'all' && item.maker !== f.maker) return false;
-      if (f.model !== 'all' && item.model !== f.model) return false;
-      if (f.modelCode !== 'all' && item.modelCode !== f.modelCode) return false;
-      if (yearFrom !== null) {
-        const itemYear = Number(item.year);
-        if (Number.isFinite(itemYear) && itemYear < yearFrom) return false;
+      try {
+        setPageLoading(true);
+        setError('');
+
+        if (!activeFilters) {
+          setMatchedCount(manifest.count);
+          const startIndex = pageStartIndex;
+          const endIndex = Math.min(startIndex + VEHICLES_PER_PAGE, manifest.count);
+          const firstShard = Math.floor(startIndex / manifest.shardSize) + 1;
+          const lastShard = Math.floor(Math.max(endIndex - 1, startIndex) / manifest.shardSize) + 1;
+          const vehicles = await fetchShardVehicles(
+            Array.from({ length: lastShard - firstShard + 1 }, (_, index) => firstShard + index)
+          );
+          if (!active) return;
+          setVisibleVehicles(
+            vehicles
+              .filter((vehicle) => {
+                const absoluteIndex = vehicle.absoluteIndex ?? -1;
+                return absoluteIndex >= startIndex && absoluteIndex < endIndex;
+              })
+              .sort((a, b) => (a.absoluteIndex ?? 0) - (b.absoluteIndex ?? 0))
+          );
+          return;
+        }
+
+        let index = searchIndexes[activeFeed];
+        if (!index) {
+          const response = await fetch(`${FEED_PATHS[activeFeed]}/index.json`);
+          if (!response.ok) throw new Error(`Cannot load search index: ${response.status}`);
+          index = (await response.json()) as SearchIndexPayload;
+          if (!active) return;
+          setSearchIndexes((current) => ({ ...current, [activeFeed]: index }));
+        }
+
+        const matchedEntries = index.vehicles.filter((item) => matchesFilters(item, appliedFilters));
+        const pageEntries = matchedEntries.slice(pageStartIndex, pageStartIndex + VEHICLES_PER_PAGE);
+        const neededIndexes = new Set(pageEntries.map((entry) => entry.absoluteIndex));
+        const vehicles = await fetchShardVehicles(
+          pageEntries.map((entry) => Math.floor(entry.absoluteIndex / manifest.shardSize) + 1)
+        );
+
+        if (!active) return;
+        setMatchedCount(matchedEntries.length);
+        setVisibleVehicles(
+          vehicles
+            .filter((vehicle) => neededIndexes.has(vehicle.absoluteIndex ?? -1))
+            .sort((a, b) => (a.absoluteIndex ?? 0) - (b.absoluteIndex ?? 0))
+        );
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        if (!active) return;
+        setLoading(false);
+        setPageLoading(false);
       }
-      if (
-        f.transmission !== 'all' &&
-        normalizeTransmission(item.transmission) !== f.transmission
-      ) {
-        return false;
-      }
-      if (f.color !== 'all' && item.color !== f.color) return false;
-      if (f.cc !== 'all' && item.cc !== f.cc) return false;
-      if (gradeFrom !== null) {
-        const itemGrade = parseAuctionGradeScore(item.auctionGrade);
-        if (itemGrade !== null && itemGrade < gradeFrom) return false;
-      }
+    };
 
-      const mileage = parseMileageNumber(item.mileage);
-      if (mileageMin !== null && mileage !== null && mileage < mileageMin) return false;
-      if (mileageMax !== null && mileage !== null && mileage > mileageMax) return false;
+    void loadVehicles();
 
-      const startPrice = parsePriceNumber(item.startPrice);
-      if (priceFrom !== null && startPrice !== null && startPrice < priceFrom) return false;
-      if (priceTo !== null && startPrice !== null && startPrice > priceTo) return false;
-
-      if (!q) return true;
-      const joined = [
-        item.id,
-        item.maker,
-        item.model,
-        item.modelGrade,
-        item.year,
-        item.location,
-        item.lotNo,
-        item.modelCode,
-        item.startPrice,
-        item.endPrice,
-        item.status,
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return joined.includes(q);
-    });
-  }, [payload, appliedFilters]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / VEHICLES_PER_PAGE));
-  const pageStartIndex = (currentPage - 1) * VEHICLES_PER_PAGE;
-  const paginatedVehicles = useMemo(
-    () => filtered.slice(pageStartIndex, pageStartIndex + VEHICLES_PER_PAGE),
-    [filtered, pageStartIndex]
-  );
+    return () => {
+      active = false;
+    };
+  }, [activeFeed, activeFilters, appliedFilters, currentPage, manifest, pageStartIndex, searchIndexes]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -332,7 +445,7 @@ export function JpaucFeed() {
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-5 py-2">
             <Database className="h-4 w-4 text-primary" />
             <span className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-              Cars Form Japan
+              Cars From Japan
             </span>
           </div>
           <h1 className="text-3xl font-bold text-foreground md:text-5xl">
@@ -367,19 +480,19 @@ export function JpaucFeed() {
             <div className="section-card p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Total</p>
               <p className="mt-1 text-xl font-semibold text-foreground">
-                {payload?.count?.toLocaleString() ?? 0}
+                {manifest?.count?.toLocaleString() ?? 0}
               </p>
             </div>
             <div className="section-card p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Matched</p>
               <p className="mt-1 text-xl font-semibold text-foreground">
-                {filtered.length.toLocaleString()}
+                {matchedCount.toLocaleString()}
               </p>
             </div>
             <div className="section-card p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Scraped</p>
               <p className="mt-1 text-sm font-semibold text-foreground">
-                {payload?.scrapedAt ? new Date(payload.scrapedAt).toLocaleString() : '-'}
+                {manifest?.scrapedAt ? new Date(manifest.scrapedAt).toLocaleString() : '-'}
               </p>
             </div>
             <div className="section-card p-4">
@@ -572,11 +685,11 @@ export function JpaucFeed() {
 
       <section className="bg-[#f8f5ee] px-4 pb-24">
         <div className="section-shell">
-          {loading ? (
+          {loading || (pageLoading && visibleVehicles.length === 0) ? (
             <div className="section-card p-8 text-center text-muted-foreground">Loading...</div>
           ) : error ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">{error}</div>
-          ) : filtered.length === 0 ? (
+          ) : matchedCount === 0 ? (
             <div className="section-card p-8 text-center text-muted-foreground">
               No vehicles found for current filters.
             </div>
@@ -584,8 +697,9 @@ export function JpaucFeed() {
             <div className="space-y-5">
               <div className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Showing {pageStartIndex + 1}-{Math.min(pageStartIndex + VEHICLES_PER_PAGE, filtered.length)} of{' '}
-                  {filtered.length.toLocaleString()} vehicles. 20 vehicles per page.
+                  Showing {pageStartIndex + 1}-{Math.min(pageStartIndex + VEHICLES_PER_PAGE, matchedCount)} of{' '}
+                  {matchedCount.toLocaleString()} vehicles. 20 vehicles per page.
+                  {pageLoading ? ' Loading this page...' : ''}
                 </p>
                 <div className="flex items-center gap-2">
                   <button
@@ -610,7 +724,7 @@ export function JpaucFeed() {
                 </div>
               </div>
 
-              {paginatedVehicles.map((vehicle) => {
+              {visibleVehicles.map((vehicle) => {
                 const images = getVehicleImages(vehicle);
                 const mainImage = images[0] ?? '';
                 const vehicleTitle = vehicle.model || vehicle.titleFull || `${vehicle.maker} ${vehicle.id}`;
