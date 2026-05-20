@@ -254,27 +254,13 @@ export function AdminContracts() {
     } catch (error) {
       setNotice({
         type: 'error',
-        text: `Contract was saved, but EmailJS did not send it. Opening your email app instead. ${getErrorMessage(error)}`,
+        text: `Contract was saved, but EmailJS did not send it. ${getErrorMessage(error)}`,
       });
+      setIsBusy(false);
+      return;
     } finally {
       setIsBusy(false);
     }
-
-    const subject = encodeURIComponent(`Inno Group ${next.contractType === 'deposit' ? 'deposit agreement' : 'vehicle agreement'} for signing`);
-    const body = encodeURIComponent(
-      [
-        `Hi ${next.client.name || ''},`,
-        '',
-        `Please review and sign your Inno Group ${next.contractType === 'deposit' ? 'deposit agreement' : 'vehicle agreement'} using the link below:`,
-        signingLink,
-        '',
-        `Contract: ${contractTitle(next)}`,
-        '',
-        'Thank you,',
-        'Inno Group Ltd',
-      ].join('\n')
-    );
-    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
   };
 
   const remove = async () => {
