@@ -10,7 +10,15 @@ import {
 } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ContractDocument } from '../components/ContractDocument';
-import { VehicleContract, formatDateTime, getContractById, upsertContract } from '../lib/contracts';
+import {
+  VehicleContract,
+  formatDateTime,
+  getContractBySigningToken,
+  getErrorMessage,
+  recordContractEvent,
+  saveSignature,
+  upsertContract,
+} from '../lib/contracts';
 
 type AckKey = 'terms' | 'cin' | 'docs' | 'odometer' | 'privacy' | 'deposit';
 
@@ -79,30 +87,55 @@ export function SignContract() {
     deposit: false,
   });
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!contractId) return;
 
-    const found = getContractById(contractId);
-    const nextFound =
-      found && found.status === 'sent'
-        ? { ...found, status: 'viewed' as const, viewedAt: found.viewedAt || new Date().toISOString() }
-        : found;
-    if (nextFound && nextFound !== found) {
-      upsertContract(nextFound);
+    let isMounted = true;
+
+    async function loadContract() {
+      setIsLoading(true);
+      try {
+        const found = await getContractBySigningToken(contractId!);
+        const nextFound =
+          found && found.status === 'sent'
+            ? { ...found, status: 'viewed' as const, viewedAt: found.viewedAt || new Date().toISOString() }
+            : found;
+
+        if (nextFound && found?.status === 'sent') {
+          await upsertContract(nextFound);
+          await recordContractEvent(nextFound.id, 'viewed');
+        }
+
+        if (!isMounted) return;
+        setContract(nextFound);
+        setPurchaserName(nextFound?.signatures.purchaserName || nextFound?.client.name || '');
+        setAccepted({
+          terms: Boolean(nextFound?.acknowledgements.termsAccepted),
+          cin: Boolean(nextFound?.acknowledgements.cinProvided),
+          docs: Boolean(nextFound?.acknowledgements.signDocumentsAccepted),
+          odometer: Boolean(nextFound?.acknowledgements.odometerAcknowledged),
+          privacy: Boolean(nextFound?.acknowledgements.privacyAccepted),
+          deposit: Boolean(nextFound?.acknowledgements.depositForfeitureAccepted),
+        });
+        setHasSignature(Boolean(nextFound?.signatures.purchaser));
+        document.title = nextFound ? 'Sign Agreement' : 'Contract Not Found';
+      } catch (error) {
+        if (!isMounted) return;
+        setMessage(`Could not load contract: ${getErrorMessage(error)}`);
+        document.title = 'Contract Not Found';
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
     }
-    setContract(nextFound);
-    setPurchaserName(nextFound?.signatures.purchaserName || nextFound?.client.name || '');
-    setAccepted({
-      terms: Boolean(nextFound?.acknowledgements.termsAccepted),
-      cin: Boolean(nextFound?.acknowledgements.cinProvided),
-      docs: Boolean(nextFound?.acknowledgements.signDocumentsAccepted),
-      odometer: Boolean(nextFound?.acknowledgements.odometerAcknowledged),
-      privacy: Boolean(nextFound?.acknowledgements.privacyAccepted),
-      deposit: Boolean(nextFound?.acknowledgements.depositForfeitureAccepted),
-    });
-    setHasSignature(Boolean(nextFound?.signatures.purchaser));
-    document.title = nextFound ? 'Sign Vehicle Agreement' : 'Contract Not Found';
+
+    loadContract();
+
+    return () => {
+      isMounted = false;
+    };
   }, [contractId]);
 
   const signed = contract?.status === 'signed';
@@ -208,7 +241,7 @@ export function SignContract() {
     scrollToSection('submit');
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!contract) return;
     if (!purchaserName.trim()) {
       setMessage('Please enter your full legal name before signing.');
@@ -249,11 +282,31 @@ export function SignContract() {
       },
     };
 
-    upsertContract(signedContract);
-    setContract(signedContract);
-    setMessage('Signed successfully. You can now print or save the completed agreement as a PDF.');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsSubmitting(true);
+    try {
+      await saveSignature(signedContract, purchaserName.trim(), signature);
+      await upsertContract(signedContract);
+      await recordContractEvent(signedContract.id, 'signed', 'Captured in browser signing session');
+      setContract(signedContract);
+      setMessage('Signed successfully. You can now print or save the completed agreement as a PDF.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      setMessage(`Could not submit signature: ${getErrorMessage(error)}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
+        <div className="max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <h1 className="text-2xl font-semibold text-slate-900">Loading contract</h1>
+          <p className="mt-3 text-sm text-slate-600">Please wait while we open your secure signing link.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!contract) {
     return (
@@ -261,8 +314,7 @@ export function SignContract() {
         <div className="max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <h1 className="text-2xl font-semibold text-slate-900">Contract not found</h1>
           <p className="mt-3 text-sm text-slate-600">
-            This signing link only works where the contract record is available. The current prototype stores
-            contracts in browser local storage; cross-device signing needs a database-backed contract store.
+            This signing link is not available. Please ask Inno Group to resend the contract link.
           </p>
           <Link to="/" className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
             Back to website
@@ -501,10 +553,10 @@ export function SignContract() {
                   <button
                     type="button"
                     onClick={submit}
-                    disabled={!canSubmit}
+                    disabled={!canSubmit || isSubmitting}
                     className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
-                    Finish signing
+                    {isSubmitting ? 'Submitting...' : 'Finish signing'}
                   </button>
                   <p className="mt-3 text-xs leading-5 text-slate-500">
                     By selecting finish signing, your typed name, signature, acknowledgements, completion time, and

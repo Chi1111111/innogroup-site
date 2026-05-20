@@ -1,8 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
+
 type ContractStatus = 'draft' | 'sent' | 'viewed' | 'signed' | 'cancelled';
 export type ContractType = 'vehicle-purchase' | 'deposit';
 
 export interface VehicleContract {
   id: string;
+  signingToken: string;
   contractType: ContractType;
   status: ContractStatus;
   createdAt: string;
@@ -96,14 +99,58 @@ export interface VehicleContract {
   };
 }
 
-const CONTRACT_STORAGE_KEY = 'inno:vehicle-contracts:v1';
+type ContractRow = {
+  id: string;
+  contract_type: ContractType;
+  status: ContractStatus;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  client_address: string | null;
+  signing_token: string;
+  payload: Partial<VehicleContract> | null;
+  sent_at: string | null;
+  viewed_at: string | null;
+  signed_at: string | null;
+  created_at: string;
+};
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+const supabase =
+  supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+
+function assertSupabase() {
+  if (!supabase) {
+    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.');
+  }
+
+  return supabase;
+}
+
+export function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null) {
+    const details = error as { message?: string; code?: string; details?: string; hint?: string };
+    return [details.message, details.code, details.details, details.hint].filter(Boolean).join(' - ') || JSON.stringify(error);
+  }
+
+  return String(error);
+}
+
+function randomToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
 
 function createContractId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `contract-${crypto.randomUUID()}`;
+    return crypto.randomUUID();
   }
 
-  return `contract-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+  return `${Date.now()}-${Math.round(Math.random() * 100000)}`;
 }
 
 export function createEmptyContract(contractType: ContractType = 'vehicle-purchase'): VehicleContract {
@@ -111,6 +158,7 @@ export function createEmptyContract(contractType: ContractType = 'vehicle-purcha
 
   return {
     id: createContractId(),
+    signingToken: randomToken(),
     contractType,
     status: 'draft',
     createdAt: now,
@@ -193,44 +241,118 @@ export function createEmptyContract(contractType: ContractType = 'vehicle-purcha
   };
 }
 
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+function rowToContract(row: ContractRow): VehicleContract {
+  const base = createEmptyContract(row.contract_type);
+  const payload = row.payload ?? {};
+  const client = {
+    ...base.client,
+    ...payload.client,
+    name: row.client_name ?? payload.client?.name ?? '',
+    email: row.client_email ?? payload.client?.email ?? '',
+    phone: row.client_phone ?? payload.client?.phone ?? '',
+    address: row.client_address ?? payload.client?.address ?? '',
+  };
+
+  return {
+    ...base,
+    ...payload,
+    id: row.id,
+    signingToken: row.signing_token,
+    contractType: row.contract_type,
+    status: row.status,
+    createdAt: row.created_at,
+    sentAt: row.sent_at ?? undefined,
+    viewedAt: row.viewed_at ?? undefined,
+    signedAt: row.signed_at ?? undefined,
+    client,
+    purchasedVehicle: { ...base.purchasedVehicle, ...payload.purchasedVehicle },
+    tradeIn: { ...base.tradeIn, ...payload.tradeIn },
+    payment: { ...base.payment, ...payload.payment },
+    acknowledgements: { ...base.acknowledgements, ...payload.acknowledgements },
+    signatures: { ...base.signatures, ...payload.signatures },
+    depositAgreement: { ...base.depositAgreement!, ...payload.depositAgreement },
+  };
 }
 
-export function loadContracts(): VehicleContract[] {
-  if (!canUseStorage()) return [];
-
-  try {
-    const raw = window.localStorage.getItem(CONTRACT_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+function contractToRow(contract: VehicleContract) {
+  return {
+    id: contract.id,
+    contract_type: contract.contractType,
+    status: contract.status,
+    client_name: contract.client.name,
+    client_email: contract.client.email,
+    client_phone: contract.client.phone,
+    client_address: contract.client.address,
+    signing_token: contract.signingToken,
+    payload: contract,
+    sent_at: contract.sentAt ?? null,
+    viewed_at: contract.viewedAt ?? null,
+    signed_at: contract.signedAt ?? null,
+    updated_at: new Date().toISOString(),
+  };
 }
 
-export function saveContracts(contracts: VehicleContract[]) {
-  if (!canUseStorage()) return;
-  window.localStorage.setItem(CONTRACT_STORAGE_KEY, JSON.stringify(contracts));
+export async function loadContracts(): Promise<VehicleContract[]> {
+  const client = assertSupabase();
+  const { data, error } = await client
+    .from('contracts')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map((row) => rowToContract(row as ContractRow));
 }
 
-export function upsertContract(contract: VehicleContract) {
-  const contracts = loadContracts();
-  const index = contracts.findIndex((item) => item.id === contract.id);
+export async function upsertContract(contract: VehicleContract): Promise<VehicleContract[]> {
+  const client = assertSupabase();
+  const { error } = await client.from('contracts').upsert(contractToRow(contract), { onConflict: 'id' });
+  if (error) throw error;
 
-  if (index >= 0) {
-    contracts[index] = contract;
-  } else {
-    contracts.unshift(contract);
-  }
-
-  saveContracts(contracts);
-  return contracts;
+  return loadContracts();
 }
 
-export function getContractById(id: string) {
-  return loadContracts().find((contract) => contract.id === id) ?? null;
+export async function deleteContract(contractId: string): Promise<VehicleContract[]> {
+  const client = assertSupabase();
+  const { error } = await client.from('contracts').delete().eq('id', contractId);
+  if (error) throw error;
+
+  return loadContracts();
+}
+
+export async function getContractBySigningToken(signingToken: string): Promise<VehicleContract | null> {
+  const client = assertSupabase();
+  const { data, error } = await client
+    .from('contracts')
+    .select('*')
+    .eq('signing_token', signingToken)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? rowToContract(data as ContractRow) : null;
+}
+
+export async function recordContractEvent(contractId: string, eventType: string, note?: string) {
+  const client = assertSupabase();
+  const { error } = await client.from('contract_events').insert({
+    contract_id: contractId,
+    event_type: eventType,
+    user_agent: typeof navigator === 'undefined' ? null : navigator.userAgent,
+    note: note ?? null,
+  });
+
+  if (error) throw error;
+}
+
+export async function saveSignature(contract: VehicleContract, signerName: string, signatureData: string) {
+  const client = assertSupabase();
+  const { error } = await client.from('contract_signatures').insert({
+    contract_id: contract.id,
+    signer_name: signerName,
+    signature_data: signatureData,
+    user_agent: typeof navigator === 'undefined' ? null : navigator.userAgent,
+  });
+
+  if (error) throw error;
 }
 
 export function formatDateTime(value?: string) {

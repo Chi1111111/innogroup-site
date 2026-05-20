@@ -1,18 +1,22 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import emailjs from '@emailjs/browser';
 import { Link } from 'react-router';
 import { ContractDocument } from '../components/ContractDocument';
 import {
   ContractType,
   VehicleContract,
   createEmptyContract,
+  deleteContract,
   formatDateTime,
+  getErrorMessage,
   loadContracts,
-  saveContracts,
   upsertContract,
 } from '../lib/contracts';
+import { EMAILJS_CONFIG } from '../../config/emailConfig';
 
 const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'innogroup2026';
+const CONTRACT_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_CONTRACT_TEMPLATE_ID ?? EMAILJS_CONFIG.templateId;
 
 type WorkspaceTab = 'status' | 'library' | 'editor';
 type Section = 'client' | 'vehicle' | 'trade' | 'payment' | 'checks' | 'deposit';
@@ -124,15 +128,18 @@ export function AdminContracts() {
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('status');
   const [section, setSection] = useState<Section>('client');
   const [notice, setNotice] = useState<Notice>(null);
+  const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
-    setContracts(loadContracts());
+    loadContracts()
+      .then(setContracts)
+      .catch((error) => setNotice({ type: 'error', text: `Could not load contracts: ${getErrorMessage(error)}` }));
     document.title = 'Inno Group Contract Admin';
   }, []);
 
   const signingLink = useMemo(
-    () => (typeof window === 'undefined' ? `/sign/${active.id}` : `${window.location.origin}/sign/${active.id}`),
-    [active.id]
+    () => (typeof window === 'undefined' ? `/sign/${active.signingToken}` : `${window.location.origin}/sign/${active.signingToken}`),
+    [active.signingToken]
   );
 
   const stats = useMemo(
@@ -164,33 +171,49 @@ export function AdminContracts() {
     setNotice(null);
   };
 
-  const createNewContract = (contractType: ContractType = 'vehicle-purchase') => {
+  const createNewContract = async (contractType: ContractType = 'vehicle-purchase') => {
     const next = createEmptyContract(contractType);
-    setActive(next);
-    setContracts(upsertContract(next));
-    setWorkspaceTab('editor');
-    setSection(contractType === 'deposit' ? 'deposit' : 'client');
-    setNotice(null);
+    setIsBusy(true);
+    try {
+      setContracts(await upsertContract(next));
+      setActive(next);
+      setWorkspaceTab('editor');
+      setSection(contractType === 'deposit' ? 'deposit' : 'client');
+      setNotice(null);
+    } catch (error) {
+      setNotice({ type: 'error', text: `Could not create contract: ${getErrorMessage(error)}` });
+    } finally {
+      setIsBusy(false);
+    }
   };
 
-  const save = (status: VehicleContract['status'] = active.status) => {
+  const save = async (status: VehicleContract['status'] = active.status) => {
     const next: VehicleContract = {
       ...active,
       status,
       sentAt: status === 'sent' && !active.sentAt ? new Date().toISOString() : active.sentAt,
     };
-    const nextContracts = upsertContract(next);
-    setContracts(nextContracts);
-    setActive(next);
-    setNotice({ type: 'success', text: status === 'sent' ? 'Contract saved as sent.' : 'Contract draft saved.' });
+    setIsBusy(true);
+    try {
+      const nextContracts = await upsertContract(next);
+      setContracts(nextContracts);
+      setActive(next);
+      setNotice({ type: 'success', text: status === 'sent' ? 'Contract saved as sent.' : 'Contract draft saved.' });
+      return next;
+    } catch (error) {
+      setNotice({ type: 'error', text: `Could not save contract: ${getErrorMessage(error)}` });
+      return null;
+    } finally {
+      setIsBusy(false);
+    }
   };
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(signingLink);
-    save('sent');
+    await save('sent');
   };
 
-  const sendEmail = () => {
+  const sendEmail = async () => {
     const email = active.client.email.trim();
     if (!email) {
       setSection('client');
@@ -204,11 +227,38 @@ export function AdminContracts() {
       status: 'sent',
       sentAt: active.sentAt || new Date().toISOString(),
     };
-    const nextContracts = upsertContract(next);
-    setContracts(nextContracts);
-    setActive(next);
-    setWorkspaceTab('status');
-    setNotice({ type: 'success', text: 'Contract marked as sent. Your email app will open with the signing link.' });
+    setIsBusy(true);
+    try {
+      const nextContracts = await upsertContract(next);
+      setContracts(nextContracts);
+      setActive(next);
+      setWorkspaceTab('status');
+
+      await emailjs.send(
+        EMAILJS_CONFIG.serviceId,
+        CONTRACT_TEMPLATE_ID,
+        {
+          to_email: email,
+          to_name: next.client.name || 'Customer',
+          client_name: next.client.name || 'Customer',
+          contract_title: contractTitle(next),
+          contract_type: next.contractType === 'deposit' ? 'Deposit Agreement' : 'Vehicle Agreement',
+          signing_url: signingLink,
+          company_name: 'Inno Group Ltd',
+        },
+        EMAILJS_CONFIG.publicKey
+      );
+
+      setNotice({ type: 'success', text: 'Contract saved and sent through EmailJS.' });
+      return;
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: `Contract was saved, but EmailJS did not send it. Opening your email app instead. ${getErrorMessage(error)}`,
+      });
+    } finally {
+      setIsBusy(false);
+    }
 
     const subject = encodeURIComponent(`Inno Group ${next.contractType === 'deposit' ? 'deposit agreement' : 'vehicle agreement'} for signing`);
     const body = encodeURIComponent(
@@ -227,14 +277,19 @@ export function AdminContracts() {
     window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
   };
 
-  const remove = () => {
+  const remove = async () => {
     if (!window.confirm('Delete current contract?')) return;
-    const next = contracts.filter((item) => item.id !== active.id);
-    saveContracts(next);
-    setContracts(next);
-    setActive(createEmptyContract());
-    setWorkspaceTab('library');
-    setNotice({ type: 'success', text: 'Contract deleted.' });
+    setIsBusy(true);
+    try {
+      setContracts(await deleteContract(active.id));
+      setActive(createEmptyContract());
+      setWorkspaceTab('library');
+      setNotice({ type: 'success', text: 'Contract deleted.' });
+    } catch (error) {
+      setNotice({ type: 'error', text: `Could not delete contract: ${getErrorMessage(error)}` });
+    } finally {
+      setIsBusy(false);
+    }
   };
 
   const updateClient = (key: keyof VehicleContract['client'], value: string) => setActive((current) => ({ ...current, client: { ...current.client, [key]: value } }));
@@ -308,7 +363,7 @@ export function AdminContracts() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Link to="/admin" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium">Content Admin</Link>
-              <button onClick={() => createNewContract()} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">New Contract</button>
+              <button onClick={() => createNewContract()} disabled={isBusy} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">New Contract</button>
             </div>
           </div>
 
@@ -353,7 +408,7 @@ export function AdminContracts() {
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <button onClick={() => activateContract(contract, 'editor')} className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">Open</button>
-                        <a href={`/sign/${contract.id}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Signing page</a>
+                        <a href={`/sign/${contract.signingToken}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Signing page</a>
                       </div>
                     </div>
                   ))
@@ -380,7 +435,7 @@ export function AdminContracts() {
                   <button
                     type="button"
                     onClick={() => type.available && createNewContract(type.id as ContractType)}
-                    disabled={!type.available}
+                    disabled={!type.available || isBusy}
                     className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
                     Use this contract
@@ -421,10 +476,10 @@ export function AdminContracts() {
             <div className="space-y-5">
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => save()} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black">Save Draft</button>
-                  <button onClick={sendEmail} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Send Email</button>
-                  <button onClick={copyLink} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Copy Link</button>
-                  <button onClick={remove} className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">Delete</button>
+                  <button onClick={() => save()} disabled={isBusy} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:bg-slate-300">Save Draft</button>
+                  <button onClick={sendEmail} disabled={isBusy} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">Send Email</button>
+                  <button onClick={copyLink} disabled={isBusy} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">Copy Link</button>
+                  <button onClick={remove} disabled={isBusy} className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">Delete</button>
                 </div>
                 <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                   Signing link: <span className="break-all font-medium text-slate-950">{signingLink}</span>
