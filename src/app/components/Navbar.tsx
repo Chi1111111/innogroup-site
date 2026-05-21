@@ -6,6 +6,7 @@ import { logoImage } from '../../data/pic';
 const navigationLinks = [
   { to: '/', label: 'Home' },
   { to: '/vehicles', label: 'Vehicles' },
+  { to: '/vehicles/china', label: 'Cars from China' },
   { to: '/jpauc-feed', label: 'Cars Form Japan' },
   { to: '/services', label: 'Services' },
   { to: '/finance', label: 'Finance' },
@@ -39,13 +40,19 @@ export function Navbar() {
     if (path === '/') {
       return location.pathname === '/';
     }
+    if (path === '/vehicles') {
+      return location.pathname === '/vehicles';
+    }
+    if (path === '/vehicles/china') {
+      return location.pathname.startsWith('/vehicles/china') || location.pathname === '/vehicles/baw-m8';
+    }
     return location.pathname.startsWith(path);
   };
 
   const navLinkClass = (path: string) =>
     `whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.18em] transition-colors ${
       isActive(path)
-        ? 'bg-primary/10 text-primary'
+        ? 'bg-primary/10 text-primary ring-1 ring-primary/18'
         : 'text-foreground/72 hover:bg-black/4 hover:text-foreground'
     }`;
 
@@ -82,7 +89,7 @@ export function Navbar() {
             </Link>
           </div>
 
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-3 md:flex">
             {navigationLinks.map((link) => (
               <Link key={link.to} to={link.to} className={navLinkClass(link.to)}>
                 {link.label}

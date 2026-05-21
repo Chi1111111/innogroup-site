@@ -83,10 +83,12 @@ function getBreadcrumbItems(pathname: string) {
   const names: Record<string, string> = {
     zh: '中文首页',
     vehicles: pathname.startsWith('/zh') ? '车辆咨询' : 'Vehicles',
+    china: 'Cars from China',
     services: pathname.startsWith('/zh') ? '服务与售后' : 'Services',
     finance: pathname.startsWith('/zh') ? '车辆贷款' : 'Finance',
     about: pathname.startsWith('/zh') ? '关于我们' : 'About',
     contact: pathname.startsWith('/zh') ? '联系咨询' : 'Contact',
+    'baw-m8': 'BAW M8 EV / REEV MPV',
   };
 
   const homeName = pathname.startsWith('/zh') ? '中文首页' : 'Home';

@@ -1,5 +1,5 @@
 import { VehiclesSection } from '../components/VehiclesSection';
-import { Car } from 'lucide-react';
+import { ArrowRight, BatteryCharging, Car } from 'lucide-react';
 import { Link } from 'react-router';
 
 export function Vehicles() {
@@ -20,6 +20,27 @@ export function Vehicles() {
             help with. If you want more car recommendations, contact us and we will suggest options
             that fit your budget and needs.
           </p>
+        </div>
+      </section>
+
+      <section className="px-4 py-16">
+        <div className="section-shell section-card grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-center md:p-8">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+              <BatteryCharging className="h-4 w-4" />
+              Cars from China
+            </div>
+            <h2 className="text-3xl md:text-4xl">China Import Vehicle Range</h2>
+            <p className="max-w-3xl">
+              Starting with the BAW M8 EV / REEV MPV, this section is for new-energy China-market
+              vehicles available for direct import enquiry, with final specification and compliance
+              pathway confirmed before order.
+            </p>
+          </div>
+          <Link to="/vehicles/china" className="button-primary">
+            View Cars from China
+            <ArrowRight className="h-5 w-5" />
+          </Link>
         </div>
       </section>
 

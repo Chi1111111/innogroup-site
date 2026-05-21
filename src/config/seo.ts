@@ -45,6 +45,27 @@ export const SEO_ROUTES = {
     keywords:
       'import cars Auckland, import car examples NZ, Japanese import vehicles Auckland, Japan pre-order cars NZ, Toyota Alphard import NZ, Mercedes G350d NZ, Porsche Taycan import, Audi A6 Avant import, Subaru BRZ NZ',
   },
+  '/vehicles/baw-m8': {
+    title: 'BAW M8 EV / REEV MPV Import NZ | 7/9-Seater Electric MPV',
+    description:
+      'Import the BAW M8 EV / REEV MPV to New Zealand. A practical 7/9-seater new-energy people mover for families, shuttle operators, tourism companies and business transport.',
+    keywords:
+      'BAW M8 NZ, BAW M8 EV New Zealand, electric MPV NZ, 9 seater EV NZ, 7 seater MPV NZ, China car import NZ, new energy MPV NZ',
+  },
+  '/vehicles/china': {
+    title: 'Cars from China NZ | New-Energy Vehicle Import Range',
+    description:
+      'Browse China-market new-energy vehicles available for direct import enquiry to New Zealand, starting with the BAW M8 EV / REEV MPV.',
+    keywords:
+      'Cars from China NZ, China car import NZ, Chinese EV import NZ, new energy vehicle NZ, BAW M8 NZ',
+  },
+  '/vehicles/china/baw-m8': {
+    title: 'BAW M8 EV / REEV MPV Import NZ | 7/9-Seater Electric MPV',
+    description:
+      'Configure the BAW M8 EV / REEV MPV for New Zealand direct import enquiry. A practical 7/9-seater new-energy people mover for family, shuttle, tourism and business transport.',
+    keywords:
+      'BAW M8 NZ, BAW M8 EV New Zealand, electric MPV NZ, 9 seater EV NZ, 7 seater MPV NZ, China car import NZ, new energy MPV NZ',
+  },
   '/services': {
     title: 'Car Import Service Auckland | Japan Import Support',
     description:

@@ -2,6 +2,8 @@ import { createBrowserRouter } from 'react-router';
 import { Root } from './Root';
 import { Home } from './pages/Home';
 import { Vehicles } from './pages/Vehicles';
+import { BawM8Page } from './pages/BawM8Page';
+import { ChinaVehicles } from './pages/ChinaVehicles';
 import { Services } from './pages/Services';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
@@ -26,6 +28,9 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Home },
       { path: 'vehicles', Component: Vehicles },
+      { path: 'vehicles/china', Component: ChinaVehicles },
+      { path: 'vehicles/china/baw-m8', Component: BawM8Page },
+      { path: 'vehicles/baw-m8', Component: BawM8Page },
       { path: 'services', Component: Services },
       { path: 'about', Component: About },
       { path: 'contact', Component: Contact },
