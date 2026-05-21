@@ -46,8 +46,8 @@ function StepItem({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
-        done ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'
+      className={`flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition-all duration-200 ${
+        done ? 'border-emerald-200 bg-emerald-50/90 shadow-sm' : 'border-slate-200 bg-white/90 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white'
       }`}
     >
       <CheckCircle2 className={`mt-0.5 h-5 w-5 flex-none ${done ? 'text-emerald-600' : 'text-slate-300'}`} />
@@ -63,7 +63,7 @@ function Notice({ message }: { message: string }) {
   if (!message) return null;
 
   return (
-    <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+    <div className="rounded-2xl border border-blue-200 bg-blue-50/90 px-4 py-3 text-sm text-blue-800 shadow-sm">
       {message}
     </div>
   );
@@ -299,8 +299,8 @@ export function SignContract() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
-        <div className="max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#f8f4ec_0,#eef3f8_42%,#f8fafc_100%)] px-4 py-12">
+        <div className="max-w-lg animate-[fadeIn_0.45s_ease-out] rounded-[32px] border border-white/70 bg-white/85 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5 backdrop-blur-xl">
           <h1 className="text-2xl font-semibold text-slate-900">Loading contract</h1>
           <p className="mt-3 text-sm text-slate-600">Please wait while we open your secure signing link.</p>
         </div>
@@ -310,13 +310,13 @@ export function SignContract() {
 
   if (!contract) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
-        <div className="max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#f8f4ec_0,#eef3f8_42%,#f8fafc_100%)] px-4 py-12">
+        <div className="max-w-lg animate-[fadeIn_0.45s_ease-out] rounded-[32px] border border-white/70 bg-white/85 p-8 text-center shadow-[0_24px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5 backdrop-blur-xl">
           <h1 className="text-2xl font-semibold text-slate-900">Contract not found</h1>
           <p className="mt-3 text-sm text-slate-600">
             This signing link is not available. Please ask Inno Group to resend the contract link.
           </p>
-          <Link to="/" className="mt-5 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
+          <Link to="/" className="mt-5 inline-flex rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5">
             Back to website
           </Link>
         </div>
@@ -325,8 +325,8 @@ export function SignContract() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 print:bg-white">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_10%_0%,#faf4e8_0,#eef4f8_34%,#f8fafc_72%)] text-slate-900 print:bg-white">
+      <header className="sticky top-0 z-40 border-b border-white/70 bg-white/75 shadow-sm shadow-slate-900/5 backdrop-blur-2xl print:hidden">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#c7a06d]">Inno Group e-sign</p>
@@ -340,7 +340,7 @@ export function SignContract() {
               <button
                 type="button"
                 onClick={goToNextRequired}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#151515] px-4 py-2.5 text-sm font-semibold text-white"
+                className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black"
               >
                 <ArrowDown className="h-4 w-4" />
                 Sign document
@@ -349,19 +349,19 @@ export function SignContract() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-5 py-2.5 text-sm font-semibold text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"
             >
               <Download className="h-4 w-4" />
               Print / PDF
             </button>
           </div>
         </div>
-        <div className="h-1 bg-slate-200">
-          <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
+        <div className="h-1 bg-slate-200/80">
+          <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${progress}%` }} />
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 print:block print:px-0 print:py-0">
+      <main className="mx-auto max-w-6xl px-4 py-7 print:block print:px-0 print:py-0">
         <aside className="hidden print:hidden">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
@@ -413,10 +413,10 @@ export function SignContract() {
         </aside>
 
         <section className="space-y-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm print:hidden">
+          <div className="animate-[fadeIn_0.45s_ease-out] rounded-[32px] border border-white/70 bg-white/85 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-slate-900/5 backdrop-blur-xl print:hidden">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 ring-1 ring-emerald-200/70">
                   <ClipboardCheck className="h-3.5 w-3.5" />
                   {signed ? 'Completed' : 'Action required'}
                 </div>
@@ -428,7 +428,7 @@ export function SignContract() {
                   after submission.
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm text-slate-600">
                 Contract ID
                 <span className="block max-w-[260px] truncate font-semibold text-slate-950">{contract.id}</span>
               </div>
@@ -441,11 +441,11 @@ export function SignContract() {
           {!signed ? (
             <div className="space-y-5 print:hidden">
               <div
-                className={`fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto bg-slate-100 p-4 shadow-2xl transition-transform ${
+                className={`fixed inset-y-0 right-0 z-50 w-full max-w-md overflow-y-auto bg-white/80 p-4 shadow-[0_30px_100px_rgba(15,23,42,0.25)] backdrop-blur-2xl transition-transform duration-500 ease-out ${
                   showSigningPanel ? 'translate-x-0' : 'translate-x-full'
                 }`}
               >
-                <div className="mb-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-4 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/90 p-4 shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/5">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#c7a06d]">Required fields</p>
                     <h3 className="mt-1 text-lg font-semibold text-slate-950">Finish signing</h3>
@@ -453,7 +453,7 @@ export function SignContract() {
                   <button
                     type="button"
                     onClick={() => setShowSigningPanel(false)}
-                    className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700"
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:border-slate-300"
                   >
                     Close
                   </button>
@@ -462,7 +462,7 @@ export function SignContract() {
                   ref={(node) => {
                     sectionRefs.current.name = node;
                   }}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className="rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/5"
                 >
                   <div className="flex items-center gap-3">
                     <FileSignature className="h-5 w-5 text-[#c7a06d]" />
@@ -476,7 +476,7 @@ export function SignContract() {
                         setPurchaserName(event.target.value);
                         setMessage('');
                       }}
-                      className="w-full rounded-xl border border-slate-300 px-3 py-3 text-sm outline-none focus:border-[#c7a06d] focus:ring-2 focus:ring-[#c7a06d]/20"
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all duration-200 focus:border-[#c7a06d] focus:ring-4 focus:ring-[#c7a06d]/15"
                     />
                   </label>
                 </div>
@@ -485,7 +485,7 @@ export function SignContract() {
                   ref={(node) => {
                     sectionRefs.current.acknowledgements = node;
                   }}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className="mt-4 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/5"
                 >
                   <div className="flex items-center gap-3">
                     <ClipboardCheck className="h-5 w-5 text-[#c7a06d]" />
@@ -495,13 +495,13 @@ export function SignContract() {
                     {ACKNOWLEDGEMENTS.map((item) => (
                       <label
                         key={item.key}
-                        className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700"
+                        className={`flex gap-3 rounded-2xl border p-3 text-sm leading-6 text-slate-700 transition-all duration-200 ${accepted[item.key] ? 'border-emerald-200 bg-emerald-50/80' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                       >
                         <input
                           type="checkbox"
                           checked={accepted[item.key]}
                           onChange={(event) => updateAccepted(item.key, event.target.checked)}
-                          className="mt-1"
+                          className="mt-1 accent-slate-950"
                         />
                         <span>{item.label}</span>
                       </label>
@@ -513,7 +513,7 @@ export function SignContract() {
                   ref={(node) => {
                     sectionRefs.current.signature = node;
                   }}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className="mt-4 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/5"
                 >
                   <div className="flex items-center gap-3">
                     <PenLine className="h-5 w-5 text-[#c7a06d]" />
@@ -531,13 +531,13 @@ export function SignContract() {
                     onPointerUp={stopDrawing}
                     onPointerCancel={stopDrawing}
                     onPointerLeave={() => setIsDrawing(false)}
-                    className="mt-4 h-44 w-full touch-none rounded-xl border border-slate-300 bg-white"
+                    className="mt-4 h-44 w-full touch-none rounded-2xl border border-slate-200 bg-white shadow-inner shadow-slate-100"
                   />
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={clearSignature}
-                      className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold"
+                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold transition-all duration-200 hover:border-slate-300"
                     >
                       Clear signature
                     </button>
@@ -548,13 +548,13 @@ export function SignContract() {
                   ref={(node) => {
                     sectionRefs.current.submit = node;
                   }}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className="mt-4 rounded-[28px] border border-white/70 bg-white/90 p-5 shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/5"
                 >
                   <button
                     type="button"
                     onClick={submit}
                     disabled={!canSubmit || isSubmitting}
-                    className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="w-full rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none disabled:hover:translate-y-0"
                   >
                     {isSubmitting ? 'Submitting...' : 'Finish signing'}
                   </button>
@@ -569,26 +569,26 @@ export function SignContract() {
                 <button
                   type="button"
                   onClick={() => setShowSigningPanel(false)}
-                  className="fixed inset-0 z-40 bg-slate-950/30"
+                  className="fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-sm transition-opacity duration-300"
                   aria-label="Close signing panel"
                 />
               ) : null}
 
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="animate-[fadeIn_0.5s_ease-out] overflow-hidden rounded-[32px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.10)] ring-1 ring-slate-900/5">
                 <ContractDocument contract={contract} />
               </div>
               <div className="sticky bottom-4 z-30 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setShowSigningPanel(true)}
-                  className="rounded-full bg-[#151515] px-5 py-3 text-sm font-semibold text-white shadow-xl"
+                  className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(15,23,42,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-black"
                 >
                   Sign document
                 </button>
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 print:hidden">
+            <div className="rounded-[28px] border border-emerald-200 bg-emerald-50/90 p-5 shadow-[0_18px_50px_rgba(16,185,129,0.10)] print:hidden">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-1 h-6 w-6 text-emerald-600" />
@@ -603,7 +603,7 @@ export function SignContract() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white"
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-700/15 transition-all duration-200 hover:-translate-y-0.5"
                 >
                   <Download className="h-4 w-4" />
                   Print / PDF

@@ -57,11 +57,11 @@ const CONTRACT_TYPES: Array<{
 function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
     <label className="space-y-1.5">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
+        className="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-950 shadow-inner shadow-slate-100/60 outline-none transition-all duration-200 placeholder:text-slate-300 focus:border-slate-400 focus:bg-white focus:shadow-sm focus:ring-4 focus:ring-slate-200/70"
       />
     </label>
   );
@@ -69,8 +69,8 @@ function TextInput({ label, value, onChange }: { label: string; value: string; o
 
 function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <label className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+    <label className={`flex gap-3 rounded-2xl border p-4 text-sm text-slate-700 transition-all duration-200 ${checked ? 'border-emerald-200 bg-emerald-50/80 shadow-sm' : 'border-slate-200 bg-white/90 hover:border-slate-300 hover:bg-white'}`}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-0.5 accent-slate-950" />
       <span>{label}</span>
     </label>
   );
@@ -112,9 +112,9 @@ function contractTitle(contract: VehicleContract) {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-slate-950">{value}</p>
+    <div className="group rounded-[28px] border border-white/70 bg-white/80 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(15,23,42,0.10)]">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">{value}</p>
     </div>
   );
 }
@@ -296,14 +296,14 @@ export function AdminContracts() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#f8f4ec_0,#eef3f8_38%,#f8fafc_100%)] px-4 py-12">
+        <div className="w-full max-w-md animate-[fadeIn_0.45s_ease-out] rounded-[32px] border border-white/70 bg-white/85 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5 backdrop-blur-xl">
           <h1 className="text-2xl font-semibold text-slate-900">Admin Login</h1>
           <p className="mt-2 text-sm text-slate-600">Contract Workspace</p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <TextInput label="Password" value={password} onChange={setPassword} />
             {loginError ? <p className="text-sm text-red-600">{loginError}</p> : null}
-            <button type="submit" className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+            <button type="submit" className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black active:translate-y-0">
               Sign In
             </button>
           </form>
@@ -317,8 +317,8 @@ export function AdminContracts() {
     <button
       type="button"
       onClick={() => setWorkspaceTab(id)}
-      className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
-        workspaceTab === id ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+      className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${
+        workspaceTab === id ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/15' : 'text-slate-500 hover:bg-white hover:text-slate-950'
       }`}
     >
       {label}
@@ -329,8 +329,8 @@ export function AdminContracts() {
     <button
       type="button"
       onClick={() => setSection(id)}
-      className={`rounded-xl px-4 py-2 text-sm font-medium ${
-        section === id ? 'bg-slate-900 text-white' : 'border border-slate-300 bg-white text-slate-700'
+      className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+        section === id ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'border border-slate-200 bg-white/80 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-950'
       }`}
     >
       {label}
@@ -338,22 +338,22 @@ export function AdminContracts() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900 print:bg-white print:px-0 print:py-0">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_10%_0%,#faf4e8_0,#eef4f8_34%,#f8fafc_70%)] px-4 py-6 text-slate-900 print:bg-white print:px-0 print:py-0">
       <div className="mx-auto max-w-7xl space-y-5 print:hidden">
-        <header className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <header className="animate-[fadeIn_0.45s_ease-out] rounded-[32px] border border-white/70 bg-white/80 p-6 shadow-[0_20px_70px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5 backdrop-blur-xl">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#c7a06d]">Inno Group e-sign</p>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-950">Contract Workspace</h1>
+              <h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-950">Contract Workspace</h1>
               <p className="mt-2 text-sm text-slate-600">Track sent agreements, manage contract types, and prepare signing links.</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link to="/admin" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium">Content Admin</Link>
-              <button onClick={() => createNewContract()} disabled={isBusy} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">New Contract</button>
+              <Link to="/admin" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">Content Admin</Link>
+              <button onClick={() => createNewContract()} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">New Contract</button>
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+          <div className="mt-6 flex flex-wrap gap-2 rounded-full border border-slate-200/80 bg-slate-100/70 p-1.5">
             {navButton('status', 'Status Board')}
             {navButton('library', 'Contract Library')}
             {navButton('editor', 'Prepare & Send')}
@@ -371,8 +371,8 @@ export function AdminContracts() {
               <StatCard label="Signed" value={stats.signed} />
             </div>
 
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-200 px-5 py-4">
+            <div className="overflow-hidden rounded-[32px] border border-white/70 bg-white/85 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-slate-900/5 backdrop-blur-xl">
+              <div className="border-b border-slate-100 px-6 py-5">
                 <h2 className="text-lg font-semibold text-slate-950">Sent contract status</h2>
               </div>
               <div className="divide-y divide-slate-100">
@@ -380,7 +380,7 @@ export function AdminContracts() {
                   <p className="p-5 text-sm text-slate-500">No contracts yet.</p>
                 ) : (
                   contracts.map((contract) => (
-                    <div key={contract.id} className="grid gap-3 p-5 lg:grid-cols-[1.2fr_160px_1fr_auto] lg:items-center">
+                    <div key={contract.id} className="grid gap-3 p-6 transition-all duration-200 hover:bg-slate-50/80 lg:grid-cols-[1.2fr_160px_1fr_auto] lg:items-center">
                       <div>
                         <p className="font-semibold text-slate-950">{contract.client.name || 'Unnamed client'}</p>
                         <p className="mt-1 text-sm text-slate-500">{contractTitle(contract)}</p>
@@ -393,8 +393,8 @@ export function AdminContracts() {
                         Signed {formatDateTime(contract.signedAt)}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <button onClick={() => activateContract(contract, 'editor')} className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">Open</button>
-                        <a href={`/sign/${contract.signingToken}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Signing page</a>
+                        <button onClick={() => activateContract(contract, 'editor')} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300">Open</button>
+                        <a href={`/sign/${contract.signingToken}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5">Signing page</a>
                       </div>
                     </div>
                   ))
@@ -405,10 +405,10 @@ export function AdminContracts() {
         ) : null}
 
         {workspaceTab === 'library' ? (
-          <section className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
+          <section className="grid animate-[fadeIn_0.35s_ease-out] gap-5 lg:grid-cols-[1fr_1.2fr]">
             <div className="space-y-4">
               {CONTRACT_TYPES.map((type) => (
-                <div key={type.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div key={type.id} className="rounded-[28px] border border-white/70 bg-white/85 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_rgba(15,23,42,0.10)]">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h2 className="text-lg font-semibold text-slate-950">{type.name}</h2>
@@ -422,7 +422,7 @@ export function AdminContracts() {
                     type="button"
                     onClick={() => type.available && createNewContract(type.id as ContractType)}
                     disabled={!type.available || isBusy}
-                    className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="mt-5 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                   >
                     Use this contract
                   </button>
@@ -430,7 +430,7 @@ export function AdminContracts() {
               ))}
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-[32px] border border-white/70 bg-white/85 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-slate-900/5 backdrop-blur-xl">
               <h2 className="text-lg font-semibold text-slate-950">Existing documents</h2>
               <div className="mt-4 space-y-3">
                 {contracts.length === 0 ? (
@@ -440,7 +440,7 @@ export function AdminContracts() {
                     <button
                       key={contract.id}
                       onClick={() => activateContract(contract, 'editor')}
-                      className={`w-full rounded-2xl border p-4 text-left text-sm ${contract.id === active.id ? 'border-primary bg-primary/10' : 'border-slate-200 bg-white'}`}
+                      className={`w-full rounded-3xl border p-4 text-left text-sm transition-all duration-200 hover:-translate-y-0.5 ${contract.id === active.id ? 'border-primary bg-primary/10 shadow-sm' : 'border-slate-200 bg-white/80 hover:border-slate-300 hover:bg-white'}`}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -458,16 +458,16 @@ export function AdminContracts() {
         ) : null}
 
         {workspaceTab === 'editor' ? (
-          <section className="grid gap-5 lg:grid-cols-[minmax(360px,520px)_1fr]">
+          <section className="grid animate-[fadeIn_0.35s_ease-out] gap-5 lg:grid-cols-[minmax(360px,520px)_1fr]">
             <div className="space-y-5">
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-[28px] border border-white/70 bg-white/85 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/5 backdrop-blur-xl">
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => save()} disabled={isBusy} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:bg-slate-300">Save Draft</button>
-                  <button onClick={sendEmail} disabled={isBusy} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">Send Email</button>
-                  <button onClick={copyLink} disabled={isBusy} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">Copy Link</button>
-                  <button onClick={remove} disabled={isBusy} className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">Delete</button>
+                  <button onClick={() => save()} disabled={isBusy} className="rounded-full bg-[#d2a968] px-5 py-2.5 text-sm font-semibold text-black shadow-lg shadow-[#d2a968]/20 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300">Save Draft</button>
+                  <button onClick={sendEmail} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">Send Email</button>
+                  <button onClick={copyLink} disabled={isBusy} className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/15 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300">Copy Link</button>
+                  <button onClick={remove} disabled={isBusy} className="rounded-full border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">Delete</button>
                 </div>
-                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-700">
                   Signing link: <span className="break-all font-medium text-slate-950">{signingLink}</span>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -477,7 +477,7 @@ export function AdminContracts() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-[28px] border border-white/70 bg-white/85 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/5 backdrop-blur-xl">
                 <div className="flex flex-wrap gap-2">
                   {sectionButton('client', 'Client')}
                   {isDepositContract ? (
@@ -563,7 +563,7 @@ export function AdminContracts() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="overflow-hidden rounded-[32px] border border-white/70 bg-white p-3 shadow-[0_24px_80px_rgba(15,23,42,0.10)] ring-1 ring-slate-900/5">
               <ContractDocument contract={active} />
             </div>
           </section>
