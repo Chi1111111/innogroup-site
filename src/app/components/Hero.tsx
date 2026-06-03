@@ -8,28 +8,29 @@ import {
   partnerUssImage,
 } from '../../data/pic';
 import { BrandLogo } from './BrandLogo';
+import { useLanguage } from './SiteTranslator';
 
 const heroHighlights = [
-  'Japan, China, Macau and selected overseas markets',
-  'Sourcing, shipping and local handover support',
-  'Private buyers, dealers and business partners',
+  { en: 'Japan, China, Macau and selected overseas markets', zh: '日本、中国、澳门及其他精选海外市场' },
+  { en: 'Sourcing, shipping and local handover support', zh: '车源寻找、运输协调与本地交付支持' },
+  { en: 'Private buyers, dealers and business partners', zh: '服务个人客户、车商及商业合作伙伴' },
 ];
 
 const heroStats = [
   {
-    label: 'Vehicle choice',
-    value: 'Multi-Market',
-    note: 'Access vehicle options across trusted overseas and local channels',
+    label: { en: 'Vehicle choice', zh: '车辆选择' },
+    value: { en: 'Multi-Market', zh: '多市场' },
+    note: { en: 'Access vehicle options across trusted overseas and local channels', zh: '通过可信海外及本地渠道获取更多车型选择' },
   },
   {
-    label: 'Supply channels',
-    value: 'Beyond Japan',
-    note: 'Japanese auctions, Chinese suppliers, Macau opportunities and more',
+    label: { en: 'Supply channels', zh: '供应渠道' },
+    value: { en: 'Beyond Japan', zh: '不止日本' },
+    note: { en: 'Japanese auctions, Chinese suppliers, Macau opportunities and more', zh: '覆盖日本拍卖、中国供应商、澳门市场机会等' },
   },
   {
-    label: 'NZ support',
-    value: 'Local Delivery',
-    note: 'Clear communication from sourcing brief to handover support',
+    label: { en: 'NZ support', zh: '新西兰支持' },
+    value: { en: 'Local Delivery', zh: '本地交付' },
+    note: { en: 'Clear communication from sourcing brief to handover support', zh: '从找车需求到交付支持，全程清晰沟通' },
   },
 ];
 
@@ -42,6 +43,7 @@ const supplierBadges = [
 
 export function Hero() {
   const [currentImage, setCurrentImage] = useState(0);
+  const { text } = useLanguage();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -85,26 +87,28 @@ export function Hero() {
               style={{ animationDelay: '0.12s' }}
             >
               <span className="h-2 w-2 rounded-full bg-primary" />
-              Auckland Based
+              {text({ en: 'Auckland Based', zh: '奥克兰本地' })}
               <span className="text-white/35">|</span>
-              Global Vehicle Sourcing
+              {text({ en: 'Global Vehicle Sourcing', zh: '全球车源采购' })}
             </div>
 
             <h1
               className="animate-slideUp text-[2.55rem] leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[5.75rem]"
               style={{ animationDelay: '0.2s' }}
             >
-              Global vehicle <span className="text-primary">sourcing</span>.
+              {text({ en: 'Global vehicle', zh: '全球车源' })} <span className="text-primary">{text({ en: 'sourcing', zh: '采购' })}</span>.
               <br />
-              Delivered locally in New Zealand.
+              {text({ en: 'Delivered locally in New Zealand.', zh: '新西兰本地交付。' })}
             </h1>
 
             <p
               className="mt-4 max-w-2xl animate-slideUp text-[0.98rem] leading-7 text-white/72 sm:mt-6 md:text-xl md:leading-8"
               style={{ animationDelay: '0.3s' }}
             >
-              Inno Group connects New Zealand customers, dealers and partners with trusted vehicle
-              sources from Japan, China, Macau and selected overseas markets.
+              {text({
+                en: 'Inno Group connects New Zealand customers, dealers and partners with trusted vehicle sources from Japan, China, Macau and selected overseas markets.',
+                zh: 'Inno Group 连接新西兰客户、车商和合作伙伴，对接日本、中国、澳门及其他海外优质车源。',
+              })}
             </p>
 
             <div
@@ -113,10 +117,10 @@ export function Hero() {
             >
               {heroHighlights.map((item) => (
                 <span
-                  key={item}
+                  key={text(item)}
                   className="rounded-full border border-white/12 bg-white/7 px-3 py-1.5 text-[11px] leading-5 text-white/74 backdrop-blur-sm sm:px-4 sm:py-2 sm:text-sm"
                 >
-                  {item}
+                  {text(item)}
                 </span>
               ))}
             </div>
@@ -126,17 +130,17 @@ export function Hero() {
               style={{ animationDelay: '0.5s' }}
             >
               <a href="/vehicles/china" className="button-primary w-full sm:w-auto">
-                Browse China Vehicles
+                {text({ en: 'Browse China Vehicles', zh: '浏览中国车型' })}
                 <ArrowRight className="h-5 w-5" />
               </a>
 
               <a href="#quote" className="button-secondary-dark w-full sm:w-auto">
-                Source a Vehicle
+                {text({ en: 'Source a Vehicle', zh: '寻找车辆' })}
                 <ArrowRight className="h-5 w-5" />
               </a>
 
               <a href="#partners" className="button-secondary-dark w-full sm:w-auto">
-                Partner With Us
+                {text({ en: 'Partner With Us', zh: '合作洽谈' })}
                 <ArrowRight className="h-5 w-5" />
               </a>
             </div>
@@ -165,10 +169,10 @@ export function Hero() {
             <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
-                  Why Clients Start Here
+                  {text({ en: 'Why Clients Start Here', zh: '客户为什么从这里开始' })}
                 </p>
                 <p className="mt-2 text-sm text-white/62">
-                  A multi-market sourcing network built for New Zealand.
+                  {text({ en: 'A multi-market sourcing network built for New Zealand.', zh: '为新西兰打造的多市场车源网络。' })}
                 </p>
               </div>
 
@@ -191,21 +195,23 @@ export function Hero() {
                   className="rounded-[22px] border border-white/8 bg-black/18 p-4 sm:rounded-[24px] sm:p-5"
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/42">
-                    {stat.label}
+                    {text(stat.label)}
                   </p>
-                  <p className="mt-2 text-[1.7rem] font-semibold text-white sm:text-3xl">{stat.value}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/62 sm:leading-7">{stat.note}</p>
+                  <p className="mt-2 text-[1.7rem] font-semibold text-white sm:text-3xl">{text(stat.value)}</p>
+                  <p className="mt-2 text-sm leading-6 text-white/62 sm:leading-7">{text(stat.note)}</p>
                 </div>
               ))}
             </div>
 
             <div className="mt-6 rounded-[24px] border border-primary/18 bg-primary/10 p-4 sm:mt-8 sm:rounded-[26px] sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/82">
-                Typical Brief
+                {text({ en: 'Typical Brief', zh: '典型需求' })}
               </p>
               <p className="mt-3 text-base leading-7 text-white/86 sm:text-lg sm:leading-8">
-                "Find the right model, confirm the channel, understand the landed position, and
-                deliver with local support."
+                {text({
+                  en: '"Find the right model, confirm the channel, understand the landed position, and deliver with local support."',
+                  zh: '“找到合适车型，确认车源渠道，算清落地成本，并提供本地交付支持。”',
+                })}
               </p>
             </div>
           </div>

@@ -1,145 +1,80 @@
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-declare global {
-  interface Window {
-    googleTranslateElementInit?: () => void;
-    google?: {
-      translate?: {
-        TranslateElement: new (
-          options: {
-            pageLanguage: string;
-            includedLanguages: string;
-            autoDisplay: boolean;
-          },
-          elementId: string
-        ) => void;
-      };
-    };
-  }
-}
+export type Language = 'en' | 'zh';
+export type LocalizedText = string | { en: string; zh: string };
 
-const TRANSLATE_SCRIPT_ID = 'google-translate-script';
-const TRANSLATE_ELEMENT_ID = 'google_translate_element';
+type LanguageContextValue = {
+  language: Language;
+  setLanguage: (language: Language) => void;
+  text: (copy: LocalizedText) => string;
+};
 
-function setCookie(name: string, value: string) {
-  document.cookie = `${name}=${value};path=/;max-age=31536000`;
-  document.cookie = `${name}=${value};path=/;domain=${window.location.hostname};max-age=31536000`;
-}
+const LanguageContext = createContext<LanguageContextValue | null>(null);
+const STORAGE_KEY = 'inno-language';
 
-function clearCookie(name: string) {
-  document.cookie = `${name}=;path=/;max-age=0`;
-  document.cookie = `${name}=;path=/;domain=${window.location.hostname};max-age=0`;
-}
+export function SiteTranslatorProvider({ children }: { children?: ReactNode }) {
+  const [language, setLanguageState] = useState<Language>('en');
 
-function triggerGoogleTranslate(language: 'en' | 'zh-CN') {
-  const select = document.querySelector<HTMLSelectElement>('.goog-te-combo');
-
-  if (language === 'en') {
-    clearCookie('googtrans');
-    window.location.reload();
-    return;
-  }
-
-  setCookie('googtrans', `/en/${language}`);
-
-  if (select) {
-    select.value = language;
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-    return;
-  }
-
-  window.location.reload();
-}
-
-export function SiteTranslatorProvider() {
   useEffect(() => {
-    window.googleTranslateElementInit = () => {
-      if (!window.google?.translate) return;
-
-      new window.google.translate.TranslateElement(
-        {
-          pageLanguage: 'en',
-          includedLanguages: 'en,zh-CN',
-          autoDisplay: false,
-        },
-        TRANSLATE_ELEMENT_ID
-      );
-    };
-
-    if (!document.getElementById(TRANSLATE_SCRIPT_ID)) {
-      const script = document.createElement('script');
-      script.id = TRANSLATE_SCRIPT_ID;
-      script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-      script.async = true;
-      document.body.appendChild(script);
+    const savedLanguage = window.localStorage.getItem(STORAGE_KEY);
+    if (savedLanguage === 'zh') {
+      setLanguageState('zh');
+      document.documentElement.lang = 'zh-CN';
     }
   }, []);
 
-  return (
-    <>
-      <div id={TRANSLATE_ELEMENT_ID} className="fixed -left-[9999px] top-0 h-0 w-0 overflow-hidden" />
-      <style>{`
-        .goog-te-banner-frame,
-        .goog-te-gadget-icon,
-        .goog-te-balloon-frame,
-        #goog-gt-tt {
-          display: none !important;
-        }
+  const setLanguage = (nextLanguage: Language) => {
+    setLanguageState(nextLanguage);
+    window.localStorage.setItem(STORAGE_KEY, nextLanguage);
+    document.documentElement.lang = nextLanguage === 'zh' ? 'zh-CN' : 'en-NZ';
+  };
 
-        body {
-          top: 0 !important;
-        }
-
-        .skiptranslate {
-          font-size: 0 !important;
-        }
-      `}</style>
-    </>
+  const value = useMemo<LanguageContextValue>(
+    () => ({
+      language,
+      setLanguage,
+      text: (copy) => (typeof copy === 'string' ? copy : copy[language]),
+    }),
+    [language]
   );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+
+  if (!context) {
+    throw new Error('useLanguage must be used inside SiteTranslatorProvider');
+  }
+
+  return context;
 }
 
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
-  const [activeLanguage, setActiveLanguage] = useState<'en' | 'zh-CN'>('en');
-
-  useEffect(() => {
-    const cookie = document.cookie
-      .split('; ')
-      .find((entry) => entry.startsWith('googtrans='))
-      ?.split('=')[1];
-
-    if (cookie?.includes('/zh-CN')) {
-      setActiveLanguage('zh-CN');
-    }
-  }, []);
-
+  const { language, setLanguage } = useLanguage();
   const buttonBase =
-    'notranslate rounded-full px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-colors';
+    'rounded-full px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-colors';
   const wrapperClass = compact
-    ? 'notranslate grid grid-cols-2 gap-2 rounded-2xl border border-black/8 bg-white/70 p-1.5'
-    : 'notranslate inline-flex items-center gap-1 rounded-full border border-black/8 bg-white/64 p-1 shadow-sm';
+    ? 'grid grid-cols-2 gap-2 rounded-2xl border border-black/8 bg-white/70 p-1.5'
+    : 'inline-flex items-center gap-1 rounded-full border border-black/8 bg-white/64 p-1 shadow-sm';
 
   return (
-    <div className={wrapperClass} translate="no" aria-label="Language switcher">
+    <div className={wrapperClass} aria-label="Language switcher">
       <button
         type="button"
-        onClick={() => {
-          setActiveLanguage('en');
-          triggerGoogleTranslate('en');
-        }}
+        onClick={() => setLanguage('en')}
         className={`${buttonBase} ${
-          activeLanguage === 'en' ? 'bg-[#151515] text-white' : 'text-foreground/68 hover:text-foreground'
+          language === 'en' ? 'bg-[#151515] text-white' : 'text-foreground/68 hover:text-foreground'
         }`}
       >
         EN
       </button>
       <button
         type="button"
-        onClick={() => {
-          setActiveLanguage('zh-CN');
-          triggerGoogleTranslate('zh-CN');
-        }}
+        onClick={() => setLanguage('zh')}
         className={`${buttonBase} ${
-          activeLanguage === 'zh-CN' ? 'bg-primary text-white' : 'text-foreground/68 hover:text-foreground'
+          language === 'zh' ? 'bg-primary text-white' : 'text-foreground/68 hover:text-foreground'
         }`}
       >
         中文

@@ -2,16 +2,16 @@ import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { logoImage } from '../../data/pic';
-import { LanguageSwitcher } from './SiteTranslator';
+import { LanguageSwitcher, useLanguage } from './SiteTranslator';
 
 const navigationLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/vehicles/china', label: 'Cars from China' },
-  { to: '/jpauc-feed', label: 'Cars From Japan' },
-  { to: '/services', label: 'Services' },
-  { to: '/finance', label: 'Finance' },
-  { to: '/about', label: 'About' },
-  { to: '/contact', label: 'Contact' },
+  { to: '/', label: { en: 'Home', zh: '首页' } },
+  { to: '/vehicles/china', label: { en: 'Cars from China', zh: '中国车源' } },
+  { to: '/jpauc-feed', label: { en: 'Cars From Japan', zh: '日本车源' } },
+  { to: '/services', label: { en: 'Services', zh: '服务支持' } },
+  { to: '/finance', label: { en: 'Finance', zh: '车辆贷款' } },
+  { to: '/about', label: { en: 'About', zh: '关于我们' } },
+  { to: '/contact', label: { en: 'Contact', zh: '联系我们' } },
 ];
 
 const GlobeIcon = () => (
@@ -35,6 +35,7 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const location = useLocation();
+  const { text } = useLanguage();
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -89,7 +90,7 @@ export function Navbar() {
           <div className="hidden items-center gap-3 md:flex">
             {navigationLinks.map((link) => (
               <Link key={link.to} to={link.to} className={navLinkClass(link.to)}>
-                {link.label}
+                {text(link.label)}
               </Link>
             ))}
           </div>
@@ -100,7 +101,7 @@ export function Navbar() {
               to="/contact"
               className="inline-flex items-center whitespace-nowrap rounded-full bg-[#151515] px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-0.5 hover:bg-primary"
             >
-              Request Quote
+              {text({ en: 'Request Quote', zh: '获取报价' })}
             </Link>
           </div>
 
@@ -122,7 +123,7 @@ export function Navbar() {
                   className={mobileNavLinkClass(link.to)}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <span>{link.label}</span>
+                  <span>{text(link.label)}</span>
                   <span className="text-current/55">/</span>
                 </Link>
               ))}
@@ -132,7 +133,7 @@ export function Navbar() {
                 className="mt-3 inline-flex w-full items-center justify-center whitespace-nowrap rounded-2xl bg-[#151515] px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.16em] text-white"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Request Quote
+                {text({ en: 'Request Quote', zh: '获取报价' })}
               </Link>
 
               <LanguageSwitcher compact />

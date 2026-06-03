@@ -14,14 +14,15 @@ export function Root() {
     location.pathname.startsWith('/contract/');
 
   return (
-    <div className="min-h-screen bg-background">
-      <SEO />
-      <SiteTranslatorProvider />
-      <ScrollToTop />
-      {isWorkflowRoute ? null : <Navbar />}
-      <Outlet />
-      {isWorkflowRoute ? null : <Footer />}
-      {isWorkflowRoute ? null : <StickyCTA />}
-    </div>
+    <SiteTranslatorProvider>
+      <div className="min-h-screen bg-background">
+        <SEO />
+        <ScrollToTop />
+        {isWorkflowRoute ? null : <Navbar />}
+        <Outlet />
+        {isWorkflowRoute ? null : <Footer />}
+        {isWorkflowRoute ? null : <StickyCTA />}
+      </div>
+    </SiteTranslatorProvider>
   );
 }

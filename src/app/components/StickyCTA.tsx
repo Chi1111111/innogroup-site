@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Calculator, MessageCircle, X } from 'lucide-react';
 import { useLocation } from 'react-router';
+import { useLanguage } from './SiteTranslator';
 
 export function StickyCTA() {
   const [isVisible, setIsVisible] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const location = useLocation();
+  const { text } = useLanguage();
   const showCalculatorCta = location.pathname !== '/services';
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export function StickyCTA() {
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/42">
-          Quick Actions
+          {text({ en: 'Quick Actions', zh: '快捷操作' })}
         </p>
         <div className="flex flex-col gap-2.5 sm:flex-row">
           {showCalculatorCta ? (
@@ -40,7 +42,7 @@ export function StickyCTA() {
               className="flex flex-1 items-center justify-center gap-2 rounded-[18px] border border-black/8 bg-black/[0.04] px-4 py-3 text-center text-sm font-semibold text-foreground transition-all active:scale-95"
             >
               <Calculator className="w-5 h-5" />
-              <span>Landing Price</span>
+              <span>{text({ en: 'Landing Price', zh: '落地价' })}</span>
             </a>
           ) : null}
           <a
@@ -64,7 +66,7 @@ export function StickyCTA() {
                 className="group flex items-center gap-3 rounded-2xl bg-primary px-6 py-4 font-semibold text-white shadow-[0_22px_50px_rgba(199,162,74,0.32)] transition-all hover:scale-[1.02] hover:bg-primary/90"
               >
                 <Calculator className="w-6 h-6" />
-                <span>Landing Price</span>
+              <span>{text({ en: 'Landing Price', zh: '落地价' })}</span>
               </a>
             ) : null}
 
@@ -75,7 +77,7 @@ export function StickyCTA() {
               className="group flex items-center gap-3 rounded-2xl bg-[#151515] px-6 py-4 font-semibold text-white shadow-[0_22px_50px_rgba(17,17,17,0.28)] transition-all hover:scale-[1.02] hover:bg-[#202020]"
             >
               <MessageCircle className="w-6 h-6" />
-              <span>Chat on WhatsApp</span>
+              <span>{text({ en: 'Chat on WhatsApp', zh: 'WhatsApp 咨询' })}</span>
             </a>
 
             <button
@@ -83,7 +85,7 @@ export function StickyCTA() {
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-800 px-4 py-2 text-sm text-white transition-all hover:bg-gray-700"
             >
               <X className="w-4 h-4" />
-              <span>Minimize</span>
+              <span>{text({ en: 'Minimize', zh: '收起' })}</span>
             </button>
           </>
         ) : (
