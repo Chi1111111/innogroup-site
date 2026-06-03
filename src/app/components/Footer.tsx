@@ -1,5 +1,6 @@
 ﻿import { Link } from 'react-router';
 import { BrandLogo } from './BrandLogo';
+import { LanguageSwitcher } from './SiteTranslator';
 
 export function Footer() {
   return (
@@ -34,14 +35,13 @@ export function Footer() {
               <li><Link to="/contact" className="inline-block transition-colors hover:text-primary">Contact</Link></li>
             </ul>
 
-            <h4 className="mb-5 mt-8 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Chinese</h4>
-            <ul className="space-y-3 text-white/62">
-              <li><Link to="/zh" className="inline-block transition-colors hover:text-primary">涓枃棣栭〉</Link></li>
-              <li><Link to="/zh/services" className="inline-block transition-colors hover:text-primary">杩涘彛鍞悗</Link></li>
-              <li><Link to="/zh/finance" className="inline-block transition-colors hover:text-primary">杞﹁締璐锋</Link></li>
-              <li><Link to="/zh/about" className="inline-block transition-colors hover:text-primary">鍏充簬鎴戜滑</Link></li>
-              <li><Link to="/zh/contact" className="inline-block transition-colors hover:text-primary">鑱旂郴鍜ㄨ</Link></li>
-            </ul>
+            <h4 className="mb-5 mt-8 text-sm font-semibold uppercase tracking-[0.2em] text-primary">Language</h4>
+            <div className="max-w-[190px]">
+              <LanguageSwitcher compact />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-white/52">
+              Translate the current page instantly without opening a separate Chinese site.
+            </p>
           </div>
 
           <div>

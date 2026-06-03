@@ -38,9 +38,7 @@ function setAlternateLinks(pathname: string) {
     .forEach((element) => element.remove());
 
   const pairs = SEO_ROUTE_PAIRS as Record<string, string>;
-  const englishPath = pathname.startsWith('/zh')
-    ? Object.entries(pairs).find(([, zhPath]) => zhPath === pathname)?.[0]
-    : pathname;
+  const englishPath = pathname;
   const chinesePath = englishPath ? pairs[englishPath] : undefined;
 
   if (!englishPath || !chinesePath) return;
@@ -80,13 +78,12 @@ function getRouteMeta(pathname: string) {
 function getBreadcrumbItems(pathname: string) {
   const segments = pathname.split('/').filter(Boolean);
   const names: Record<string, string> = {
-    zh: '中文首页',
-    vehicles: pathname.startsWith('/zh') ? '车辆咨询' : 'Vehicles',
+    vehicles: 'Vehicles',
     china: 'Cars from China',
-    services: pathname.startsWith('/zh') ? '服务与售后' : 'Services',
-    finance: pathname.startsWith('/zh') ? '车辆贷款' : 'Finance',
-    about: pathname.startsWith('/zh') ? '关于我们' : 'About',
-    contact: pathname.startsWith('/zh') ? '联系咨询' : 'Contact',
+    services: 'Services',
+    finance: 'Finance',
+    about: 'About',
+    contact: 'Contact',
     'baw-m8': 'BAW M8 EV / REEV MPV',
     'wox-air': 'WOX AIR',
     'wox-nebula': 'WOX Nebula',
@@ -94,21 +91,19 @@ function getBreadcrumbItems(pathname: string) {
     'wox-zeny': 'WOX Zeny',
   };
 
-  const homeName = pathname.startsWith('/zh') ? '中文首页' : 'Home';
+  const homeName = 'Home';
   const items = [
     {
       '@type': 'ListItem',
       position: 1,
       name: homeName,
-      item: `${SEO_CONFIG.siteUrl}${pathname.startsWith('/zh') ? '/zh' : ''}`,
+      item: SEO_CONFIG.siteUrl,
     },
   ];
 
   let currentPath = '';
   segments.forEach((segment, index) => {
     currentPath += `/${segment}`;
-    if (currentPath === '/zh') return;
-
     items.push({
       '@type': 'ListItem',
       position: items.length + 1,
@@ -127,8 +122,7 @@ export function SEO() {
     const meta = getRouteMeta(location.pathname);
     const canonicalUrl = `${SEO_CONFIG.siteUrl}${location.pathname === '/' ? '' : location.pathname}`;
     const imageUrl = new URL(SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href;
-    const lang = 'lang' in meta ? meta.lang : 'en-NZ';
-    const isChinese = lang.startsWith('zh');
+    const lang = 'en-NZ';
 
     document.documentElement.lang = lang;
     document.title = meta.title;
@@ -144,8 +138,7 @@ export function SEO() {
 
     setMeta('og:site_name', SEO_CONFIG.siteName, 'property');
     setMeta('og:type', 'website', 'property');
-    setMeta('og:locale', isChinese ? SEO_CONFIG.zhLocale : SEO_CONFIG.locale, 'property');
-    setMeta('og:locale:alternate', isChinese ? SEO_CONFIG.locale : SEO_CONFIG.zhLocale, 'property');
+    setMeta('og:locale', SEO_CONFIG.locale, 'property');
     setMeta('og:title', meta.title, 'property');
     setMeta('og:description', meta.description, 'property');
     setMeta('og:url', canonicalUrl, 'property');
@@ -183,34 +176,34 @@ export function SEO() {
       ],
       hasOfferCatalog: {
         '@type': 'OfferCatalog',
-        name: isChinese ? '车辆服务' : 'Vehicle services',
+        name: 'Vehicle services',
         itemListElement: [
           {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: isChinese ? '日本进口车辆资源代找' : 'Japanese vehicle sourcing',
+              name: 'Japanese vehicle sourcing',
             },
           },
           {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: isChinese ? '进口车落地价与合规咨询' : 'Import landed cost and compliance guidance',
+              name: 'Import landed cost and compliance guidance',
             },
           },
           {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: isChinese ? '二手车与进口车贷款咨询' : 'Used and import car finance enquiries',
+              name: 'Used and import car finance enquiries',
             },
           },
           {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: isChinese ? '购车后售后伙伴支持' : 'After-sales partner support',
+              name: 'After-sales partner support',
             },
           },
         ],
@@ -239,43 +232,24 @@ export function SEO() {
     setJsonLd('inno-faq-schema', {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: isChinese
-        ? [
-            {
-              '@type': 'Question',
-              name: 'Inno Group 可以帮我在奥克兰买二手车吗？',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: '可以。我们可以根据预算、用途、车型和配置，帮你判断适合本地二手车、日本进口车或中国新车渠道，并提供中文购车咨询。',
-              },
-            },
-            {
-              '@type': 'Question',
-              name: '日本进口车落地价包括哪些费用？',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: '通常会包括日本车价、服务费、汇率、GST、运输、清关、合规、注册和其他根据车况产生的费用。',
-              },
-            },
-          ]
-        : [
-            {
-              '@type': 'Question',
-              name: 'Can Inno Group help me buy a used car in Auckland?',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: 'Yes. Inno Group can help Auckland and New Zealand buyers compare local used cars with Japanese import options based on budget, model, mileage, and use case.',
-              },
-            },
-            {
-              '@type': 'Question',
-              name: 'What costs are included in a Japanese import landed price?',
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: 'A landed price can include the Japan vehicle price, service fees, exchange rate, GST, shipping, customs, compliance, registration, and condition-related costs.',
-              },
-            },
-          ],
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'Can Inno Group help me buy a used car in Auckland?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. Inno Group can help Auckland and New Zealand buyers compare local used cars with Japanese import options based on budget, model, mileage, and use case.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What costs are included in a Japanese import landed price?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'A landed price can include the Japan vehicle price, service fees, exchange rate, GST, shipping, customs, compliance, registration, and condition-related costs.',
+          },
+        },
+      ],
     });
     removeJsonLd('inno-vehicle-list-schema');
   }, [location.pathname]);

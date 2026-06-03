@@ -2,7 +2,6 @@ export const SEO_CONFIG = {
   siteName: 'Inno Group Ltd',
   siteUrl: 'https://www.innogroup.co.nz',
   locale: 'en_NZ',
-  zhLocale: 'zh_NZ',
   defaultTitle: 'Import Car Auckland NZ | Vehicle Sourcing | Inno Group',
   defaultDescription:
     'Inno Group helps New Zealand customers, dealers and partners source vehicles from Japan, China, Macau and selected overseas markets with local support.',
@@ -21,13 +20,7 @@ export const SEO_CONFIG = {
   },
 } as const;
 
-export const SEO_ROUTE_PAIRS = {
-  '/': '/zh',
-  '/services': '/zh/services',
-  '/finance': '/zh/finance',
-  '/about': '/zh/about',
-  '/contact': '/zh/contact',
-} as const;
+export const SEO_ROUTE_PAIRS = {} as const;
 
 export const SEO_ROUTES = {
   '/': {
@@ -113,42 +106,5 @@ export const SEO_ROUTES = {
       'Contact Inno Group Ltd in Albany, Auckland for vehicle sourcing, import car quotes, China vehicle enquiries, finance enquiries and tailored recommendations.',
     keywords:
       'vehicle sourcing quote Auckland, import car quote Auckland, China car quote NZ, contact car dealer Auckland, Inno Group contact',
-  },
-  '/zh': {
-    title: '奥克兰车辆进口与买车服务 | Inno Group Ltd',
-    description:
-      'Inno Group Ltd 提供奥克兰买车咨询、日本进口车、中国车源、车辆贷款、落地价估算和售后伙伴支持。',
-    keywords:
-      '奥克兰买车, 新西兰买车, 日本进口车, 中国车源, 进口二手车, 奥克兰车商, 新西兰进口车',
-    lang: 'zh-NZ',
-  },
-  '/zh/services': {
-    title: '车辆进口服务与落地价说明 | Inno Group Ltd',
-    description:
-      '了解日本进口车选车、拍卖、运输、新西兰合规、进口车落地价估算和售后伙伴支持。',
-    keywords:
-      '日本进口车流程, 进口车落地价, 新西兰进口车合规, 奥克兰进口车服务, 日本拍卖车',
-    lang: 'zh-NZ',
-  },
-  '/zh/finance': {
-    title: '新西兰买车贷款与预算规划 | Inno Group Ltd',
-    description:
-      '了解新西兰买车贷款、预算规划、首付、还款周期和二手车或进口车购买前的费用判断。',
-    keywords: '新西兰买车贷款, 奥克兰车贷, 二手车贷款, 日本进口车贷款, 买车预算',
-    lang: 'zh-NZ',
-  },
-  '/zh/about': {
-    title: '关于 Inno Group | 奥克兰车辆进口服务',
-    description:
-      'Inno Group Ltd 位于奥克兰 Albany，帮助新西兰客户了解日本进口车、中国车源、本地二手车和买车后的实际支持。',
-    keywords: 'Inno Group, 奥克兰车商, Albany 二手车, 日本进口车服务, 新西兰华人买车',
-    lang: 'zh-NZ',
-  },
-  '/zh/contact': {
-    title: '中文买车咨询 | 联系 Inno Group Ltd',
-    description:
-      '联系 Inno Group Ltd 获取中文买车建议、日本进口车报价、中国车源咨询、奥克兰二手车咨询和 WhatsApp 支持。',
-    keywords: '中文买车咨询, 奥克兰买车, 日本进口车报价, 奥克兰二手车咨询, 新西兰华人买车',
-    lang: 'zh-NZ',
   },
 } as const;

@@ -2,6 +2,7 @@ import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { logoImage } from '../../data/pic';
+import { LanguageSwitcher } from './SiteTranslator';
 
 const navigationLinks = [
   { to: '/', label: 'Home' },
@@ -94,6 +95,7 @@ export function Navbar() {
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
+            <LanguageSwitcher />
             <Link
               to="/contact"
               className="inline-flex items-center whitespace-nowrap rounded-full bg-[#151515] px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-0.5 hover:bg-primary"
@@ -132,6 +134,8 @@ export function Navbar() {
               >
                 Request Quote
               </Link>
+
+              <LanguageSwitcher compact />
             </div>
           </div>
         )}

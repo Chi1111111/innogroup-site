@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { Root } from './Root';
 import { Home } from './pages/Home';
 import { BawM8Page } from './pages/BawM8Page';
@@ -12,13 +12,6 @@ import { AdminVehicles } from './pages/AdminVehicles';
 import { AdminContracts } from './pages/AdminContracts';
 import { SignContract } from './pages/SignContract';
 import { JpaucFeed } from './pages/JpaucFeed';
-import {
-  ChineseAbout,
-  ChineseContact,
-  ChineseFinance,
-  ChineseHome,
-  ChineseServices,
-} from './pages/ChinesePages';
 
 export const router = createBrowserRouter([
   {
@@ -42,11 +35,11 @@ export const router = createBrowserRouter([
       { path: 'admin/contracts', Component: AdminContracts },
       { path: 'contract/:contractId', Component: SignContract },
       { path: 'sign/:contractId', Component: SignContract },
-      { path: 'zh', Component: ChineseHome },
-      { path: 'zh/services', Component: ChineseServices },
-      { path: 'zh/finance', Component: ChineseFinance },
-      { path: 'zh/about', Component: ChineseAbout },
-      { path: 'zh/contact', Component: ChineseContact },
+      { path: 'zh', Component: () => <Navigate to="/" replace /> },
+      { path: 'zh/services', Component: () => <Navigate to="/services" replace /> },
+      { path: 'zh/finance', Component: () => <Navigate to="/finance" replace /> },
+      { path: 'zh/about', Component: () => <Navigate to="/about" replace /> },
+      { path: 'zh/contact', Component: () => <Navigate to="/contact" replace /> },
     ],
   },
 ]);

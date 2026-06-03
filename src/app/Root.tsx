@@ -4,6 +4,7 @@ import { Footer } from './components/Footer';
 import { ScrollToTop } from './components/ScrollToTop';
 import { StickyCTA } from './components/StickyCTA';
 import { SEO } from './components/SEO';
+import { SiteTranslatorProvider } from './components/SiteTranslator';
 
 export function Root() {
   const location = useLocation();
@@ -15,6 +16,7 @@ export function Root() {
   return (
     <div className="min-h-screen bg-background">
       <SEO />
+      <SiteTranslatorProvider />
       <ScrollToTop />
       {isWorkflowRoute ? null : <Navbar />}
       <Outlet />
