@@ -1,9 +1,9 @@
 import { createBrowserRouter } from 'react-router';
 import { Root } from './Root';
 import { Home } from './pages/Home';
-import { Vehicles } from './pages/Vehicles';
 import { BawM8Page } from './pages/BawM8Page';
 import { ChinaVehicles } from './pages/ChinaVehicles';
+import { WoxAirPage, WoxNebulaPage, WoxSheraPage, WoxZenyPage } from './pages/WoxVehiclePage';
 import { Services } from './pages/Services';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
@@ -18,7 +18,6 @@ import {
   ChineseFinance,
   ChineseHome,
   ChineseServices,
-  ChineseVehicles,
 } from './pages/ChinesePages';
 
 export const router = createBrowserRouter([
@@ -27,10 +26,12 @@ export const router = createBrowserRouter([
     Component: Root,
     children: [
       { index: true, Component: Home },
-      { path: 'vehicles', Component: Vehicles },
       { path: 'vehicles/china', Component: ChinaVehicles },
       { path: 'vehicles/china/baw-m8', Component: BawM8Page },
-      { path: 'vehicles/baw-m8', Component: BawM8Page },
+      { path: 'vehicles/china/wox-air', Component: WoxAirPage },
+      { path: 'vehicles/china/wox-nebula', Component: WoxNebulaPage },
+      { path: 'vehicles/china/wox-shera', Component: WoxSheraPage },
+      { path: 'vehicles/china/wox-zeny', Component: WoxZenyPage },
       { path: 'services', Component: Services },
       { path: 'about', Component: About },
       { path: 'contact', Component: Contact },
@@ -42,7 +43,6 @@ export const router = createBrowserRouter([
       { path: 'contract/:contractId', Component: SignContract },
       { path: 'sign/:contractId', Component: SignContract },
       { path: 'zh', Component: ChineseHome },
-      { path: 'zh/vehicles', Component: ChineseVehicles },
       { path: 'zh/services', Component: ChineseServices },
       { path: 'zh/finance', Component: ChineseFinance },
       { path: 'zh/about', Component: ChineseAbout },

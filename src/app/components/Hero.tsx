@@ -10,26 +10,26 @@ import {
 import { BrandLogo } from './BrandLogo';
 
 const heroHighlights = [
-  'Import car and Japan auction sourcing',
-  'NZ compliance and delivery handled',
-  'After-sales support through trusted partners',
+  'Japan, China, Macau and selected overseas markets',
+  'Sourcing, shipping and local handover support',
+  'Private buyers, dealers and business partners',
 ];
 
 const heroStats = [
   {
     label: 'Vehicle choice',
-    value: 'Spec First',
-    note: 'Choose the model, grade, colour, and options that suit you',
+    value: 'Multi-Market',
+    note: 'Access vehicle options across trusted overseas and local channels',
   },
   {
-    label: 'Stock access',
-    value: 'Japan Direct',
-    note: 'Auction lanes, dealer networks, and selected local stock',
+    label: 'Supply channels',
+    value: 'Beyond Japan',
+    note: 'Japanese auctions, Chinese suppliers, Macau opportunities and more',
   },
   {
-    label: 'Ownership support',
-    value: 'After Purchase',
-    note: 'Parts, repairs, workshop referrals, and practical help',
+    label: 'NZ support',
+    value: 'Local Delivery',
+    note: 'Clear communication from sourcing brief to handover support',
   },
 ];
 
@@ -87,25 +87,24 @@ export function Hero() {
               <span className="h-2 w-2 rounded-full bg-primary" />
               Auckland Based
               <span className="text-white/35">|</span>
-              Import Car Sourcing
+              Global Vehicle Sourcing
             </div>
 
             <h1
               className="animate-slideUp text-[2.55rem] leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[5.75rem]"
               style={{ animationDelay: '0.2s' }}
             >
-              Your next <span className="text-primary">import car</span>.
+              Global vehicle <span className="text-primary">sourcing</span>.
               <br />
-              Sourced directly from Japan.
+              Delivered locally in New Zealand.
             </h1>
 
             <p
               className="mt-4 max-w-2xl animate-slideUp text-[0.98rem] leading-7 text-white/72 sm:mt-6 md:text-xl md:leading-8"
               style={{ animationDelay: '0.3s' }}
             >
-              We help Auckland and New Zealand buyers source Japanese import cars, compare car
-              options, and choose the right model, grade, colour, and features with clear landed
-              pricing and practical support after delivery.
+              Inno Group connects New Zealand customers, dealers and partners with trusted vehicle
+              sources from Japan, China, Macau and selected overseas markets.
             </p>
 
             <div
@@ -126,13 +125,18 @@ export function Hero() {
               className="mt-8 flex flex-col gap-3 animate-slideUp sm:mt-10 sm:flex-row sm:gap-4"
               style={{ animationDelay: '0.5s' }}
             >
-              <a href="#quote" className="button-primary w-full sm:w-auto">
-                Request a Quote
+              <a href="/vehicles/china" className="button-primary w-full sm:w-auto">
+                Browse China Vehicles
                 <ArrowRight className="h-5 w-5" />
               </a>
 
-              <a href="#calculator" className="button-secondary-dark w-full sm:w-auto">
-                Calculate Landing Price
+              <a href="#quote" className="button-secondary-dark w-full sm:w-auto">
+                Source a Vehicle
+                <ArrowRight className="h-5 w-5" />
+              </a>
+
+              <a href="#partners" className="button-secondary-dark w-full sm:w-auto">
+                Partner With Us
                 <ArrowRight className="h-5 w-5" />
               </a>
             </div>
@@ -164,7 +168,7 @@ export function Hero() {
                   Why Clients Start Here
                 </p>
                 <p className="mt-2 text-sm text-white/62">
-                  A cleaner buying path from sourcing to ownership.
+                  A multi-market sourcing network built for New Zealand.
                 </p>
               </div>
 
@@ -200,8 +204,8 @@ export function Hero() {
                 Typical Brief
               </p>
               <p className="mt-3 text-base leading-7 text-white/86 sm:text-lg sm:leading-8">
-                "Hybrid SUV, under $40k, low mileage, tidy history, and easy support after
-                purchase."
+                "Find the right model, confirm the channel, understand the landed position, and
+                deliver with local support."
               </p>
             </div>
           </div>

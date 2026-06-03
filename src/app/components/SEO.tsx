@@ -1,7 +1,6 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useLocation } from 'react-router';
 import { SEO_CONFIG, SEO_ROUTE_PAIRS, SEO_ROUTES } from '../../config/seo';
-import { vehicles } from '../../data/vehicles';
 
 const routeKeys = Object.keys(SEO_ROUTES) as Array<keyof typeof SEO_ROUTES>;
 
@@ -89,6 +88,10 @@ function getBreadcrumbItems(pathname: string) {
     about: pathname.startsWith('/zh') ? '关于我们' : 'About',
     contact: pathname.startsWith('/zh') ? '联系咨询' : 'Contact',
     'baw-m8': 'BAW M8 EV / REEV MPV',
+    'wox-air': 'WOX AIR',
+    'wox-nebula': 'WOX Nebula',
+    'wox-shera': 'WOX Shera Taxi Edition',
+    'wox-zeny': 'WOX Zeny',
   };
 
   const homeName = pathname.startsWith('/zh') ? '中文首页' : 'Home';
@@ -186,7 +189,7 @@ export function SEO() {
             '@type': 'Offer',
             itemOffered: {
               '@type': 'Service',
-              name: isChinese ? '日本进口车车源代找' : 'Japanese vehicle sourcing',
+              name: isChinese ? '日本进口车辆资源代找' : 'Japanese vehicle sourcing',
             },
           },
           {
@@ -222,7 +225,7 @@ export function SEO() {
       inLanguage: lang,
       potentialAction: {
         '@type': 'SearchAction',
-        target: `${SEO_CONFIG.siteUrl}/vehicles?search={search_term_string}`,
+        target: `${SEO_CONFIG.siteUrl}/vehicles/china?search={search_term_string}`,
         'query-input': 'required name=search_term_string',
       },
     });
@@ -243,7 +246,7 @@ export function SEO() {
               name: 'Inno Group 可以帮我在奥克兰买二手车吗？',
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: '可以。我们可以根据预算、用途、车型和配置，帮你判断适合本地二手车还是日本进口车，并提供中文买车咨询。',
+                text: '可以。我们可以根据预算、用途、车型和配置，帮你判断适合本地二手车、日本进口车或中国新车渠道，并提供中文购车咨询。',
               },
             },
             {
@@ -274,41 +277,9 @@ export function SEO() {
             },
           ],
     });
-
-    if (location.pathname === '/vehicles' || location.pathname === '/zh/vehicles') {
-      setJsonLd('inno-vehicle-list-schema', {
-        '@context': 'https://schema.org',
-        '@type': 'ItemList',
-        name: isChinese ? '日本进口预订车辆示例' : 'Japanese import vehicle examples',
-        description: meta.description,
-        itemListElement: vehicles.map((vehicle, index) => ({
-          '@type': 'ListItem',
-          position: index + 1,
-          item: {
-            '@type': 'Vehicle',
-            name: vehicle.name,
-            image: vehicle.image.startsWith('http')
-              ? vehicle.image
-              : new URL(vehicle.image, SEO_CONFIG.siteUrl).href,
-            modelDate: vehicle.year,
-            mileageFromOdometer: vehicle.mileage,
-            offers: {
-              '@type': 'Offer',
-              priceCurrency: 'NZD',
-              price: vehicle.priceRange.replace(/[^0-9.]/g, ''),
-              availability: 'https://schema.org/PreOrder',
-              seller: {
-                '@type': 'AutoDealer',
-                name: SEO_CONFIG.siteName,
-              },
-            },
-          },
-        })),
-      });
-    } else {
-      removeJsonLd('inno-vehicle-list-schema');
-    }
+    removeJsonLd('inno-vehicle-list-schema');
   }, [location.pathname]);
 
   return null;
 }
+

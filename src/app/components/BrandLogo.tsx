@@ -91,7 +91,7 @@ export function BrandLogo({ variant = 'hero', className = '', eyebrow }: BrandLo
           <span
             className={`${subtitleClasses[variant]} ${isLightPillVariant ? 'brand-logo-subtitle' : ''}`.trim()}
           >
-            Japan Direct Sourcing
+            Global Vehicle Sourcing
           </span>
         </div>
       </div>

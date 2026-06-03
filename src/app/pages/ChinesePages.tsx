@@ -27,20 +27,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { BrandLogo } from '../components/BrandLogo';
-import { VehicleCard } from '../components/VehicleCard';
 import { heroGalleryImages } from '../../data/pic';
-import { vehicles } from '../../data/vehicles';
-
-const vehicleCardLabels = {
-  viewLarger: '查看大图',
-  enquireNow: '立即咨询',
-  openGallery: '打开车辆图片',
-  closeGallery: '关闭图片',
-  previousImage: '上一张图片',
-  nextImage: '下一张图片',
-  whatsappMessage: ({ name, year, mileage }: { name: string; year: string; mileage: string }) =>
-    `你好，我想咨询 ${name}（${year}，${mileage}）。可以发我更多信息吗？`,
-};
 
 const homeStats = [
   ['车辆选择', '先看需求', '按车型、等级、颜色和配置找车，而不是只看现车。'],
@@ -329,48 +316,6 @@ export function ChineseHome() {
 
       <QuoteBlock />
     </>
-  );
-}
-
-export function ChineseVehicles() {
-  return (
-    <div className="pt-20">
-      <PageHeader
-        icon={Car}
-        eyebrow="车辆示例"
-        title="我们可以帮你寻找的"
-        highlight="日本进口车"
-        subtitle="这些车辆只是预订车源示例，用来展示我们可以从日本协助寻找的车型类型。如果你想看更多选择，请联系我们按预算和需求推荐。"
-      />
-      <section className="bg-white px-4 py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-16 space-y-4 text-center">
-            <div className="inline-block rounded-full bg-primary/10 px-4 py-2">
-              <span className="text-sm text-primary">示例车辆</span>
-            </div>
-            <h2 className="text-4xl text-foreground md:text-5xl">几款常见热门示例</h2>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              页面上的车辆不是全部库存，而是日本预订车源示例。想找其他品牌、年份、预算或用途，可以直接联系我们。
-            </p>
-          </div>
-          <div className="mb-10 rounded-3xl border border-primary/15 bg-gradient-to-r from-primary/8 via-primary/5 to-transparent px-6 py-5 text-center">
-            <p className="text-base font-medium text-foreground md:text-lg">这里展示的车辆均为日本进口预订示例。</p>
-            <p className="mt-2 text-sm text-muted-foreground md:text-base">如果你想找不同车型，把品牌、预算、年份或使用场景发给我们，我们会建议更匹配的选择。</p>
-          </div>
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {vehicles.map((vehicle) => (
-              <VehicleCard
-                key={vehicle.name}
-                {...vehicle}
-                availability={vehicle.availability === 'Pre Order' ? '可预订' : vehicle.availability}
-                labels={vehicleCardLabels}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-      <FinalCta />
-    </div>
   );
 }
 

@@ -5,9 +5,8 @@ import { logoImage } from '../../data/pic';
 
 const navigationLinks = [
   { to: '/', label: 'Home' },
-  { to: '/vehicles', label: 'Vehicles' },
   { to: '/vehicles/china', label: 'Cars from China' },
-  { to: '/jpauc-feed', label: 'Cars Form Japan' },
+  { to: '/jpauc-feed', label: 'Cars From Japan' },
   { to: '/services', label: 'Services' },
   { to: '/finance', label: 'Finance' },
   { to: '/about', label: 'About' },
@@ -40,11 +39,8 @@ export function Navbar() {
     if (path === '/') {
       return location.pathname === '/';
     }
-    if (path === '/vehicles') {
-      return location.pathname === '/vehicles';
-    }
     if (path === '/vehicles/china') {
-      return location.pathname.startsWith('/vehicles/china') || location.pathname === '/vehicles/baw-m8';
+      return location.pathname.startsWith('/vehicles/china');
     }
     return location.pathname.startsWith(path);
   };
