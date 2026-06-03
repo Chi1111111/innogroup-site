@@ -19,14 +19,16 @@ export function SiteTranslatorProvider({ children }: { children?: ReactNode }) {
     const savedLanguage = window.localStorage.getItem(STORAGE_KEY);
     if (savedLanguage === 'zh') {
       setLanguageState('zh');
-      document.documentElement.lang = 'zh-CN';
     }
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en-NZ';
+  }, [language]);
 
   const setLanguage = (nextLanguage: Language) => {
     setLanguageState(nextLanguage);
     window.localStorage.setItem(STORAGE_KEY, nextLanguage);
-    document.documentElement.lang = nextLanguage === 'zh' ? 'zh-CN' : 'en-NZ';
   };
 
   const value = useMemo<LanguageContextValue>(

@@ -3,6 +3,7 @@ import emailjs from '@emailjs/browser';
 import { ArrowLeft, ArrowRight, BatteryCharging, Check, ChevronDown, Mail, X } from 'lucide-react';
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
 import { bawM8Colours, bawM8Images, bawM8Versions } from '../../data/bawM8';
+import { useLanguage } from '../components/SiteTranslator';
 
 type VersionId = (typeof bawM8Versions)[number]['id'];
 
@@ -116,6 +117,7 @@ function BawM8HeroConfigurator({
   selectedId: VersionId;
   onSelect: (id: VersionId) => void;
 }) {
+  const { text } = useLanguage();
   const [selectedColour, setSelectedColour] = useState(bawM8Colours[1]);
   const [slideIndex, setSlideIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -142,15 +144,17 @@ function BawM8HeroConfigurator({
           <div className="space-y-5">
             <div className="section-kicker">
               <BatteryCharging className="h-4 w-4" />
-              Cars from China
+              {text({ en: 'Cars from China', zh: '中国车源' })}
             </div>
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary/82">
               Model 01
             </p>
             <h1>BAW M8 EV / REEV MPV</h1>
             <p className="max-w-2xl text-lg leading-8 text-foreground/72">
-              A practical new-energy 7/9-seater people mover available for direct import to New
-              Zealand.
+              {text({
+                en: 'A practical new-energy 7/9-seater people mover available for direct import to New Zealand.',
+                zh: '一款可面向新西兰直采进口的新能源 7/9 座 MPV。',
+              })}
             </p>
           </div>
 
@@ -208,7 +212,7 @@ function BawM8HeroConfigurator({
               <div className="space-y-7">
                 <div className="space-y-3">
                   <p className="text-sm font-bold uppercase tracking-[0.16em] text-foreground/62">
-                    Exterior colour
+                    {text({ en: 'Exterior colour', zh: '车身颜色' })}
                   </p>
                   <div className="flex flex-wrap gap-3">
                     {bawM8Colours.map((colour, index) => (
@@ -236,7 +240,7 @@ function BawM8HeroConfigurator({
 
                 <div className="space-y-3">
                   <p className="text-sm font-bold uppercase tracking-[0.16em] text-foreground/62">
-                    Choose configuration
+                    {text({ en: 'Choose configuration', zh: '选择配置' })}
                   </p>
                   <div className="space-y-3">
                     {bawM8Versions.map((version) => {
@@ -270,14 +274,16 @@ function BawM8HeroConfigurator({
                     })}
                   </div>
                   <p className="text-xs leading-5 text-muted-foreground">
-                    Pricing is subject to final specification, exchange rate, shipping, GST,
-                    compliance and registration.
+                    {text({
+                      en: 'Pricing is subject to final specification, exchange rate, shipping, GST, compliance and registration.',
+                      zh: '价格会根据最终配置、汇率、海运、GST、合规和上牌情况确认。',
+                    })}
                   </p>
                 </div>
               </div>
 
               <button type="button" onClick={scrollToQuote} className="button-primary mt-8 w-full">
-                Request this configuration
+                {text({ en: 'Request this configuration', zh: '咨询此配置' })}
                 <ArrowRight className="h-5 w-5" />
               </button>
             </div>
@@ -307,15 +313,19 @@ function BawM8HeroConfigurator({
 }
 
 function BawM8PriceAndDifferences({ selectedId }: { selectedId: VersionId }) {
+  const { text } = useLanguage();
   const selectedIndex = bawM8Versions.findIndex((version) => version.id === selectedId);
 
   return (
     <section className="px-4 py-12">
       <div className="section-shell space-y-8">
         <div className="animate-slideUp space-y-4">
-          <div className="section-kicker">Differences</div>
+          <div className="section-kicker">{text({ en: 'Differences', zh: '配置差异' })}</div>
           <p className="max-w-4xl text-sm text-muted-foreground">
-            The table below focuses on what changes between versions.
+            {text({
+              en: 'The table below focuses on what changes between versions.',
+              zh: '下方表格重点展示不同版本之间的配置差异。',
+            })}
           </p>
           <div className="overflow-hidden rounded-[24px] border border-black/6 bg-white shadow-[0_24px_80px_rgba(17,17,17,0.08)]">
             <div className="overflow-x-auto">
@@ -323,7 +333,7 @@ function BawM8PriceAndDifferences({ selectedId }: { selectedId: VersionId }) {
                 <thead>
                   <tr className="bg-[#161514] text-white">
                     <th className="w-[210px] px-5 py-4 text-sm font-semibold uppercase tracking-[0.12em]">
-                      Configuration
+                      {text({ en: 'Configuration', zh: '配置' })}
                     </th>
                     {bawM8Versions.map((version) => (
                       <th key={version.id} className="px-5 py-4 text-sm font-semibold">
@@ -363,17 +373,20 @@ function BawM8PriceAndDifferences({ selectedId }: { selectedId: VersionId }) {
 }
 
 function BawM8Options() {
+  const { text } = useLanguage();
   const [openGroup, setOpenGroup] = useState(0);
 
   return (
     <section className="px-4 py-12">
       <div className="section-shell grid animate-slideUp gap-8 lg:grid-cols-[0.72fr_1.28fr]">
         <div className="space-y-4">
-          <div className="section-kicker">Options</div>
-          <h2>Confirm before order</h2>
+          <div className="section-kicker">{text({ en: 'Options', zh: '选项' })}</div>
+          <h2>{text({ en: 'Confirm before order', zh: '下单前确认' })}</h2>
           <p>
-            These are the practical option and confirmation items we check before placing an import
-            order.
+            {text({
+              en: 'These are the practical option and confirmation items we check before placing an import order.',
+              zh: '这些是下进口订单前需要确认的选项和实际事项。',
+            })}
           </p>
         </div>
 
@@ -410,6 +423,7 @@ function BawM8Options() {
 }
 
 function BawM8QuoteForm({ selectedId }: { selectedId: VersionId }) {
+  const { text } = useLanguage();
   const selected = bawM8Versions.find((version) => version.id === selectedId) ?? bawM8Versions[0];
   const [formData, setFormData] = useState({
     name: '',
@@ -465,7 +479,10 @@ function BawM8QuoteForm({ selectedId }: { selectedId: VersionId }) {
         EMAILJS_CONFIG.publicKey
       );
 
-      alert("Thank you for your BAW M8 enquiry. We'll be in touch within 24 hours.");
+      alert(text({
+        en: "Thank you for your BAW M8 enquiry. We'll be in touch within 24 hours.",
+        zh: '感谢咨询 BAW M8。我们会在 24 小时内联系你。',
+      }));
       setFormData({
         name: '',
         phone: '',
@@ -478,7 +495,10 @@ function BawM8QuoteForm({ selectedId }: { selectedId: VersionId }) {
       });
     } catch (error) {
       console.error('Error sending BAW M8 enquiry:', error);
-      alert('Sorry, there was an error sending your enquiry. Please try again or contact us directly.');
+      alert(text({
+        en: 'Sorry, there was an error sending your enquiry. Please try again or contact us directly.',
+        zh: '抱歉，咨询发送失败。请重试或直接联系我们。',
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -494,47 +514,53 @@ function BawM8QuoteForm({ selectedId }: { selectedId: VersionId }) {
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20">
             <Mail className="h-6 w-6 text-primary" />
           </div>
-          <h2 className="text-white">Request BAW M8 Import Quote</h2>
+          <h2 className="text-white">
+            {text({ en: 'Request BAW M8 Import Quote', zh: '咨询 BAW M8 进口报价' })}
+          </h2>
           <p className="mt-4 text-white/72">
-            We will confirm availability, specification, landed pricing and compliance pathway
-            before order.
+            {text({
+              en: 'We will confirm availability, specification, landed pricing and compliance pathway before order.',
+              zh: '下单前我们会确认供应、配置、落地价格和合规路径。',
+            })}
           </p>
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
             <p className="text-sm text-white/76">
-              Source-file note: supplied specification is M8 EV 505km Left-hand Drive - General
-              Version. RHD, REEV, warranty, charging and parts support must be confirmed.
+              {text({
+                en: 'Source-file note: supplied specification is M8 EV 505km Left-hand Drive - General Version. RHD, REEV, warranty, charging and parts support must be confirmed.',
+                zh: '资料备注：当前规格来自 M8 EV 505km 左舵通用版本。右舵、REEV、质保、充电和零件支持均需进一步确认。',
+              })}
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="section-card space-y-5 p-5 sm:p-8">
           <label className="space-y-2">
-            <span>Selected configuration</span>
+            <span>{text({ en: 'Selected configuration', zh: '选择配置' })}</span>
             <select name="configuration" value={formData.configuration} onChange={handleChange} className={inputClass}>
               {bawM8Versions.map((version) => (
                 <option key={version.id}>{version.version}</option>
               ))}
-              <option>REEV option - please confirm availability</option>
-              <option>Not sure</option>
+              <option>{text({ en: 'REEV option - please confirm availability', zh: 'REEV 版本 - 需确认供应' })}</option>
+              <option>{text({ en: 'Not sure', zh: '暂不确定' })}</option>
             </select>
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="space-y-2">
-              <span>Name</span>
+              <span>{text({ en: 'Name', zh: '姓名' })}</span>
               <input name="name" value={formData.name} onChange={handleChange} required className={inputClass} />
             </label>
             <label className="space-y-2">
-              <span>Phone</span>
+              <span>{text({ en: 'Phone', zh: '电话' })}</span>
               <input name="phone" type="tel" value={formData.phone} onChange={handleChange} required className={inputClass} />
             </label>
           </div>
           <label className="space-y-2">
-            <span>Email</span>
+            <span>{text({ en: 'Email', zh: '邮箱' })}</span>
             <input name="email" type="email" value={formData.email} onChange={handleChange} required className={inputClass} />
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="space-y-2">
-              <span>Intended use</span>
+              <span>{text({ en: 'Intended use', zh: '用途' })}</span>
               <select name="intendedUse" value={formData.intendedUse} onChange={handleChange} className={inputClass}>
                 {['Family', 'Shuttle', 'Tourism', 'Business', 'Other'].map((option) => (
                   <option key={option}>{option}</option>
@@ -542,7 +568,7 @@ function BawM8QuoteForm({ selectedId }: { selectedId: VersionId }) {
               </select>
             </label>
             <label className="space-y-2">
-              <span>Budget range</span>
+              <span>{text({ en: 'Budget range', zh: '预算范围' })}</span>
               <input
                 name="budget"
                 value={formData.budget}
@@ -553,18 +579,21 @@ function BawM8QuoteForm({ selectedId }: { selectedId: VersionId }) {
             </label>
           </div>
           <label className="space-y-2">
-            <span>Message</span>
+            <span>{text({ en: 'Message', zh: '留言' })}</span>
             <textarea
               name="message"
               value={formData.message}
               onChange={handleChange}
               rows={5}
               className={inputClass}
-              placeholder="Tell us colour, seat layout, business use or compliance questions."
+              placeholder={text({
+                en: 'Tell us colour, seat layout, business use or compliance questions.',
+                zh: '告诉我们颜色、座位布局、商业用途或合规问题。',
+              })}
             />
           </label>
           <button type="submit" disabled={isSubmitting} className="button-primary w-full">
-            {isSubmitting ? 'Sending...' : 'Request selected configuration'}
+            {isSubmitting ? text({ en: 'Sending...', zh: '发送中...' }) : text({ en: 'Request selected configuration', zh: '咨询所选配置' })}
             <ArrowRight className="h-5 w-5" />
           </button>
         </form>

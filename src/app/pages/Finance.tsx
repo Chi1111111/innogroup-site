@@ -1,11 +1,13 @@
 ﻿import { useState } from 'react';
 import { CheckCircle, Clock, Shield, ArrowRight, Upload, DollarSign, ExternalLink } from 'lucide-react';
 import mtfAlbanyLogo from '../../data/pic/partner-mtf-albany.png';
+import { useLanguage } from '../components/SiteTranslator';
 
 const mtfAlbanyApplyUrl = 'https://apply.mtf.co.nz/?originatorid=2309&utm_source=Innogroup&utm_medium=introducer%20website&utm_campaign=Innogroup';
 
 export function Finance() {
   const [currentStep, setCurrentStep] = useState(1);
+  const { text } = useLanguage();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -56,14 +58,14 @@ export function Finance() {
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="max-w-4xl mx-auto text-center relative z-10 animate-fadeIn">
           <h1 className="mb-6 text-4xl font-light tracking-tight text-white sm:text-5xl md:mb-8 md:text-7xl lg:text-8xl">
-            Get Approved.<br />
-            <span className="text-primary">Drive Sooner.</span>
+            {text({ en: 'Get Approved.', zh: '先了解预算。' })}<br />
+            <span className="text-primary">{text({ en: 'Drive Sooner.', zh: '再更快上路。' })}</span>
           </h1>
           <p className="mb-3 text-lg font-light text-gray-400 sm:text-xl md:mb-4 md:text-2xl">
-            Simple finance tailored to your situation.
+            {text({ en: 'Simple finance tailored to your situation.', zh: '根据你的情况了解车辆贷款方向。' })}
           </p>
           <p className="text-lg text-gray-500">
-            No pressure. No obligation.
+            {text({ en: 'No pressure. No obligation.', zh: '无压力，无强制义务。' })}
           </p>
         </div>
       </section>
@@ -75,32 +77,32 @@ export function Finance() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 group-hover:bg-primary/20 transition-all duration-500">
               <Clock className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-white font-semibold mb-2">Fast Approval</h3>
-            <p className="text-sm text-gray-400">Same-day possible</p>
+            <h3 className="text-white font-semibold mb-2">{text({ en: 'Fast Approval', zh: '快速审批' })}</h3>
+            <p className="text-sm text-gray-400">{text({ en: 'Same-day possible', zh: '有机会当天获得反馈' })}</p>
           </div>
 
           <div className="text-center group">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 group-hover:bg-primary/20 transition-all duration-500">
               <DollarSign className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-white font-semibold mb-2">Competitive Rates</h3>
-            <p className="text-sm text-gray-400">Best NZ rates</p>
+            <h3 className="text-white font-semibold mb-2">{text({ en: 'Competitive Rates', zh: '有竞争力利率' })}</h3>
+            <p className="text-sm text-gray-400">{text({ en: 'Best NZ rates', zh: '匹配合适贷款渠道' })}</p>
           </div>
 
           <div className="text-center group">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 group-hover:bg-primary/20 transition-all duration-500">
               <Shield className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-white font-semibold mb-2">Trusted Partners</h3>
-            <p className="text-sm text-gray-400">Verified lenders</p>
+            <h3 className="text-white font-semibold mb-2">{text({ en: 'Trusted Partners', zh: '可信合作方' })}</h3>
+            <p className="text-sm text-gray-400">{text({ en: 'Verified lenders', zh: '合作贷款机构支持' })}</p>
           </div>
 
           <div className="text-center group">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 group-hover:bg-primary/20 transition-all duration-500">
               <CheckCircle className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-white font-semibold mb-2">No Obligation</h3>
-            <p className="text-sm text-gray-400">Free to apply</p>
+            <h3 className="text-white font-semibold mb-2">{text({ en: 'No Obligation', zh: '无强制义务' })}</h3>
+            <p className="text-sm text-gray-400">{text({ en: 'Free to apply', zh: '了解方案不等于必须购买' })}</p>
           </div>
         </div>
       </section>
@@ -124,13 +126,16 @@ export function Finance() {
             </a>
             <div className="flex flex-col justify-center p-6 sm:p-10 md:p-12">
               <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-                Finance Partner
+                {text({ en: 'Finance Partner', zh: '贷款合作伙伴' })}
               </p>
               <h2 className="mb-5 text-3xl font-light leading-tight text-white sm:text-4xl md:text-5xl">
-                Talk to your local money experts at MTF Albany
+                {text({ en: 'Talk to your local money experts at MTF Albany', zh: '对接 MTF Albany 本地贷款团队' })}
               </h2>
               <p className="mb-8 max-w-xl text-base leading-relaxed text-gray-400 sm:text-lg">
-                Apply directly with our finance partner and get support from a local team that understands vehicle lending.
+                {text({
+                  en: 'Apply directly with our finance partner and get support from a local team that understands vehicle lending.',
+                  zh: '你可以直接通过我们的贷款合作伙伴申请，并获得熟悉车辆贷款的本地团队支持。',
+                })}
               </p>
               <a
                 href={mtfAlbanyApplyUrl}
@@ -138,7 +143,7 @@ export function Finance() {
                 rel="noreferrer"
                 className="inline-flex w-fit items-center gap-3 rounded-xl bg-primary px-6 py-4 font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-primary/90"
               >
-                Apply with MTF Albany
+                {text({ en: 'Apply with MTF Albany', zh: '通过 MTF Albany 申请' })}
                 <ExternalLink className="h-5 w-5" />
               </a>
             </div>
@@ -150,15 +155,15 @@ export function Finance() {
       <section className="px-4 py-16 sm:py-20 md:py-24">
         <div className="max-w-6xl mx-auto">
           <h2 className="mb-12 text-center text-3xl font-light text-white animate-fadeIn sm:mb-16 md:mb-20 md:text-5xl">
-            How It <span className="text-primary">Works</span>
+            {text({ en: 'How It', zh: '流程' })} <span className="text-primary">{text({ en: 'Works', zh: '怎么走' })}</span>
           </h2>
 
           <div className="grid gap-8 md:grid-cols-4">
             {[
-              { num: '1', title: 'Submit Details', desc: 'Fill out our simple form' },
-              { num: '2', title: 'We Match You', desc: 'Connect with best lenders' },
-              { num: '3', title: 'Get Approved', desc: 'Fast decision process' },
-              { num: '4', title: 'Drive Your Car', desc: 'Hit the road sooner' },
+              { num: '1', title: text({ en: 'Submit Details', zh: '提交信息' }), desc: text({ en: 'Fill out our simple form', zh: '填写基本资料和预算' }) },
+              { num: '2', title: text({ en: 'We Match You', zh: '匹配方案' }), desc: text({ en: 'Connect with best lenders', zh: '协助对接合适渠道' }) },
+              { num: '3', title: text({ en: 'Get Approved', zh: '获得反馈' }), desc: text({ en: 'Fast decision process', zh: '确认可行贷款方向' }) },
+              { num: '4', title: text({ en: 'Drive Your Car', zh: '安排提车' }), desc: text({ en: 'Hit the road sooner', zh: '预算清晰后再选车' }) },
             ].map((step, idx) => (
               <div key={idx} className="text-center group animate-scaleIn" style={{ animationDelay: `${idx * 0.1}s` }}>
                 <div className="relative mb-6">
@@ -182,16 +187,16 @@ export function Finance() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="mb-6 text-3xl font-light text-white sm:text-4xl md:text-5xl">
-              Estimate Your <span className="text-primary">Repayments</span>
+              {text({ en: 'Estimate Your', zh: '估算你的' })} <span className="text-primary">{text({ en: 'Repayments', zh: '每周还款' })}</span>
             </h2>
-            <p className="text-gray-400">Get an idea before you apply</p>
+            <p className="text-gray-400">{text({ en: 'Get an idea before you apply', zh: '申请前先有一个大概概念' })}</p>
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl sm:p-8 md:p-12">
             <div className="space-y-6 sm:space-y-8">
               {/* Vehicle Price */}
               <div>
-                <label className="block text-white mb-3 text-lg">Vehicle Price</label>
+                <label className="block text-white mb-3 text-lg">{text({ en: 'Vehicle Price', zh: '车辆价格' })}</label>
                 <input
                   type="range"
                   min="10000"
@@ -208,7 +213,7 @@ export function Finance() {
 
               {/* Deposit */}
               <div>
-                <label className="block text-white mb-3 text-lg">Deposit</label>
+                <label className="block text-white mb-3 text-lg">{text({ en: 'Deposit', zh: '首付' })}</label>
                 <input
                   type="range"
                   min="0"
@@ -225,7 +230,7 @@ export function Finance() {
 
               {/* Term */}
               <div>
-                <label className="block text-white mb-3 text-lg">Term (months)</label>
+                <label className="block text-white mb-3 text-lg">{text({ en: 'Term (months)', zh: '贷款周期（月）' })}</label>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[24, 36, 48, 60].map((term) => (
                     <button
@@ -245,11 +250,11 @@ export function Finance() {
 
               {/* Result */}
               <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/20 to-yellow-500/20 p-5 text-center sm:p-8">
-                <p className="text-gray-300 mb-2">Estimated Weekly Payment</p>
+                <p className="text-gray-300 mb-2">{text({ en: 'Estimated Weekly Payment', zh: '预计每周还款' })}</p>
                 <div className="mb-2 text-4xl font-light text-white sm:text-5xl md:text-6xl">
                   ${calculateWeeklyPayment()}
                 </div>
-                <p className="text-sm text-gray-400">Based on 7.99% p.a. rate*</p>
+                <p className="text-sm text-gray-400">{text({ en: 'Based on 7.99% p.a. rate*', zh: '按 7.99% p.a. 示例利率估算*' })}</p>
               </div>
             </div>
           </div>
@@ -261,9 +266,9 @@ export function Finance() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="mb-6 text-3xl font-light text-white sm:text-4xl md:text-5xl">
-              Start Your <span className="text-primary">Application</span>
+              {text({ en: 'Start Your', zh: '开始你的' })} <span className="text-primary">{text({ en: 'Application', zh: '申请' })}</span>
             </h2>
-            <p className="text-gray-400">Takes less than 5 minutes</p>
+            <p className="text-gray-400">{text({ en: 'Takes less than 5 minutes', zh: '通常 5 分钟内可完成' })}</p>
           </div>
 
           {/* Progress Bar */}
@@ -290,7 +295,7 @@ export function Finance() {
                 </div>
               ))}
             </div>
-            <p className="text-center text-gray-400">Step {currentStep} of 4</p>
+            <p className="text-center text-gray-400">{text({ en: `Step ${currentStep} of 4`, zh: `第 ${currentStep} 步，共 4 步` })}</p>
           </div>
 
           {/* Form */}
@@ -298,10 +303,10 @@ export function Finance() {
             {/* Step 1: Personal Details */}
             {currentStep === 1 && (
               <div className="space-y-6 animate-fadeIn">
-                <h3 className="text-2xl font-semibold text-white mb-6">Personal Details</h3>
+                <h3 className="text-2xl font-semibold text-white mb-6">{text({ en: 'Personal Details', zh: '个人信息' })}</h3>
                 
                 <div>
-                  <label className="block text-white mb-2">Full Name</label>
+                  <label className="block text-white mb-2">{text({ en: 'Full Name', zh: '姓名' })}</label>
                   <input
                     type="text"
                     required
@@ -313,7 +318,7 @@ export function Finance() {
                 </div>
 
                 <div>
-                  <label className="block text-white mb-2">Phone</label>
+                  <label className="block text-white mb-2">{text({ en: 'Phone', zh: '电话' })}</label>
                   <input
                     type="tel"
                     required
@@ -325,7 +330,7 @@ export function Finance() {
                 </div>
 
                 <div>
-                  <label className="block text-white mb-2">Email</label>
+                  <label className="block text-white mb-2">{text({ en: 'Email', zh: '邮箱' })}</label>
                   <input
                     type="email"
                     required
@@ -341,10 +346,10 @@ export function Finance() {
             {/* Step 2: Living Situation */}
             {currentStep === 2 && (
               <div className="space-y-6 animate-fadeIn">
-                <h3 className="text-2xl font-semibold text-white mb-6">Living Situation</h3>
+                <h3 className="text-2xl font-semibold text-white mb-6">{text({ en: 'Living Situation', zh: '居住情况' })}</h3>
                 
                 <div>
-                  <label className="block text-white mb-2">Residency Status</label>
+                  <label className="block text-white mb-2">{text({ en: 'Residency Status', zh: '身份状态' })}</label>
                   <select
                     required
                     value={formData.residencyStatus}
@@ -359,7 +364,7 @@ export function Finance() {
                 </div>
 
                 <div>
-                  <label className="block text-white mb-2">Living Arrangement</label>
+                  <label className="block text-white mb-2">{text({ en: 'Living Arrangement', zh: '居住安排' })}</label>
                   <select
                     required
                     value={formData.livingArrangement}
@@ -375,7 +380,7 @@ export function Finance() {
                 </div>
 
                 <div>
-                  <label className="block text-white mb-2">Number of Dependants</label>
+                  <label className="block text-white mb-2">{text({ en: 'Number of Dependants', zh: '抚养人数' })}</label>
                   <select
                     required
                     value={formData.dependants}
@@ -395,10 +400,10 @@ export function Finance() {
             {/* Step 3: Employment & Income */}
             {currentStep === 3 && (
               <div className="space-y-6 animate-fadeIn">
-                <h3 className="text-2xl font-semibold text-white mb-6">Employment & Income</h3>
+                <h3 className="text-2xl font-semibold text-white mb-6">{text({ en: 'Employment & Income', zh: '工作与收入' })}</h3>
                 
                 <div>
-                  <label className="block text-white mb-2">Employment Type</label>
+                  <label className="block text-white mb-2">{text({ en: 'Employment Type', zh: '工作类型' })}</label>
                   <select
                     required
                     value={formData.employmentType}
@@ -414,7 +419,7 @@ export function Finance() {
                 </div>
 
                 <div>
-                  <label className="block text-white mb-2">Current Employer</label>
+                  <label className="block text-white mb-2">{text({ en: 'Current Employer', zh: '当前雇主' })}</label>
                   <input
                     type="text"
                     required
@@ -426,7 +431,7 @@ export function Finance() {
                 </div>
 
                 <div>
-                  <label className="block text-white mb-2">Annual Income (before tax)</label>
+                  <label className="block text-white mb-2">{text({ en: 'Annual Income (before tax)', zh: '税前年收入' })}</label>
                   <input
                     type="text"
                     required
@@ -442,25 +447,25 @@ export function Finance() {
             {/* Step 4: Final */}
             {currentStep === 4 && (
               <div className="space-y-6 animate-fadeIn">
-                <h3 className="text-2xl font-semibold text-white mb-6">Almost Done</h3>
+                <h3 className="text-2xl font-semibold text-white mb-6">{text({ en: 'Almost Done', zh: '即将完成' })}</h3>
                 
                 <div>
-                  <label className="block text-white mb-2">Driver Licence (optional)</label>
+                  <label className="block text-white mb-2">{text({ en: 'Driver Licence (optional)', zh: '驾照（可稍后提供）' })}</label>
                   <div className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-primary/50 transition-all duration-300 cursor-pointer bg-white/5">
                     <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-400 mb-2">Click to upload or drag and drop</p>
-                    <p className="text-sm text-gray-500">JPG, PNG or PDF (max 5MB)</p>
+                    <p className="text-gray-400 mb-2">{text({ en: 'Click to upload or drag and drop', zh: '点击上传或拖拽文件' })}</p>
+                    <p className="text-sm text-gray-500">{text({ en: 'JPG, PNG or PDF (max 5MB)', zh: '支持 JPG、PNG 或 PDF（最大 5MB）' })}</p>
                     <input type="file" className="hidden" accept="image/*,.pdf" />
                   </div>
-                  <p className="text-sm text-gray-500 mt-2">You can also provide this later</p>
+                  <p className="text-sm text-gray-500 mt-2">{text({ en: 'You can also provide this later', zh: '也可以之后再提供' })}</p>
                 </div>
 
                 <div className="bg-primary/10 border border-primary/30 rounded-xl p-6">
-                  <h4 className="text-white font-semibold mb-2">What happens next?</h4>
+                  <h4 className="text-white font-semibold mb-2">{text({ en: 'What happens next?', zh: '接下来会发生什么？' })}</h4>
                   <ul className="space-y-2 text-gray-300 text-sm">
-                    <li>We&apos;ll review your application within 24 hours.</li>
-                    <li>We&apos;ll match you with the most suitable lending options.</li>
-                    <li>We&apos;ll contact you to confirm the next steps.</li>
+                    <li>{text({ en: "We'll review your application within 24 hours.", zh: '我们会在 24 小时内查看你的申请。' })}</li>
+                    <li>{text({ en: "We'll match you with the most suitable lending options.", zh: '我们会协助匹配合适的贷款方案。' })}</li>
+                    <li>{text({ en: "We'll contact you to confirm the next steps.", zh: '我们会联系你确认下一步。' })}</li>
                   </ul>
                 </div>
               </div>
@@ -474,7 +479,7 @@ export function Finance() {
                   onClick={handleBack}
                   className="flex-1 py-4 px-6 bg-white/10 text-white rounded-xl font-semibold hover:bg-white/20 transition-all duration-300"
                 >
-                  Back
+                  {text({ en: 'Back', zh: '返回' })}
                 </button>
               )}
               
@@ -484,7 +489,7 @@ export function Finance() {
                   onClick={handleNext}
                   className="flex-1 py-4 px-6 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-2"
                 >
-                  Continue
+                  {text({ en: 'Continue', zh: '继续' })}
                   <ArrowRight className="w-5 h-5" />
                 </button>
               ) : (
@@ -492,14 +497,14 @@ export function Finance() {
                   type="submit"
                   className="flex-1 py-4 px-6 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-2"
                 >
-                  Submit Application
+                  {text({ en: 'Submit Application', zh: '提交申请' })}
                   <CheckCircle className="w-5 h-5" />
                 </button>
               )}
             </div>
 
             <p className="text-center text-gray-500 text-sm mt-6">
-              No hidden costs. No obligation.
+              {text({ en: 'No hidden costs. No obligation.', zh: '无隐藏费用。无强制义务。' })}
             </p>
           </form>
         </div>
@@ -509,20 +514,20 @@ export function Finance() {
       <section className="py-24 px-4 bg-gradient-to-b from-primary/5 to-transparent">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="mb-6 text-4xl font-light text-white md:text-6xl">
-            Ready to Get <span className="text-primary">Started?</span>
+            {text({ en: 'Ready to Get', zh: '准备好' })} <span className="text-primary">{text({ en: 'Started?', zh: '开始了吗？' })}</span>
           </h2>
           <p className="text-xl text-gray-400 mb-8">
-            Join hundreds of satisfied customers who financed with Inno Group
+            {text({ en: 'Join hundreds of satisfied customers who financed with Inno Group', zh: '让我们帮你先把预算和贷款方向弄清楚' })}
           </p>
           <a
             href="#apply"
             className="inline-flex items-center gap-3 bg-primary text-white px-10 py-5 rounded-xl font-semibold text-lg hover:bg-primary/90 transition-all duration-500 hover:scale-105 shadow-2xl shadow-primary/20"
           >
-            Apply Now
+            {text({ en: 'Apply Now', zh: '现在申请' })}
             <ArrowRight className="w-5 h-5" />
           </a>
           <p className="text-gray-500 mt-6">
-            No hidden costs. No obligation.
+            {text({ en: 'No hidden costs. No obligation.', zh: '无隐藏费用。无强制义务。' })}
           </p>
         </div>
       </section>

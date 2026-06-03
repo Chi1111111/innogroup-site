@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
 import { getWoxVehicle, type WoxVehicle } from '../../data/woxVehicles';
+import { useLanguage } from '../components/SiteTranslator';
 
 type WoxSlug = WoxVehicle['slug'];
 type WoxVersion = WoxVehicle['versions'][number];
@@ -35,6 +36,7 @@ function WoxHero({
   selected: WoxVersion;
   onSelect: (id: string) => void;
 }) {
+  const { text } = useLanguage();
   const [slideIndex, setSlideIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const gallery = getVersionGallery(vehicle, selected);
@@ -59,7 +61,7 @@ function WoxHero({
           <div className="space-y-5">
             <div className="section-kicker">
               <BatteryCharging className="h-4 w-4" />
-              Cars from China
+              {text({ en: 'Cars from China', zh: '中国车源' })}
             </div>
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary/82">
               {vehicle.modelCode}
@@ -121,7 +123,7 @@ function WoxHero({
             <div className="flex flex-col justify-between border-t border-black/6 p-6 sm:p-8 md:border-l md:border-t-0">
               <div className="space-y-5">
                 <p className="text-sm font-bold uppercase tracking-[0.16em] text-foreground/62">
-                  Choose configuration
+                  {text({ en: 'Choose configuration', zh: '选择配置' })}
                 </p>
                 {vehicle.versions.map((version) => (
                   <button
@@ -155,7 +157,7 @@ function WoxHero({
                 ))}
                 <div className="rounded-[20px] border border-black/6 bg-white/75 p-4">
                   <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Selected version details
+                    {text({ en: 'Selected version details', zh: '所选版本详情' })}
                   </p>
                   <div className="mt-3 space-y-2">
                     {selected.notes.map((note) => (
@@ -170,7 +172,7 @@ function WoxHero({
               </div>
 
               <button type="button" onClick={() => scrollToQuote(vehicle.slug)} className="button-primary mt-8 w-full">
-                Request this model
+                {text({ en: 'Request this model', zh: '咨询此车型' })}
                 <ArrowRight className="h-5 w-5" />
               </button>
             </div>
@@ -200,6 +202,7 @@ function WoxHero({
 }
 
 function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxVersion }) {
+  const { text } = useLanguage();
   const [openGroup, setOpenGroup] = useState(0);
 
   return (
@@ -207,8 +210,8 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
       <section className="px-4 py-12">
         <div className="section-shell grid gap-6 lg:grid-cols-[0.72fr_1.28fr]">
           <div className="space-y-4">
-            <div className="section-kicker">Highlights</div>
-            <h2>Built for electric sourcing enquiries</h2>
+            <div className="section-kicker">{text({ en: 'Highlights', zh: '车型亮点' })}</div>
+            <h2>{text({ en: 'Built for electric sourcing enquiries', zh: '面向电动车源咨询' })}</h2>
             <p>{vehicle.subtitle}</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -226,11 +229,14 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
         <div className="section-shell space-y-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <div className="section-kicker">Specifications</div>
+              <div className="section-kicker">{text({ en: 'Specifications', zh: '规格信息' })}</div>
               <h2 className="mt-4">{selected.name}</h2>
             </div>
             <p className="max-w-md text-sm font-semibold leading-7 text-foreground/62">
-              These figures update when a different configuration is selected above.
+              {text({
+                en: 'These figures update when a different configuration is selected above.',
+                zh: '上方切换不同配置后，这里的参数会同步更新。',
+              })}
             </p>
           </div>
           <div className="overflow-hidden rounded-[24px] border border-black/6 bg-white shadow-[0_24px_80px_rgba(17,17,17,0.08)]">
@@ -245,7 +251,7 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
           </div>
           <div className="section-card p-5">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-              Shared vehicle information
+              {text({ en: 'Shared vehicle information', zh: '共享车型信息' })}
             </p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {vehicle.specs.map((spec) => (
@@ -262,9 +268,12 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
       <section className="px-4 py-12">
         <div className="section-shell grid animate-slideUp gap-8 lg:grid-cols-[0.72fr_1.28fr]">
           <div className="space-y-4">
-            <div className="section-kicker">Confirm before order</div>
-            <h2>Import checks</h2>
-            <p>These are the practical confirmation items we check before placing an import order.</p>
+            <div className="section-kicker">{text({ en: 'Confirm before order', zh: '下单前确认' })}</div>
+            <h2>{text({ en: 'Import checks', zh: '进口确认事项' })}</h2>
+            <p>{text({
+              en: 'These are the practical confirmation items we check before placing an import order.',
+              zh: '这些是下进口订单前需要逐项确认的实际问题。',
+            })}</p>
           </div>
 
           <div className="section-card overflow-hidden">
@@ -273,7 +282,9 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
               onClick={() => setOpenGroup(openGroup === 0 ? -1 : 0)}
               className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
             >
-              <span className="font-bold text-foreground">China vehicle import confirmation</span>
+              <span className="font-bold text-foreground">
+                {text({ en: 'China vehicle import confirmation', zh: '中国车辆进口确认' })}
+              </span>
               <ChevronDown className={`h-5 w-5 text-primary ${openGroup === 0 ? 'rotate-180' : ''}`} />
             </button>
             {openGroup === 0 && (
@@ -294,6 +305,7 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
 }
 
 function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxVersion }) {
+  const { text } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -348,7 +360,10 @@ function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: Wo
         EMAILJS_CONFIG.publicKey
       );
 
-      alert(`Thank you for your ${vehicle.name} enquiry. We'll be in touch within 24 hours.`);
+      alert(text({
+        en: `Thank you for your ${vehicle.name} enquiry. We'll be in touch within 24 hours.`,
+        zh: `感谢咨询 ${vehicle.name}。我们会在 24 小时内联系你。`,
+      }));
       setFormData({
         name: '',
         phone: '',
@@ -360,7 +375,10 @@ function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: Wo
       });
     } catch (error) {
       console.error(`${vehicle.name} enquiry error:`, error);
-      alert('Sorry, there was an error sending your enquiry. Please try again or contact us directly.');
+      alert(text({
+        en: 'Sorry, there was an error sending your enquiry. Please try again or contact us directly.',
+        zh: '抱歉，咨询发送失败。请重试或直接联系我们。',
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -376,10 +394,14 @@ function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: Wo
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20">
             <Mail className="h-6 w-6 text-primary" />
           </div>
-          <h2 className="text-white">Request {vehicle.name} Import Quote</h2>
+          <h2 className="text-white">
+            {text({ en: `Request ${vehicle.name} Import Quote`, zh: `咨询 ${vehicle.name} 进口报价` })}
+          </h2>
           <p className="mt-4 text-white/72">
-            We will confirm availability, specification, landed pricing and compliance pathway
-            before order.
+            {text({
+              en: 'We will confirm availability, specification, landed pricing and compliance pathway before order.',
+              zh: '下单前我们会确认供应、配置、落地价格和合规路径。',
+            })}
           </p>
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
             <p className="text-sm text-white/76">{vehicle.quoteNote}</p>
@@ -388,31 +410,31 @@ function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: Wo
 
         <form onSubmit={handleSubmit} className="section-card space-y-5 p-5 sm:p-8">
           <label className="space-y-2">
-            <span>Selected configuration</span>
+            <span>{text({ en: 'Selected configuration', zh: '选择配置' })}</span>
             <select name="configuration" value={formData.configuration} onChange={handleChange} className={inputClass}>
               {vehicle.versions.map((version) => (
                 <option key={version.id}>{version.name}</option>
               ))}
-              <option>Not sure</option>
+              <option>{text({ en: 'Not sure', zh: '暂不确定' })}</option>
             </select>
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="space-y-2">
-              <span>Name</span>
+              <span>{text({ en: 'Name', zh: '姓名' })}</span>
               <input name="name" value={formData.name} onChange={handleChange} required className={inputClass} />
             </label>
             <label className="space-y-2">
-              <span>Phone</span>
+              <span>{text({ en: 'Phone', zh: '电话' })}</span>
               <input name="phone" type="tel" value={formData.phone} onChange={handleChange} required className={inputClass} />
             </label>
           </div>
           <label className="space-y-2">
-            <span>Email</span>
+            <span>{text({ en: 'Email', zh: '邮箱' })}</span>
             <input name="email" type="email" value={formData.email} onChange={handleChange} required className={inputClass} />
           </label>
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="space-y-2">
-              <span>Intended use</span>
+              <span>{text({ en: 'Intended use', zh: '用途' })}</span>
               <select name="intendedUse" value={formData.intendedUse} onChange={handleChange} className={inputClass}>
                 {['Private buyer', 'Dealer', 'Fleet', 'Business', 'Other'].map((option) => (
                   <option key={option}>{option}</option>
@@ -420,7 +442,7 @@ function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: Wo
               </select>
             </label>
             <label className="space-y-2">
-              <span>Budget range</span>
+              <span>{text({ en: 'Budget range', zh: '预算范围' })}</span>
               <input
                 name="budget"
                 value={formData.budget}
@@ -431,18 +453,21 @@ function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: Wo
             </label>
           </div>
           <label className="space-y-2">
-            <span>Message</span>
+            <span>{text({ en: 'Message', zh: '留言' })}</span>
             <textarea
               name="message"
               value={formData.message}
               onChange={handleChange}
               rows={5}
               className={inputClass}
-              placeholder="Tell us colour, intended use, timing or compliance questions."
+              placeholder={text({
+                en: 'Tell us colour, intended use, timing or compliance questions.',
+                zh: '告诉我们颜色、用途、时间安排或合规问题。',
+              })}
             />
           </label>
           <button type="submit" disabled={isSubmitting} className="button-primary w-full">
-            {isSubmitting ? 'Sending...' : 'Request this model'}
+            {isSubmitting ? text({ en: 'Sending...', zh: '发送中...' }) : text({ en: 'Request this model', zh: '咨询此车型' })}
             <ArrowRight className="h-5 w-5" />
           </button>
         </form>

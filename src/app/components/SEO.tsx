@@ -123,8 +123,6 @@ export function SEO() {
     const canonicalUrl = `${SEO_CONFIG.siteUrl}${location.pathname === '/' ? '' : location.pathname}`;
     const imageUrl = new URL(SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href;
     const lang = 'en-NZ';
-
-    document.documentElement.lang = lang;
     document.title = meta.title;
     setMeta('description', meta.description);
     if ('keywords' in meta) {
