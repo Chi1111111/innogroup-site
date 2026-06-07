@@ -4,7 +4,7 @@ export const SEO_CONFIG = {
   locale: 'en_NZ',
   defaultTitle: 'Import Car Auckland NZ | Vehicle Sourcing | Inno Group',
   defaultDescription:
-    'Inno Group helps New Zealand customers, dealers and partners source vehicles from Japan, China, Macau and selected overseas markets with local support.',
+    'Inno Group helps New Zealand customers, dealers and partners source quality vehicles through suitable overseas channels, with local support in New Zealand.',
   defaultImage: '/og-image.png',
   phone: '+642885307225',
   email: 'innogroup.shawn@gmail.com',
@@ -24,11 +24,11 @@ export const SEO_ROUTE_PAIRS = {} as const;
 
 export const SEO_ROUTES = {
   '/': {
-    title: 'Global Vehicle Sourcing NZ | Inno Group Ltd',
+    title: 'Import Cars NZ | Vehicle Sourcing | Inno Group Ltd',
     description:
-      'Inno Group connects New Zealand customers, dealers and partners with trusted vehicle sources from Japan, China, Macau and selected overseas markets.',
+      'Inno Group is a New Zealand vehicle sourcing partner helping customers and dealers import vehicles through suitable overseas channels, including Japan, China and selected supply networks.',
     keywords:
-      'vehicle sourcing NZ, import car Auckland, China car import NZ, Japanese import cars NZ, car sourcing Auckland, Inno Group Ltd',
+      'import cars NZ, vehicle sourcing NZ, import car Auckland, Japan car auctions NZ, China car import NZ, overseas vehicle sourcing, Inno Group Ltd',
   },
   '/vehicles/china': {
     title: 'Cars from China NZ | Factory-Backed Vehicle Sourcing',
@@ -98,7 +98,7 @@ export const SEO_ROUTES = {
     description:
       'Learn about Inno Group Ltd, an Auckland vehicle sourcing company helping New Zealand buyers and partners access trusted overseas vehicle channels.',
     keywords:
-      'Inno Group Ltd, Auckland car dealer, vehicle sourcing Auckland, Albany car dealer, Japan vehicle sourcing Auckland, China vehicle sourcing NZ',
+      'Inno Group Ltd, Auckland car dealer, vehicle sourcing Auckland, Albany car dealer, import vehicle sourcing Auckland, China vehicle sourcing NZ',
   },
   '/contact': {
     title: 'Vehicle Sourcing Quote Auckland | Contact Inno Group Ltd',

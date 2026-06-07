@@ -11,21 +11,21 @@ import { BrandLogo } from './BrandLogo';
 import { useLanguage } from './SiteTranslator';
 
 const heroHighlights = [
-  { en: 'Japan, China, Macau and selected overseas markets', zh: '日本、中国、澳门及其他精选海外市场' },
+  { en: 'Overseas vehicle import support', zh: '海外车辆进口支持' },
   { en: 'Sourcing, shipping and local handover support', zh: '车源寻找、运输协调与本地交付支持' },
-  { en: 'Private buyers, dealers and business partners', zh: '服务个人客户、车商及商业合作伙伴' },
+  { en: 'Japan, China and selected channels', zh: '日本、中国及精选渠道' },
 ];
 
 const heroStats = [
   {
     label: { en: 'Vehicle choice', zh: '车辆选择' },
-    value: { en: 'Multi-Market', zh: '多市场' },
-    note: { en: 'Access vehicle options across trusted overseas and local channels', zh: '通过可信海外及本地渠道获取更多车型选择' },
+    value: { en: 'Import Options', zh: '进口选择' },
+    note: { en: 'Dealer stock, auction access and selected overseas supply channels', zh: '车商库存、拍卖资源及精选海外供应渠道' },
   },
   {
     label: { en: 'Supply channels', zh: '供应渠道' },
-    value: { en: 'Beyond Japan', zh: '不止日本' },
-    note: { en: 'Japanese auctions, Chinese suppliers, Macau opportunities and more', zh: '覆盖日本拍卖、中国供应商、澳门市场机会等' },
+    value: { en: 'Multi-Channel', zh: '多渠道' },
+    note: { en: 'We match the source market to the model, budget and use case', zh: '根据车型、预算和用途匹配合适车源市场' },
   },
   {
     label: { en: 'NZ support', zh: '新西兰支持' },
@@ -89,14 +89,14 @@ export function Hero() {
               <span className="h-2 w-2 rounded-full bg-primary" />
               {text({ en: 'Auckland Based', zh: '奥克兰本地' })}
               <span className="text-white/35">|</span>
-              {text({ en: 'Global Vehicle Sourcing', zh: '全球车源采购' })}
+              {text({ en: 'Vehicle Imports', zh: '车辆进口' })}
             </div>
 
             <h1
               className="animate-slideUp text-[2.55rem] leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[5.75rem]"
               style={{ animationDelay: '0.2s' }}
             >
-              {text({ en: 'Global vehicle', zh: '全球车源' })} <span className="text-primary">{text({ en: 'sourcing', zh: '采购' })}</span>.
+              {text({ en: 'Vehicle', zh: '车辆' })} <span className="text-primary">{text({ en: 'imports', zh: '进口' })}</span>.
               <br />
               {text({ en: 'Delivered locally in New Zealand.', zh: '新西兰本地交付。' })}
             </h1>
@@ -106,8 +106,8 @@ export function Hero() {
               style={{ animationDelay: '0.3s' }}
             >
               {text({
-                en: 'Inno Group connects New Zealand customers, dealers and partners with trusted vehicle sources from Japan, China, Macau and selected overseas markets.',
-                zh: 'Inno Group 连接新西兰客户、车商和合作伙伴，对接日本、中国、澳门及其他海外优质车源。',
+                en: 'Inno Group helps New Zealand customers, dealers and partners source quality vehicles through suitable overseas channels, including Japan, China, Macau and selected supply networks.',
+                zh: 'Inno Group 帮助新西兰客户、车商和合作伙伴通过合适的海外渠道寻找优质车辆，包括日本、中国、澳门及精选供应网络。',
               })}
             </p>
 
@@ -129,8 +129,8 @@ export function Hero() {
               className="mt-8 flex flex-col gap-3 animate-slideUp sm:mt-10 sm:flex-row sm:gap-4"
               style={{ animationDelay: '0.5s' }}
             >
-              <a href="/vehicles/china" className="button-primary w-full sm:w-auto">
-                {text({ en: 'Browse China Vehicles', zh: '浏览中国车型' })}
+              <a href="/jpauc-feed" className="button-primary w-full sm:w-auto">
+                {text({ en: 'Browse Japan Stock', zh: '浏览日本车源' })}
                 <ArrowRight className="h-5 w-5" />
               </a>
 
@@ -172,7 +172,7 @@ export function Hero() {
                   {text({ en: 'Why Clients Start Here', zh: '客户为什么从这里开始' })}
                 </p>
                 <p className="mt-2 text-sm text-white/62">
-                  {text({ en: 'A multi-market sourcing network built for New Zealand.', zh: '为新西兰打造的多市场车源网络。' })}
+                  {text({ en: 'An import sourcing network built for New Zealand.', zh: '为新西兰打造的进口车源网络。' })}
                 </p>
               </div>
 

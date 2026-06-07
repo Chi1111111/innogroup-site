@@ -141,13 +141,13 @@ export function SEO() {
     setMeta('og:description', meta.description, 'property');
     setMeta('og:url', canonicalUrl, 'property');
     setMeta('og:image', imageUrl, 'property');
-    setMeta('og:image:alt', 'Inno Group Japanese import cars Auckland', 'property');
+    setMeta('og:image:alt', 'Inno Group import cars Auckland', 'property');
 
     setMeta('twitter:card', 'summary_large_image');
     setMeta('twitter:title', meta.title);
     setMeta('twitter:description', meta.description);
     setMeta('twitter:image', imageUrl);
-    setMeta('twitter:image:alt', 'Inno Group Japanese import cars Auckland');
+    setMeta('twitter:image:alt', 'Inno Group import cars Auckland');
 
     setJsonLd('inno-local-business-schema', {
       '@context': 'https://schema.org',
@@ -166,7 +166,7 @@ export function SEO() {
       },
       areaServed: SEO_CONFIG.areaServed,
       knowsAbout: [
-        'Japanese import cars',
+        'Import cars',
         'Japan car auctions',
         'Used cars Auckland',
         'Vehicle finance Auckland',
@@ -236,15 +236,15 @@ export function SEO() {
           name: 'Can Inno Group help me buy a used car in Auckland?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Yes. Inno Group can help Auckland and New Zealand buyers compare local used cars with Japanese import options based on budget, model, mileage, and use case.',
+            text: 'Yes. Inno Group can help Auckland and New Zealand buyers compare local used cars with suitable import options based on budget, model, mileage, and use case.',
           },
         },
         {
           '@type': 'Question',
-          name: 'What costs are included in a Japanese import landed price?',
+          name: 'What costs are included in an import landed price?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'A landed price can include the Japan vehicle price, service fees, exchange rate, GST, shipping, customs, compliance, registration, and condition-related costs.',
+            text: 'A landed price can include the source vehicle price, service fees, exchange rate, GST, shipping, customs, compliance, registration, and condition-related costs.',
           },
         },
       ],

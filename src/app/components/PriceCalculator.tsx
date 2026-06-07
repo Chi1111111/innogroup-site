@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Calculator, TrendingUp, DollarSign, Sparkles, Info } from 'lucide-react';
+import { useState } from 'react';
+import { Calculator, TrendingUp, DollarSign, Info } from 'lucide-react';
 
 export function PriceCalculator() {
   const [vehiclePrice, setVehiclePrice] = useState('');
@@ -65,21 +65,18 @@ export function PriceCalculator() {
   };
 
   return (
-    <section className="bg-gradient-to-br from-white via-gray-50 to-white px-4 py-16 sm:py-20 md:py-24">
+    <section className="bg-gradient-to-br from-white via-gray-50 to-white px-4 py-12 sm:py-16">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-12 space-y-4 text-center sm:mb-16">
+        <div className="mb-8 space-y-3 text-center sm:mb-10">
           <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 sm:px-6 sm:py-3">
             <Calculator className="w-5 h-5 text-primary" />
             <span className="text-primary font-semibold">Import Cost Calculator</span>
           </div>
-          <h2 className="mb-4 text-3xl text-foreground sm:text-4xl md:text-5xl">
-            Calculate Your
-            <span className="block mt-2 text-primary">Landing Price</span>
+          <h2 className="text-3xl text-foreground sm:text-4xl">
+            Import Landing Price
           </h2>
-          <p className="mx-auto max-w-3xl text-base text-muted-foreground sm:text-lg">
-            Get an instant estimate of your total landed cost when importing from Japan.<br className="hidden md:block" />
-            Includes all fees, duties, and our service charges.
+          <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+            Quick estimate for imported vehicle landed costs, including common shipping, compliance and service fees.
           </p>
         </div>
 
@@ -100,7 +97,7 @@ export function PriceCalculator() {
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-foreground font-bold">
                     <span className="text-primary">●</span>
-                    Vehicle Price (Japanese Yen)
+                    Vehicle Price (JPY)
                   </label>
                   <div className="relative">
                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground text-lg font-semibold">¥</span>
@@ -114,7 +111,7 @@ export function PriceCalculator() {
                   </div>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Info className="w-4 h-4" />
-                    Enter the auction or dealer price in Japan
+                    Enter the source-market price in Japanese yen
                   </p>
                 </div>
 
@@ -149,7 +146,7 @@ export function PriceCalculator() {
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                     <span className="relative flex items-center justify-center gap-2">
-                      <Sparkles className="w-5 h-5" />
+                      <Calculator className="w-5 h-5" />
                       Calculate
                     </span>
                   </button>
@@ -203,12 +200,12 @@ export function PriceCalculator() {
                     
                     <div className="space-y-3 rounded-2xl border border-primary/10 bg-white/50 p-4 backdrop-blur-sm sm:p-5">
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
-                        <span className="text-sm text-muted-foreground sm:text-base">Vehicle Price (Japan)</span>
+                        <span className="text-sm text-muted-foreground sm:text-base">Vehicle Price (JPY)</span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(parseFloat(vehiclePrice), 'JPY')}</span>
                       </div>
                       
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
-                        <span className="text-sm text-muted-foreground sm:text-base">Base Fees (Japan)</span>
+                        <span className="text-sm text-muted-foreground sm:text-base">Base Fees</span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(100000, 'JPY')}</span>
                       </div>
 
@@ -252,27 +249,6 @@ export function PriceCalculator() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Info Cards */}
-        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-5 sm:mt-16 md:grid-cols-3 md:gap-6">
-          <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover:shadow-xl transition-all">
-            <div className="text-primary text-3xl mb-3">🇯🇵</div>
-            <h4 className="font-bold text-foreground mb-2">Source from Japan</h4>
-            <p className="text-sm text-muted-foreground">Access premium vehicles from trusted Japanese auctions and dealers</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover:shadow-xl transition-all">
-            <div className="text-primary text-3xl mb-3">📋</div>
-            <h4 className="font-bold text-foreground mb-2">Full Compliance</h4>
-            <p className="text-sm text-muted-foreground">All import duties, GST, and NZ compliance requirements included</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover:shadow-xl transition-all">
-            <div className="text-primary text-3xl mb-3">✅</div>
-            <h4 className="font-bold text-foreground mb-2">Transparent Pricing</h4>
-            <p className="text-sm text-muted-foreground">No hidden fees - what you see is what you pay</p>
           </div>
         </div>
       </div>

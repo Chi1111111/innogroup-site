@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { Hero } from '../components/Hero';
+import { PriceCalculator } from '../components/PriceCalculator';
 import { QuoteFormSection } from '../components/QuoteFormSection';
 import { useLanguage } from '../components/SiteTranslator';
 
@@ -24,7 +25,7 @@ const sourceMarkets = [
   {
     title: { en: 'China', zh: '中国' },
     icon: BatteryCharging,
-    text: { en: 'Factory-backed new vehicles, EVs, MPVs, SUVs and commercial models with manufacturer warranty support.', zh: '厂家支持的新车资源，覆盖 EV、MPV、SUV 和商用车型，部分车型可提供厂家质保支持。' },
+    text: { en: 'A selective supplementary channel focused on EVs, MPVs and commercial opportunities.', zh: '精选补充渠道，重点关注 EV、MPV 及商用车型机会。' },
   },
   {
     title: { en: 'Macau', zh: '澳门' },
@@ -38,7 +39,7 @@ const sourceMarkets = [
   },
 ];
 
-const japanPoints = [
+const importPoints = [
   { en: 'Vehicle sourcing and inspection support', zh: '车源寻找与车况判断支持' },
   { en: 'Transparent landed cost estimation', zh: '清晰透明的落地价预估' },
   { en: 'Shipping, compliance and delivery coordination', zh: '海运、合规与本地交付协调' },
@@ -82,11 +83,11 @@ export function Home() {
               <Globe2 className="h-4 w-4" />
               {text({ en: 'Source Markets', zh: '车源市场' })}
             </div>
-            <h2>{text({ en: 'Multiple Sourcing Channels. One Trusted Partner.', zh: '多渠道车源，一个可信赖的合作伙伴。' })}</h2>
+            <h2>{text({ en: 'Import Sourcing Across Trusted Overseas Channels.', zh: '通过可信海外渠道寻找进口车源。' })}</h2>
             <p className="text-lg leading-8 text-foreground/70">
               {text({
-                en: 'Inno Group is not limited to a single vehicle source. We work across Japanese dealer stock and auctions, selected Chinese manufacturers and suppliers, Macau market opportunities, and other overseas sourcing networks.',
-                zh: 'Inno Group 不局限于单一车源。我们覆盖日本车商库存与拍卖资源、中国优质主机厂及供应商、澳门市场机会，以及其他海外车源网络。',
+                en: 'Inno Group works across Japanese dealer stock and auctions, selected Chinese manufacturers and suppliers, Macau market opportunities, and other overseas sourcing networks. We match the channel to the vehicle, budget and intended use.',
+                zh: 'Inno Group 覆盖日本车商库存与拍卖资源、精选中国主机厂及供应商、澳门市场机会，以及其他海外车源网络。我们会根据车型、预算和用途匹配合适渠道。',
               })}
             </p>
           </div>
@@ -109,25 +110,25 @@ export function Home() {
         </div>
       </section>
 
-      <section className="px-4 py-12 sm:py-16">
-        <div className="section-shell grid items-stretch gap-6 lg:grid-cols-2">
-          <article className="section-card flex min-h-[360px] flex-col justify-between p-7 sm:p-9 lg:p-10">
+      <section className="px-4 py-10 sm:py-14">
+        <div className="section-shell grid items-stretch gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+          <article className="section-card flex min-h-[320px] flex-col justify-between p-7 sm:p-9 lg:p-10">
             <div className="space-y-5">
               <div className="section-kicker">
                 <Ship className="h-4 w-4" />
-                {text({ en: 'Japan Direct Import', zh: '日本直采进口' })}
+                {text({ en: 'Import Sourcing', zh: '进口车源服务' })}
               </div>
               <div className="space-y-3">
-                <h2>{text({ en: 'Japan Direct Import', zh: '日本直采进口' })}</h2>
+                <h2>{text({ en: 'Import Sourcing, Matched to the Right Channel', zh: '进口车源，根据需求匹配渠道' })}</h2>
                 <p className="max-w-xl text-lg leading-8 text-foreground/70">
                   {text({
-                    en: 'We help customers source quality vehicles directly from Japan with transparent pricing, selection support, shipping coordination and local delivery assistance.',
-                    zh: '我们帮助客户直接从日本寻找优质车辆，并提供透明报价、选车支持、运输协调和新西兰本地交付协助。',
+                    en: 'We help customers source quality vehicles through suitable overseas channels with transparent pricing, selection support, shipping coordination and local delivery assistance.',
+                    zh: '我们帮助客户通过合适的海外渠道寻找优质车辆，并提供透明报价、选车支持、运输协调和新西兰本地交付协助。',
                   })}
                 </p>
               </div>
               <div className="space-y-3 border-t border-black/6 pt-5">
-                {japanPoints.map((point) => (
+                {importPoints.map((point) => (
                   <div key={text(point)} className="flex gap-3">
                     <CheckCircle2 className="mt-1 h-5 w-5 flex-none text-primary" />
                     <p className="text-sm font-semibold leading-7 text-foreground/76">{text(point)}</p>
@@ -137,28 +138,28 @@ export function Home() {
             </div>
             <div className="mt-8">
               <Link to="/jpauc-feed" className="button-secondary">
-                {text({ en: 'Explore Japan Stock', zh: '查看日本车源' })}
+                {text({ en: 'Browse Available Stock', zh: '查看可选车源' })}
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
           </article>
 
-          <article className="flex min-h-[360px] flex-col justify-between rounded-[30px] border border-black/6 bg-[#111214] p-7 text-white shadow-[0_30px_100px_rgba(17,17,17,0.18)] sm:p-9 lg:p-10">
-            <div className="space-y-5">
+          <article className="flex min-h-[320px] flex-col justify-between rounded-[30px] border border-black/6 bg-[#111214] p-6 text-white shadow-[0_30px_100px_rgba(17,17,17,0.18)] sm:p-7 lg:p-8">
+            <div className="space-y-4">
               <div className="section-kicker border-white/12 bg-white/8 text-primary">
                 <BatteryCharging className="h-4 w-4" />
-                {text({ en: 'Cars from China', zh: '中国车源' })}
+                {text({ en: 'Selective China Channel', zh: '精选中国渠道' })}
               </div>
-              <div className="space-y-3">
-                <h2 className="text-white">{text({ en: 'Cars from China', zh: '中国车源' })}</h2>
-                <p className="max-w-xl text-lg leading-8 text-white/68">
+              <div className="space-y-2">
+                <h2 className="text-2xl text-white sm:text-3xl">{text({ en: 'China Vehicles, Selective Supply', zh: '中国车源，精选补充' })}</h2>
+                <p className="max-w-xl text-sm leading-7 text-white/68">
                   {text({
-                    en: 'Access factory-backed vehicles from selected Chinese manufacturers and suppliers, with local New Zealand support from sourcing enquiry through handover.',
-                    zh: '通过精选中国主机厂及供应商渠道获取厂家支持车型，并由 Inno Group 提供从咨询到交付的新西兰本地支持。',
+                    en: 'A focused option for selected EV, MPV, SUV and commercial models when they suit the brief.',
+                    zh: '作为补充选择，适合有明确需求的 EV、MPV、SUV 及商用车型。',
                   })}
                 </p>
               </div>
-              <div className="space-y-3 border-t border-white/10 pt-5">
+              <div className="space-y-2 border-t border-white/10 pt-4">
                 {chinaPoints.map((point) => (
                   <div key={text(point)} className="flex gap-3">
                     <CheckCircle2 className="mt-1 h-5 w-5 flex-none text-primary" />
@@ -176,6 +177,10 @@ export function Home() {
           </article>
         </div>
       </section>
+
+      <div id="calculator">
+        <PriceCalculator />
+      </div>
 
       <section id="partners" className="px-4 py-16 sm:py-20">
         <div className="section-shell">
