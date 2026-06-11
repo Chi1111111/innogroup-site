@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 type ContractStatus = 'draft' | 'sent' | 'viewed' | 'signed' | 'cancelled';
-export type ContractType = 'vehicle-purchase' | 'deposit';
+export type ContractType = 'vehicle-purchase' | 'deposit' | 'consignment';
 
 export interface VehicleContract {
   id: string;
@@ -96,6 +96,18 @@ export interface VehicleContract {
     contactAvailability: string;
     acknowledgementName: string;
     preOrderVehicle: string;
+  };
+  consignmentAgreement?: {
+    date: string;
+    ownerName: string;
+    ownerId: string;
+    ownerBankAccount: string;
+    listingPrice: string;
+    minimumSalePrice: string;
+    termEndDate: string;
+    commissionRate: string;
+    settlementBusinessDays: string;
+    additionalCosts: string;
   };
 }
 
@@ -238,6 +250,18 @@ export function createEmptyContract(contractType: ContractType = 'vehicle-purcha
       acknowledgementName: '',
       preOrderVehicle: '',
     },
+    consignmentAgreement: {
+      date: '',
+      ownerName: '',
+      ownerId: '',
+      ownerBankAccount: '',
+      listingPrice: '',
+      minimumSalePrice: '',
+      termEndDate: '',
+      commissionRate: '7',
+      settlementBusinessDays: '5',
+      additionalCosts: '',
+    },
   };
 }
 
@@ -271,6 +295,7 @@ function rowToContract(row: ContractRow): VehicleContract {
     acknowledgements: { ...base.acknowledgements, ...payload.acknowledgements },
     signatures: { ...base.signatures, ...payload.signatures },
     depositAgreement: { ...base.depositAgreement!, ...payload.depositAgreement },
+    consignmentAgreement: { ...base.consignmentAgreement!, ...payload.consignmentAgreement },
   };
 }
 

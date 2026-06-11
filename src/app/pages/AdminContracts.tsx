@@ -19,7 +19,7 @@ const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'innogroup2026';
 const CONTRACT_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_CONTRACT_TEMPLATE_ID ?? EMAILJS_CONFIG.templateId;
 
 type WorkspaceTab = 'status' | 'library' | 'editor';
-type Section = 'client' | 'vehicle' | 'trade' | 'payment' | 'checks' | 'deposit';
+type Section = 'client' | 'vehicle' | 'trade' | 'payment' | 'checks' | 'deposit' | 'consignment';
 type Notice = { type: 'success' | 'error' | 'info'; text: string } | null;
 
 const CONTRACT_TYPES: Array<{
@@ -43,8 +43,8 @@ const CONTRACT_TYPES: Array<{
   {
     id: 'consignment',
     name: 'Consignment Agreement',
-    description: 'Coming next: owner consignment terms, sale authority, and settlement.',
-    available: false,
+    description: 'Owner vehicle consignment, 7% success fee, sale authority, and 5-business-day settlement.',
+    available: true,
   },
   {
     id: 'finance',
@@ -102,6 +102,13 @@ function contractTitle(contract: VehicleContract) {
   if (contract.contractType === 'deposit') {
     const vehicle = contract.depositAgreement?.preOrderVehicle?.trim();
     return vehicle ? `Deposit Agreement - ${vehicle}` : 'Deposit Agreement';
+  }
+
+  if (contract.contractType === 'consignment') {
+    const vehicle = [contract.purchasedVehicle.year, contract.purchasedVehicle.make, contract.purchasedVehicle.model]
+      .filter(Boolean)
+      .join(' ');
+    return vehicle ? `Consignment Agreement - ${vehicle}` : 'Consignment Agreement';
   }
 
   const vehicle = [contract.purchasedVehicle.year, contract.purchasedVehicle.make, contract.purchasedVehicle.model]
@@ -167,7 +174,7 @@ export function AdminContracts() {
   const activateContract = (contract: VehicleContract, nextTab: WorkspaceTab = 'editor') => {
     setActive(contract);
     setWorkspaceTab(nextTab);
-    setSection(contract.contractType === 'deposit' ? 'deposit' : 'client');
+    setSection(contract.contractType === 'deposit' ? 'deposit' : contract.contractType === 'consignment' ? 'consignment' : 'client');
     setNotice(null);
   };
 
@@ -178,7 +185,7 @@ export function AdminContracts() {
       setContracts(await upsertContract(next));
       setActive(next);
       setWorkspaceTab('editor');
-      setSection(contractType === 'deposit' ? 'deposit' : 'client');
+      setSection(contractType === 'deposit' ? 'deposit' : contractType === 'consignment' ? 'consignment' : 'client');
       setNotice(null);
     } catch (error) {
       setNotice({ type: 'error', text: `Could not create contract: ${getErrorMessage(error)}` });
@@ -242,7 +249,7 @@ export function AdminContracts() {
           to_name: next.client.name || 'Customer',
           client_name: next.client.name || 'Customer',
           contract_title: contractTitle(next),
-          contract_type: next.contractType === 'deposit' ? 'Deposit Agreement' : 'Vehicle Agreement',
+          contract_type: next.contractType === 'deposit' ? 'Deposit Agreement' : next.contractType === 'consignment' ? 'Consignment Agreement' : 'Vehicle Agreement',
           signing_url: signingLink,
           company_name: 'Inno Group Ltd',
         },
@@ -291,8 +298,16 @@ export function AdminContracts() {
       [key]: value,
     },
   }));
+  const updateConsignment = (key: keyof NonNullable<VehicleContract['consignmentAgreement']>, value: string) => setActive((current) => ({
+    ...current,
+    consignmentAgreement: {
+      ...(current.consignmentAgreement ?? createEmptyContract('consignment').consignmentAgreement!),
+      [key]: value,
+    },
+  }));
 
   const isDepositContract = active.contractType === 'deposit';
+  const isConsignmentContract = active.contractType === 'consignment';
 
   if (!isAuthenticated) {
     return (
@@ -482,6 +497,12 @@ export function AdminContracts() {
                   {sectionButton('client', 'Client')}
                   {isDepositContract ? (
                     sectionButton('deposit', 'Deposit Form')
+                  ) : isConsignmentContract ? (
+                    <>
+                      {sectionButton('consignment', 'Consignment')}
+                      {sectionButton('vehicle', 'Vehicle')}
+                      {sectionButton('checks', 'Checks')}
+                    </>
                   ) : (
                     <>
                       {sectionButton('vehicle', 'Vehicle')}
@@ -514,6 +535,22 @@ export function AdminContracts() {
                     <TextInput label="Pre-order vehicle" value={active.depositAgreement?.preOrderVehicle ?? ''} onChange={(v) => updateDeposit('preOrderVehicle', v)} />
                     <TextInput label="Inno Group signer" value={active.signatures.innoGroupName ?? ''} onChange={(v) => updateSig('innoGroupName', v)} />
                   </>}
+                  {isConsignmentContract && section === 'consignment' && <>
+                    <TextInput label="Agreement date" value={active.consignmentAgreement?.date ?? ''} onChange={(v) => updateConsignment('date', v)} />
+                    <TextInput label="Owner name" value={active.consignmentAgreement?.ownerName || active.client.name} onChange={(v) => { updateConsignment('ownerName', v); updateClient('name', v); }} />
+                    <TextInput label="Owner ID / company no." value={active.consignmentAgreement?.ownerId ?? ''} onChange={(v) => updateConsignment('ownerId', v)} />
+                    <TextInput label="Owner bank account" value={active.consignmentAgreement?.ownerBankAccount ?? ''} onChange={(v) => updateConsignment('ownerBankAccount', v)} />
+                    <TextInput label="Listing / target price" value={active.consignmentAgreement?.listingPrice ?? ''} onChange={(v) => updateConsignment('listingPrice', v)} />
+                    <TextInput label="Minimum sale price" value={active.consignmentAgreement?.minimumSalePrice ?? ''} onChange={(v) => updateConsignment('minimumSalePrice', v)} />
+                    <TextInput label="Term end date" value={active.consignmentAgreement?.termEndDate ?? ''} onChange={(v) => updateConsignment('termEndDate', v)} />
+                    <TextInput label="Commission rate %" value={active.consignmentAgreement?.commissionRate ?? '7'} onChange={(v) => updateConsignment('commissionRate', v)} />
+                    <TextInput label="Settlement business days" value={active.consignmentAgreement?.settlementBusinessDays ?? '5'} onChange={(v) => updateConsignment('settlementBusinessDays', v)} />
+                    <TextInput label="Additional costs / notes" value={active.consignmentAgreement?.additionalCosts ?? ''} onChange={(v) => updateConsignment('additionalCosts', v)} />
+                    <TextInput label="Owner email" value={active.client.email} onChange={(v) => updateClient('email', v)} />
+                    <TextInput label="Owner phone" value={active.client.phone} onChange={(v) => updateClient('phone', v)} />
+                    <TextInput label="Owner address" value={active.client.address} onChange={(v) => updateClient('address', v)} />
+                    <TextInput label="Inno Group signer" value={active.signatures.innoGroupName ?? ''} onChange={(v) => updateSig('innoGroupName', v)} />
+                  </>}
                   {!isDepositContract && section === 'vehicle' && <>
                     <TextInput label="Make" value={active.purchasedVehicle.make} onChange={(v) => updateVehicle('make', v)} />
                     <TextInput label="Vehicle Year" value={active.purchasedVehicle.year} onChange={(v) => updateVehicle('year', v)} />
@@ -527,7 +564,7 @@ export function AdminContracts() {
                     <TextInput label="First Registered NZ" value={active.purchasedVehicle.firstRegisteredNz} onChange={(v) => updateVehicle('firstRegisteredNz', v)} />
                     <TextInput label="Special Purpose" value={active.purchasedVehicle.specialPurpose} onChange={(v) => updateVehicle('specialPurpose', v)} />
                   </>}
-                  {!isDepositContract && section === 'trade' && <>
+                  {!isDepositContract && !isConsignmentContract && section === 'trade' && <>
                     <Check label="Trade-in applies" checked={active.tradeIn.enabled} onChange={(v) => updateTrade('enabled', v)} />
                     <TextInput label="Registration No." value={active.tradeIn.registrationNo} onChange={(v) => updateTrade('registrationNo', v)} />
                     <TextInput label="Make" value={active.tradeIn.make} onChange={(v) => updateTrade('make', v)} />
@@ -537,7 +574,7 @@ export function AdminContracts() {
                     <TextInput label="Odometer" value={active.tradeIn.odometer} onChange={(v) => updateTrade('odometer', v)} />
                     <TextInput label="Net Allowance" value={active.tradeIn.netAllowance} onChange={(v) => updateTrade('netAllowance', v)} />
                   </>}
-                  {!isDepositContract && section === 'payment' && <>
+                  {!isDepositContract && !isConsignmentContract && section === 'payment' && <>
                     <TextInput label="Sale Price inc GST" value={active.payment.salePriceIncGst} onChange={(v) => updatePayment('salePriceIncGst', v)} />
                     <TextInput label="Accessories" value={active.payment.accessoriesDescription} onChange={(v) => updatePayment('accessoriesDescription', v)} />
                     <TextInput label="Accessories Value" value={active.payment.accessoriesValueIncGst} onChange={(v) => updatePayment('accessoriesValueIncGst', v)} />

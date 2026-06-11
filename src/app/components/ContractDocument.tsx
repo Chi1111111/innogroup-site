@@ -104,7 +104,186 @@ export function ContractDocument({ contract }: { contract: VehicleContract }) {
     return <DepositContractDocument contract={contract} />;
   }
 
+  if (contract.contractType === 'consignment') {
+    return <ConsignmentContractDocument contract={contract} />;
+  }
+
   return <VehiclePurchaseContractDocument contract={contract} />;
+}
+
+function ConsignmentContractDocument({ contract }: { contract: VehicleContract }) {
+  const { client, purchasedVehicle, signatures } = contract;
+  const consignment = contract.consignmentAgreement;
+  const ownerName = consignment?.ownerName || client.name;
+  const commissionRate = consignment?.commissionRate || '7';
+  const settlementDays = consignment?.settlementBusinessDays || '5';
+  const vehicleName = [purchasedVehicle.year, purchasedVehicle.make, purchasedVehicle.model].filter(Boolean).join(' ');
+
+  return (
+    <article className="mx-auto max-w-5xl bg-white text-slate-950 print:max-w-none print:shadow-none">
+      <ContractHeader
+        title="Vehicle Consignment"
+        subtitle="Sale Agreement"
+        meta={
+          <>
+            <p className="text-white/82">Agreement date: {consignment?.date || formatDateTime(contract.createdAt)}</p>
+            <p className="mt-6 text-white/82">Inno Group Ltd</p>
+            <p className="text-white/82">1/A 331 Rosedale Road, Albany 0632</p>
+          </>
+        }
+      />
+
+      <section className="space-y-8 rounded-b-3xl border border-slate-200 px-6 py-8 shadow-sm print:rounded-none print:border-0 print:px-0 print:shadow-none sm:px-8">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+          <p className="font-semibold">Key commercial terms</p>
+          <p className="mt-1">
+            Inno Group's consignment service fee is {commissionRate}% of the actual sale price. After the buyer's
+            full payment has been received and cleared, Inno Group will pay the net sale proceeds to the owner
+            within {settlementDays} business days.
+          </p>
+        </div>
+
+        <div className="break-inside-avoid">
+          <SectionTitle>Parties and Vehicle Details</SectionTitle>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Field label="Owner / Consignor" value={ownerName} />
+            <Field label="ID / company number" value={consignment?.ownerId} />
+            <Field label="Address" value={client.address} />
+            <Field label="Contact" value={[client.email, client.phone].filter(Boolean).join(' / ')} />
+            <Field label="Vehicle" value={vehicleName} />
+            <Field label="Registration / VIN" value={purchasedVehicle.vinOrRegistration} />
+            <Field label="Odometer" value={purchasedVehicle.odometer} />
+            <Field label="Colour" value={purchasedVehicle.colour} />
+            <Field label="Listing / target price" value={consignment?.listingPrice ? money(consignment.listingPrice) : ''} />
+            <Field label="Minimum acceptable sale price" value={consignment?.minimumSalePrice ? money(consignment.minimumSalePrice) : ''} />
+            <Field label="Consignment term ends" value={consignment?.termEndDate} />
+            <Field label="Owner bank account" value={consignment?.ownerBankAccount} />
+          </div>
+        </div>
+
+        <div className="break-inside-avoid space-y-4 text-sm leading-7 text-slate-700">
+          <SectionTitle>1. Appointment</SectionTitle>
+          <p>
+            The owner appoints Inno Group Ltd to provide vehicle consignment sale services for the vehicle described
+            in this agreement. These services may include preparing vehicle information, marketing the vehicle,
+            responding to buyer enquiries, arranging inspections or viewings, negotiating with potential buyers,
+            coordinating the transaction, and assisting with delivery or transfer.
+          </p>
+          <p>
+            Inno Group is not the owner of the vehicle and is not required to purchase the vehicle or guarantee that
+            the vehicle will be sold, unless the parties agree otherwise in writing.
+          </p>
+        </div>
+
+        <div className="break-inside-avoid space-y-4 text-sm leading-7 text-slate-700">
+          <SectionTitle>2. Sale Price and Sale Approval</SectionTitle>
+          <p>
+            The listing price, target sale price, and minimum acceptable sale price are those recorded in this
+            agreement or otherwise confirmed by the parties in writing.
+          </p>
+          <p>
+            Inno Group must not confirm a sale below the minimum acceptable sale price without the owner's written
+            approval. If no minimum acceptable sale price is recorded, Inno Group must obtain the owner's written
+            approval before confirming a sale.
+          </p>
+          <p>
+            "Actual sale price" means the price paid by the buyer for the vehicle itself. It does not include
+            government charges, transport, insurance, third-party inspection costs, finance fees, repair or
+            preparation costs, or any other amount the parties agree to exclude.
+          </p>
+        </div>
+
+        <div className="break-inside-avoid space-y-4 text-sm leading-7 text-slate-700">
+          <SectionTitle>3. Service Fee and Costs</SectionTitle>
+          <p>
+            Inno Group's service fee is {commissionRate}% of the actual sale price. The service fee will be deducted
+            from the sale proceeds after the vehicle is sold and the buyer has paid in full.
+          </p>
+          <p>
+            In addition to the service fee, the owner is responsible for any agreed or necessary third-party costs,
+            including cleaning, repairs, preparation, inspections, photography, promoted advertising, towing,
+            transport, storage, RUC, registration, fines, or similar costs. If Inno Group pays these costs on the
+            owner's behalf, Inno Group may deduct them from the sale proceeds and will provide a cost summary or
+            supporting record where reasonably available.
+          </p>
+          {consignment?.additionalCosts ? (
+            <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4">Additional costs / notes: {consignment.additionalCosts}</p>
+          ) : null}
+        </div>
+
+        <div className="break-inside-avoid space-y-4 text-sm leading-7 text-slate-700">
+          <SectionTitle>4. Sale Proceeds and Settlement</SectionTitle>
+          <p>
+            Unless the parties agree otherwise in writing, the buyer may pay the sale proceeds into an account
+            nominated by Inno Group, and Inno Group may receive those funds on behalf of the owner for settlement.
+          </p>
+          <p>
+            Inno Group will pay the net sale proceeds to the owner's nominated bank account within {settlementDays}
+            business days after the buyer's full payment has been received and the relevant funds have cleared,
+            after deducting the service fee and any deductible costs under this agreement.
+          </p>
+          <p>
+            If settlement is delayed by bank processing, anti-money-laundering checks, payment reversal risk, refund
+            disputes, buyer finance release, public holidays, or third-party processing delays, the settlement period
+            will begin when the restriction is removed and the funds are available to Inno Group.
+          </p>
+        </div>
+
+        <div className="break-inside-avoid space-y-4 text-sm leading-7 text-slate-700">
+          <SectionTitle>5. Vehicle Condition, Custody, and Delivery</SectionTitle>
+          <p>
+            The owner warrants that they are the lawful owner of the vehicle or are authorised to sell it, and that
+            the vehicle is free from any undisclosed security interest, finance owing, stolen status, major accident
+            history, flood damage, odometer tampering, fines, unpaid charges, or other matter that may affect sale or
+            transfer.
+          </p>
+          <p>
+            The owner must disclose all known vehicle condition issues, repair history, accident history, import
+            records, compliance documents, keys, and included documents. The owner is responsible for any claim,
+            refund, penalty, loss, or dispute caused by inaccurate or incomplete information supplied by the owner.
+          </p>
+          <p>
+            After a sale is confirmed, the owner must cooperate with Inno Group and the buyer to complete delivery,
+            transfer, release of any finance or security interest, document signing, and any other steps reasonably
+            required to complete the transaction. Inno Group may withhold delivery of the vehicle or documents until
+            the buyer's full payment has been received and all delivery conditions are satisfied.
+          </p>
+        </div>
+
+        <div className="break-inside-avoid space-y-4 text-sm leading-7 text-slate-700">
+          <SectionTitle>6. Default, Privacy, and Governing Law</SectionTitle>
+          <p>
+            If either party breaches this agreement and causes loss to the other party, the breaching party must
+            compensate the other party for the loss caused. If the owner provides false information or fails to
+            disclose vehicle ownership or material condition issues, the owner must indemnify Inno Group for any
+            resulting loss, claim, penalty, refund, dispute, or reputational damage.
+          </p>
+          <p>
+            The owner authorises Inno Group to collect, use, store, and disclose vehicle and transaction information
+            to potential buyers, inspection providers, finance providers, transport providers, government agencies,
+            and other parties where reasonably necessary to perform this agreement.
+          </p>
+          <p>
+            This agreement is governed by New Zealand law. The parties will first try to resolve any dispute by
+            discussion. If the dispute is not resolved, either party may seek relief from a New Zealand court or other
+            competent dispute resolution body.
+          </p>
+        </div>
+
+        <div className="break-inside-avoid">
+          <SectionTitle>Signatures</SectionTitle>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <SignatureBlock label="Owner / Consignor" name={signatures.purchaserName || ownerName} signature={signatures.purchaser} />
+            <SignatureBlock label="Inno Group Ltd" name={signatures.innoGroupName || 'Inno Group Ltd'} signature={signatures.innoGroup} />
+          </div>
+          <p className="mt-5 text-xs leading-5 text-slate-500">
+            Note: This template is a commercial contract draft and is not legal advice. The parties should consider
+            legal review before signing, especially where vehicle title, finance, tax, or consumer law issues may apply.
+          </p>
+        </div>
+      </section>
+    </article>
+  );
 }
 
 function VehiclePurchaseContractDocument({ contract }: { contract: VehicleContract }) {

@@ -22,13 +22,22 @@ import {
 
 type AckKey = 'terms' | 'cin' | 'docs' | 'odometer' | 'privacy' | 'deposit';
 
-const ACKNOWLEDGEMENTS: Array<{ key: AckKey; label: string }> = [
+const PURCHASE_ACKNOWLEDGEMENTS: Array<{ key: AckKey; label: string }> = [
   { key: 'terms', label: 'I have read and accept the terms and conditions.' },
   { key: 'cin', label: 'I acknowledge the Consumer Information Notice has been provided.' },
   { key: 'docs', label: 'I agree to sign all required documents for this agreement.' },
   { key: 'odometer', label: 'I acknowledge the odometer statement shown in this agreement.' },
   { key: 'privacy', label: 'I accept the privacy and personal information handling statement.' },
   { key: 'deposit', label: 'I understand the deposit may be forfeited if I fail to complete the purchase.' },
+];
+
+const CONSIGNMENT_ACKNOWLEDGEMENTS: Array<{ key: AckKey; label: string }> = [
+  { key: 'terms', label: 'I have read and accept the vehicle consignment terms.' },
+  { key: 'cin', label: 'I confirm I am the vehicle owner or am authorised to sell this vehicle.' },
+  { key: 'docs', label: 'I agree to sign and provide documents required for sale, settlement, and transfer.' },
+  { key: 'odometer', label: 'I confirm the vehicle details and odometer information are accurate to my knowledge.' },
+  { key: 'privacy', label: 'I accept the privacy and vehicle information handling statement.' },
+  { key: 'deposit', label: 'I understand Inno Group will deduct the agreed consignment fee and approved costs from sale proceeds.' },
 ];
 
 function StepItem({
@@ -139,7 +148,8 @@ export function SignContract() {
   }, [contractId]);
 
   const signed = contract?.status === 'signed';
-  const allAccepted = ACKNOWLEDGEMENTS.every((item) => accepted[item.key]);
+  const acknowledgementItems = contract?.contractType === 'consignment' ? CONSIGNMENT_ACKNOWLEDGEMENTS : PURCHASE_ACKNOWLEDGEMENTS;
+  const allAccepted = acknowledgementItems.every((item) => accepted[item.key]);
   const canSubmit = Boolean(purchaserName.trim()) && hasSignature && allAccepted && !signed;
   const completedSteps = [
     Boolean(purchaserName.trim()),
@@ -151,6 +161,16 @@ export function SignContract() {
 
   const contractTitle = useMemo(() => {
     if (!contract) return 'Vehicle Purchase Agreement';
+    if (contract.contractType === 'deposit') {
+      const vehicle = contract.depositAgreement?.preOrderVehicle?.trim();
+      return vehicle ? `Deposit Agreement - ${vehicle}` : 'Deposit Agreement';
+    }
+    if (contract.contractType === 'consignment') {
+      const vehicle = [contract.purchasedVehicle.year, contract.purchasedVehicle.make, contract.purchasedVehicle.model]
+        .filter(Boolean)
+        .join(' ');
+      return vehicle ? `Consignment Agreement - ${vehicle}` : 'Consignment Agreement';
+    }
     const vehicle = [contract.purchasedVehicle.year, contract.purchasedVehicle.make, contract.purchasedVehicle.model]
       .filter(Boolean)
       .join(' ');
@@ -380,7 +400,7 @@ export function SignContract() {
               <StepItem
                 done={allAccepted}
                 label="Acknowledgements"
-                detail={`${ACKNOWLEDGEMENTS.filter((item) => accepted[item.key]).length}/${ACKNOWLEDGEMENTS.length} completed`}
+                detail={`${acknowledgementItems.filter((item) => accepted[item.key]).length}/${acknowledgementItems.length} completed`}
                 onClick={() => scrollToSection('acknowledgements')}
               />
               <StepItem
@@ -492,7 +512,7 @@ export function SignContract() {
                     <h3 className="text-lg font-semibold text-slate-950">2. Required acknowledgements</h3>
                   </div>
                   <div className="mt-4 space-y-2">
-                    {ACKNOWLEDGEMENTS.map((item) => (
+                    {acknowledgementItems.map((item) => (
                       <label
                         key={item.key}
                         className={`flex gap-3 rounded-2xl border p-3 text-sm leading-6 text-slate-700 transition-all duration-200 ${accepted[item.key] ? 'border-emerald-200 bg-emerald-50/80' : 'border-slate-200 bg-white hover:border-slate-300'}`}
