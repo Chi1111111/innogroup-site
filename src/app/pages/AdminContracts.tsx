@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import emailjs from '@emailjs/browser';
 import { Link } from 'react-router';
 import { ContractDocument } from '../components/ContractDocument';
@@ -74,6 +74,125 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-0.5 accent-slate-950" />
       <span>{label}</span>
     </label>
+  );
+}
+
+function SignaturePad({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value?: string;
+  onChange: (value: string) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return;
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (!value) return;
+
+    const image = new Image();
+    image.onload = () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    };
+    image.src = value;
+  }, [value]);
+
+  const getPoint = (event: PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (event.clientX - rect.left) * (canvas.width / rect.width),
+      y: (event.clientY - rect.top) * (canvas.height / rect.height),
+    };
+  };
+
+  const startDrawing = (event: PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = getPoint(event);
+    context.beginPath();
+    context.moveTo(point.x, point.y);
+    context.lineWidth = 3;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.strokeStyle = '#0f172a';
+    setIsDrawing(true);
+  };
+
+  const draw = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+
+    const context = canvasRef.current?.getContext('2d');
+    if (!context) return;
+
+    const point = getPoint(event);
+    context.lineTo(point.x, point.y);
+    context.stroke();
+  };
+
+  const saveCanvasSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    onChange(canvas.toDataURL('image/png'));
+  };
+
+  const stopDrawing = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (isDrawing) saveCanvasSignature();
+    setIsDrawing(false);
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer may already be released by the browser.
+    }
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return;
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    onChange('');
+  };
+
+  return (
+    <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-inner shadow-slate-100/60">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+        <button
+          type="button"
+          onClick={clearSignature}
+          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:text-slate-950"
+        >
+          Clear
+        </button>
+      </div>
+      <canvas
+        ref={canvasRef}
+        width={900}
+        height={240}
+        onPointerDown={startDrawing}
+        onPointerMove={draw}
+        onPointerUp={stopDrawing}
+        onPointerCancel={stopDrawing}
+        onPointerLeave={() => setIsDrawing(false)}
+        className="mt-3 h-36 w-full touch-none rounded-2xl border border-slate-200 bg-white shadow-inner shadow-slate-100"
+      />
+      <p className="mt-2 text-xs leading-5 text-slate-500">Draw here, then click Save Draft or Send Email to store it.</p>
+    </div>
   );
 }
 
@@ -541,6 +660,7 @@ export function AdminContracts() {
                     <TextInput label="Acknowledgement name" value={active.depositAgreement?.acknowledgementName ?? ''} onChange={(v) => updateDeposit('acknowledgementName', v)} />
                     <TextInput label="Pre-order vehicle" value={active.depositAgreement?.preOrderVehicle ?? ''} onChange={(v) => updateDeposit('preOrderVehicle', v)} />
                     <TextInput label="Inno Group signer" value={active.signatures.innoGroupName ?? ''} onChange={(v) => updateSig('innoGroupName', v)} />
+                    <SignaturePad label="Inno Group signature" value={active.signatures.innoGroup} onChange={(v) => updateSig('innoGroup', v)} />
                   </>}
                   {isConsignmentContract && section === 'consignment' && <>
                     <TextInput label="Agreement date" value={active.consignmentAgreement?.date ?? ''} onChange={(v) => updateConsignment('date', v)} />
@@ -557,6 +677,7 @@ export function AdminContracts() {
                     <TextInput label="Owner phone" value={active.client.phone} onChange={(v) => updateClient('phone', v)} />
                     <TextInput label="Owner address" value={active.client.address} onChange={(v) => updateClient('address', v)} />
                     <TextInput label="Inno Group signer" value={active.signatures.innoGroupName ?? ''} onChange={(v) => updateSig('innoGroupName', v)} />
+                    <SignaturePad label="Inno Group signature" value={active.signatures.innoGroup} onChange={(v) => updateSig('innoGroup', v)} />
                   </>}
                   {!isDepositContract && section === 'vehicle' && <>
                     <TextInput label="Make" value={active.purchasedVehicle.make} onChange={(v) => updateVehicle('make', v)} />
@@ -602,6 +723,7 @@ export function AdminContracts() {
                     <Check label="Business-use clause applies" checked={active.acknowledgements.businessUseClauseApplies} onChange={(v) => updateAck('businessUseClauseApplies', v)} />
                     <TextInput label="Salesperson Name" value={active.signatures.salespersonName ?? ''} onChange={(v) => updateSig('salespersonName', v)} />
                     <TextInput label="Inno Group Signer" value={active.signatures.innoGroupName ?? ''} onChange={(v) => updateSig('innoGroupName', v)} />
+                    <SignaturePad label="Inno Group signature" value={active.signatures.innoGroup} onChange={(v) => updateSig('innoGroup', v)} />
                   </>}
                 </div>
               </div>
