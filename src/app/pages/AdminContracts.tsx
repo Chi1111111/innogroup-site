@@ -10,6 +10,7 @@ import {
   formatDateTime,
   getErrorMessage,
   loadContracts,
+  parseEmailRecipients,
   upsertContract,
 } from '../lib/contracts';
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
@@ -221,11 +222,11 @@ export function AdminContracts() {
   };
 
   const sendEmail = async () => {
-    const email = active.client.email.trim();
-    if (!email) {
+    const emails = parseEmailRecipients(active.client.email);
+    if (emails.length === 0) {
       setSection('client');
       setWorkspaceTab('editor');
-      setNotice({ type: 'error', text: 'Add the customer email before sending.' });
+      setNotice({ type: 'error', text: 'Add at least one customer email before sending.' });
       return;
     }
 
@@ -241,22 +242,28 @@ export function AdminContracts() {
       setActive(next);
       setWorkspaceTab('status');
 
-      await emailjs.send(
-        EMAILJS_CONFIG.serviceId,
-        CONTRACT_TEMPLATE_ID,
-        {
-          to_email: email,
-          to_name: next.client.name || 'Customer',
-          client_name: next.client.name || 'Customer',
-          contract_title: contractTitle(next),
-          contract_type: next.contractType === 'deposit' ? 'Deposit Agreement' : next.contractType === 'consignment' ? 'Consignment Agreement' : 'Vehicle Agreement',
-          signing_url: signingLink,
-          company_name: 'Inno Group Ltd',
-        },
-        EMAILJS_CONFIG.publicKey
+      await Promise.all(
+        emails.map((email) =>
+          emailjs.send(
+            EMAILJS_CONFIG.serviceId,
+            CONTRACT_TEMPLATE_ID,
+            {
+              to_email: email,
+              to_emails: emails.join(', '),
+              recipient_count: String(emails.length),
+              to_name: next.client.name || 'Customer',
+              client_name: next.client.name || 'Customer',
+              contract_title: contractTitle(next),
+              contract_type: next.contractType === 'deposit' ? 'Deposit Agreement' : next.contractType === 'consignment' ? 'Consignment Agreement' : 'Vehicle Agreement',
+              signing_url: signingLink,
+              company_name: 'Inno Group Ltd',
+            },
+            EMAILJS_CONFIG.publicKey
+          )
+        )
       );
 
-      setNotice({ type: 'success', text: 'Contract saved and sent through EmailJS.' });
+      setNotice({ type: 'success', text: `Contract saved and sent to ${emails.length} email${emails.length === 1 ? '' : 's'} through EmailJS.` });
       return;
     } catch (error) {
       setNotice({
@@ -518,7 +525,7 @@ export function AdminContracts() {
                     <TextInput label="Name" value={active.client.name} onChange={(v) => updateClient('name', v)} />
                     <TextInput label="Driver Licence No." value={active.client.driversLicenceNo} onChange={(v) => updateClient('driversLicenceNo', v)} />
                     <TextInput label="Address" value={active.client.address} onChange={(v) => updateClient('address', v)} />
-                    <TextInput label="Email" value={active.client.email} onChange={(v) => updateClient('email', v)} />
+                    <TextInput label="Email(s)" value={active.client.email} onChange={(v) => updateClient('email', v)} />
                     <TextInput label="Phone" value={active.client.phone} onChange={(v) => updateClient('phone', v)} />
                   </>}
                   {isDepositContract && section === 'deposit' && <>
@@ -546,7 +553,7 @@ export function AdminContracts() {
                     <TextInput label="Commission rate %" value={active.consignmentAgreement?.commissionRate ?? '7'} onChange={(v) => updateConsignment('commissionRate', v)} />
                     <TextInput label="Settlement business days" value={active.consignmentAgreement?.settlementBusinessDays ?? '5'} onChange={(v) => updateConsignment('settlementBusinessDays', v)} />
                     <TextInput label="Additional costs / notes" value={active.consignmentAgreement?.additionalCosts ?? ''} onChange={(v) => updateConsignment('additionalCosts', v)} />
-                    <TextInput label="Owner email" value={active.client.email} onChange={(v) => updateClient('email', v)} />
+                    <TextInput label="Owner email(s)" value={active.client.email} onChange={(v) => updateClient('email', v)} />
                     <TextInput label="Owner phone" value={active.client.phone} onChange={(v) => updateClient('phone', v)} />
                     <TextInput label="Owner address" value={active.client.address} onChange={(v) => updateClient('address', v)} />
                     <TextInput label="Inno Group signer" value={active.signatures.innoGroupName ?? ''} onChange={(v) => updateSig('innoGroupName', v)} />

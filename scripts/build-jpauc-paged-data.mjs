@@ -157,6 +157,7 @@ for (const feed of feeds) {
 
   writeJson(path.join(feedOutputDir, 'index.json'), {
     source: sourcePayload.source || feed.sourceName,
+    generatedAt: new Date().toISOString(),
     count: vehicles.length,
     shardSize: SHARD_SIZE,
     pageSize: PAGE_SIZE,
@@ -166,6 +167,7 @@ for (const feed of feeds) {
   writeJson(path.join(feedOutputDir, 'manifest.json'), {
     source: sourcePayload.source || feed.sourceName,
     scrapedAt: sourcePayload.scrapedAt || '',
+    generatedAt: new Date().toISOString(),
     count: vehicles.length,
     listingBaseUrl: sourcePayload.listingBaseUrl || feed.fallbackBaseUrl,
     shardSize: SHARD_SIZE,

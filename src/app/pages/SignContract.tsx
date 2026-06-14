@@ -6,7 +6,6 @@ import {
   Download,
   FileSignature,
   PenLine,
-  ShieldCheck,
 } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ContractDocument } from '../components/ContractDocument';
@@ -39,34 +38,6 @@ const CONSIGNMENT_ACKNOWLEDGEMENTS: Array<{ key: AckKey; label: string }> = [
   { key: 'privacy', label: 'I accept the privacy and vehicle information handling statement.' },
   { key: 'deposit', label: 'I understand Inno Group will deduct the agreed consignment fee and approved costs from sale proceeds.' },
 ];
-
-function StepItem({
-  done,
-  label,
-  detail,
-  onClick,
-}: {
-  done: boolean;
-  label: string;
-  detail: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition-all duration-200 ${
-        done ? 'border-emerald-200 bg-emerald-50/90 shadow-sm' : 'border-slate-200 bg-white/90 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white'
-      }`}
-    >
-      <CheckCircle2 className={`mt-0.5 h-5 w-5 flex-none ${done ? 'text-emerald-600' : 'text-slate-300'}`} />
-      <span>
-        <span className="block text-sm font-semibold text-slate-950">{label}</span>
-        <span className="mt-0.5 block text-xs text-slate-500">{detail}</span>
-      </span>
-    </button>
-  );
-}
 
 function Notice({ message }: { message: string }) {
   if (!message) return null;
@@ -114,8 +85,12 @@ export function SignContract() {
             : found;
 
         if (nextFound && found?.status === 'sent') {
-          await upsertContract(nextFound);
-          await recordContractEvent(nextFound.id, 'viewed');
+          upsertContract(nextFound).catch((error) => {
+            console.warn('Could not mark contract as viewed:', error);
+          });
+          recordContractEvent(nextFound.id, 'viewed').catch((error) => {
+            console.warn('Could not record contract view event:', error);
+          });
         }
 
         if (!isMounted) return;
@@ -304,12 +279,15 @@ export function SignContract() {
 
     setIsSubmitting(true);
     try {
-      await saveSignature(signedContract, purchaserName.trim(), signature);
       await upsertContract(signedContract);
-      await recordContractEvent(signedContract.id, 'signed', 'Captured in browser signing session');
       setContract(signedContract);
       setMessage('Signed successfully. You can now print or save the completed agreement as a PDF.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      await Promise.allSettled([
+        saveSignature(signedContract, purchaserName.trim(), signature),
+        recordContractEvent(signedContract.id, 'signed', 'Captured in browser signing session'),
+      ]);
     } catch (error) {
       setMessage(`Could not submit signature: ${getErrorMessage(error)}`);
     } finally {
@@ -382,56 +360,6 @@ export function SignContract() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-7 print:block print:px-0 print:py-0">
-        <aside className="hidden print:hidden">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-950">Signing progress</p>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                {progress}%
-              </span>
-            </div>
-            <div className="mt-4 space-y-2">
-              <StepItem
-                done={Boolean(purchaserName.trim())}
-                label="Your name"
-                detail={purchaserName.trim() || 'Required'}
-                onClick={() => scrollToSection('name')}
-              />
-              <StepItem
-                done={allAccepted}
-                label="Acknowledgements"
-                detail={`${acknowledgementItems.filter((item) => accepted[item.key]).length}/${acknowledgementItems.length} completed`}
-                onClick={() => scrollToSection('acknowledgements')}
-              />
-              <StepItem
-                done={hasSignature}
-                label="Signature"
-                detail={hasSignature ? 'Signature captured' : 'Draw or sign with touch'}
-                onClick={() => scrollToSection('signature')}
-              />
-              <StepItem
-                done={Boolean(signed)}
-                label="Finish"
-                detail={signed ? 'Agreement signed' : 'Submit once ready'}
-                onClick={() => scrollToSection('submit')}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-600" />
-              <div>
-                <p className="text-sm font-semibold text-slate-950">Electronic signature record</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  The signed copy records the completion time, typed name, drawn signature, and browser device
-                  details for audit reference.
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
         <section className="space-y-5">
           <div className="animate-[fadeIn_0.45s_ease-out] rounded-[32px] border border-white/70 bg-white/85 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-slate-900/5 backdrop-blur-xl print:hidden">
             <div className="flex flex-wrap items-start justify-between gap-4">

@@ -393,6 +393,13 @@ export function formatDateTime(value?: string) {
   }
 }
 
+export function parseEmailRecipients(value: string) {
+  return value
+    .split(/[\s,;]+/)
+    .map((email) => email.trim())
+    .filter(Boolean);
+}
+
 export function money(value: string) {
   return value?.trim() ? `$${value.trim()} NZD` : '$________ NZD';
 }

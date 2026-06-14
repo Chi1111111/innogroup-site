@@ -345,6 +345,10 @@ async function main() {
   ensureDir(PUBLIC_DIR);
   ensureDir(DEBUG_DIR);
 
+  console.log(
+    `JPAUC scrape starting: pages ${startPage}-${maxPages}, maxVehicles=${maxVehicles || 'all'}, skipDetail=${skipDetail}, appendMode=${appendMode}`
+  );
+
   const browser = await chromium.launch({ headless });
   const context = await browser.newContext({ viewport: { width: 1460, height: 920 } });
   const listingPage = await context.newPage();
@@ -352,6 +356,7 @@ async function main() {
   try {
     await openListingPage(listingPage);
     const listingBaseUrl = listingPage.url().split('?')[0];
+    console.log(`JPAUC listing opened: ${listingBaseUrl}`);
 
     const seen = new Set();
     const listRecords = [];
@@ -364,6 +369,7 @@ async function main() {
       await listingPage.waitForTimeout(waitMs);
 
       const rows = await scrapeListingRows(listingPage);
+      console.log(`JPAUC page ${pageIndex}: ${rows.length} rows`);
       if (rows.length === 0) break;
 
       let newCount = 0;
@@ -397,6 +403,7 @@ async function main() {
           },
           detailConcurrency
         );
+    console.log(`JPAUC detail scrape finished: ${detailWorkers.length} records`);
 
     const existing = appendMode ? readExistingOutput(OUTPUT_IMPORT_FILE) : null;
     const vehicles = existing
@@ -420,6 +427,7 @@ async function main() {
     };
 
     fs.writeFileSync(OUTPUT_IMPORT_FILE, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
+    console.log(`JPAUC import wrote ${vehicles.length} total records`);
 
     await listingPage.screenshot({
       path: path.join(DEBUG_DIR, 'jpauc-listing.png'),
