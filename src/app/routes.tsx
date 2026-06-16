@@ -10,6 +10,7 @@ import { Contact } from './pages/Contact';
 import { Finance } from './pages/Finance';
 import { AdminVehicles } from './pages/AdminVehicles';
 import { AdminContracts } from './pages/AdminContracts';
+import { AdminCrm } from './pages/AdminCrm';
 import { SignContract } from './pages/SignContract';
 import { JpaucFeed } from './pages/JpaucFeed';
 
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: 'finance', Component: Finance },
       { path: 'jpauc-feed', Component: JpaucFeed },
       { path: 'admin', Component: AdminVehicles },
+      { path: 'admin/crm', Component: AdminCrm },
       { path: 'admin/contracts', Component: AdminContracts },
       { path: 'contract/:contractId', Component: SignContract },
       { path: 'sign/:contractId', Component: SignContract },

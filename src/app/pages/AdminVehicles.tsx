@@ -283,6 +283,12 @@ export function AdminVehicles() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
+                to="/admin/crm"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
+              >
+                CRM Admin
+              </Link>
+              <Link
                 to="/admin/contracts"
                 className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
               >
