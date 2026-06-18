@@ -73,12 +73,12 @@ export function Contact() {
               </div>
               <div>
                 <h3 className="mb-3 text-base font-bold text-foreground">{text({ en: 'Email', zh: '邮箱' })}</h3>
-                <a
-                  href="mailto:innogroup.shawn@gmail.com"
-                  className="break-all text-muted-foreground transition-colors hover:text-primary"
-                >
+                <p className="break-all text-muted-foreground">
                   innogroup.shawn@gmail.com
-                </a>
+                </p>
+                <p className="mt-2 text-sm font-semibold text-primary">
+                  {text({ en: 'Please use the form below', zh: '请优先填写下方表格' })}
+                </p>
               </div>
             </div>
 

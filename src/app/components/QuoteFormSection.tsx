@@ -13,6 +13,7 @@ const fieldClass =
   'w-full rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 px-4 py-3 text-base font-medium shadow-sm transition-all hover:shadow-md focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/30 sm:px-5 sm:py-3.5 md:px-6 md:py-4 md:text-lg';
 const helperCardClass =
   'group rounded-[22px] border border-white/10 bg-white/5 p-4 backdrop-blur-md transition-all hover:border-primary/50 sm:p-5 md:rounded-[24px] md:p-6';
+const CONTACT_FORM_RECIPIENT = 'innogroup.shawn@gmail.com';
 
 function FieldDot() {
   return <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />;
@@ -86,6 +87,12 @@ export function QuoteFormSection() {
       }
 
       const templateParams = {
+        to_email: CONTACT_FORM_RECIPIENT,
+        to_name: 'Inno Group',
+        reply_to: formData.email,
+        from_name: formData.name,
+        from_email: formData.email,
+        subject: `[Website ${formData.inquiryType === 'buy' ? 'Buy' : 'Sell'} Enquiry] ${formData.name}`,
         inquiryType: formData.inquiryType === 'buy' ? 'Buy a Car' : 'Sell My Car',
         sourceType: formData.sourceType === 'japan' ? 'Import from Japan' : 'Buy Local Stock (NZ)',
         brand: formData.brand || 'Not specified',
@@ -107,7 +114,7 @@ export function QuoteFormSection() {
         EMAILJS_CONFIG.publicKey
       );
 
-      alert("Thank you for your inquiry! We'll be in touch within 24 hours.");
+      alert("Thank you. Your form has been sent to Inno Group and we'll be in touch within 24 hours.");
 
       setFormData({
         inquiryType: 'buy',
@@ -124,7 +131,7 @@ export function QuoteFormSection() {
       setUploadedImages([]);
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Sorry, there was an error sending your inquiry. Please try again or contact us directly.');
+      alert('Sorry, there was an error sending your inquiry. Please try again, or call/WhatsApp us.');
     } finally {
       setIsSubmitting(false);
     }
