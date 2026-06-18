@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles, ArrowRight, ShieldCheck, Clock, Award, Upload, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
@@ -35,6 +35,31 @@ export function QuoteFormSection() {
 
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('source') !== 'jpauc') return;
+
+    const message = params.get('message') ?? '';
+    const vehicle = params.get('vehicle') ?? '';
+    const year = params.get('year') ?? '';
+    const price = params.get('price') ?? '';
+    const fallbackMessage = vehicle
+      ? `Hi Inno Group, I'm interested in this vehicle:\n${vehicle}`
+      : '';
+
+    setFormData((current) => ({
+      ...current,
+      inquiryType: 'buy',
+      sourceType: 'japan',
+      model: current.model || vehicle,
+      year: current.year || year,
+      budget: current.budget || price,
+      message: current.message || message || fallbackMessage,
+    }));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -783,7 +783,16 @@ export function JpaucFeed() {
                   `Link: ${vehicleLink}`,
                 ].join('\n');
                 const whatsappUrl = `https://wa.me/642885307225?text=${encodeURIComponent(enquiryMessage)}`;
-                const mailtoUrl = `mailto:innogroup.shawn@gmail.com?subject=${encodeURIComponent(`[${activeFeed === 'auction' ? 'Auction' : 'One Price Japan'} Enquiry] ${vehicleTitle}`)}&body=${encodeURIComponent(`${enquiryMessage}\n\nMy name:\nMy contact number:\n`)}`;
+                const contactParams = new URLSearchParams({
+                  source: 'jpauc',
+                  feed: activeFeed === 'auction' ? 'Auction' : 'One Price Japan',
+                  vehicle: vehicleTitle,
+                  id: vehicle.id,
+                  year: vehicle.year || '',
+                  price: estimatedNzdPrice,
+                  message: enquiryMessage,
+                });
+                const contactFormUrl = `/contact?${contactParams.toString()}#quote`;
 
                 return (
                   <article key={vehicle.id} className="section-card overflow-visible border border-black/8 p-4 md:p-5">
@@ -907,7 +916,7 @@ export function JpaucFeed() {
                             {openEnquiryId === vehicle.id ? (
                               <div className="absolute bottom-full right-0 z-30 mb-2 w-40 overflow-hidden rounded-xl border border-black/10 bg-white shadow-lg">
                                 <a
-                                  href={mailtoUrl}
+                                  href={contactFormUrl}
                                   className="flex items-center gap-2 px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-black/[0.03]"
                                 >
                                   <Mail className="h-4 w-4 text-primary" />
