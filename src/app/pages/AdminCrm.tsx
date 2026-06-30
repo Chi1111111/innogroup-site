@@ -264,7 +264,7 @@ function orderFromSignedContract(contract: VehicleContract): CrmOrder {
     id: `contract-${contract.id}`,
     sourceContractId: contract.id,
     customerName: contract.client.name || contract.depositAgreement?.clientName || '',
-    orderDate: formatContractDate(contract.signedAt),
+    orderDate: formatContractDate(contract.signedAt || contract.sentAt || contract.createdAt),
     customerPhone: contract.client.phone,
     vehicleModel: vehicleNameFromContract(contract),
     year: contract.purchasedVehicle.year,
@@ -275,6 +275,19 @@ function orderFromSignedContract(contract: VehicleContract): CrmOrder {
     complianceStage: '',
     note: noteFromContract(contract),
   };
+}
+
+function contractTitleFromContract(contract: VehicleContract) {
+  const vehicle = vehicleNameFromContract(contract);
+  const customer = contract.client.name || contract.depositAgreement?.clientName || 'Unnamed customer';
+  const type =
+    contract.contractType === 'deposit'
+      ? 'Deposit'
+      : contract.contractType === 'consignment'
+        ? 'Consignment'
+        : 'Purchase';
+
+  return `${customer} - ${vehicle || type} (${contract.status})`;
 }
 
 function mergeContractOrders(current: CrmState, contractOrders: CrmOrder[]) {
@@ -484,6 +497,10 @@ export function AdminCrm() {
   const [query, setQuery] = useState('');
   const [savedAt, setSavedAt] = useState('');
   const [contractSyncNotice, setContractSyncNotice] = useState('');
+  const [availableContracts, setAvailableContracts] = useState<VehicleContract[]>([]);
+  const [selectedContractId, setSelectedContractId] = useState('');
+  const [isLoadingContracts, setIsLoadingContracts] = useState(false);
+  const [contractImportNotice, setContractImportNotice] = useState('');
 
   useEffect(() => {
     document.title = 'Inno Group CRM Admin';
@@ -586,6 +603,35 @@ export function AdminCrm() {
       ...current,
       orders: [{ ...EMPTY_ORDER, id: createId('order') }, ...current.orders],
     }));
+  };
+
+  const loadAvailableContracts = async () => {
+    setIsLoadingContracts(true);
+    setContractImportNotice('');
+    try {
+      const contracts = await loadContracts();
+      setAvailableContracts(contracts);
+      setSelectedContractId((current) => current || contracts[0]?.id || '');
+      setContractImportNotice(
+        contracts.length > 0 ? `已读取 ${contracts.length} 份合同` : '当前没有可读取的合同'
+      );
+    } catch (error) {
+      setContractImportNotice(`读取合同失败：${getErrorMessage(error)}`);
+    } finally {
+      setIsLoadingContracts(false);
+    }
+  };
+
+  const importSelectedContract = () => {
+    const contract = availableContracts.find((item) => item.id === selectedContractId);
+    if (!contract) {
+      setContractImportNotice('请先选择一份合同。');
+      return;
+    }
+
+    setCrm((current) => mergeContractOrders(current, [orderFromSignedContract(contract)]));
+    setActiveView('orders');
+    setContractImportNotice(`已导入：${contractTitleFromContract(contract)}`);
   };
 
   const addLoanCar = () => {
@@ -1066,14 +1112,58 @@ export function AdminCrm() {
 
             {activeView === 'orders' ? (
               <div className="space-y-3 p-5">
-                <button
-                  type="button"
-                  onClick={addOrder}
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-black"
-                >
-                  <Plus size={16} />
-                  添加订单
-                </button>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex flex-wrap items-end gap-3">
+                    <button
+                      type="button"
+                      onClick={addOrder}
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black"
+                    >
+                      <Plus size={16} />
+                      添加订单
+                    </button>
+                    <button
+                      type="button"
+                      onClick={loadAvailableContracts}
+                      disabled={isLoadingContracts}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <FileText size={16} />
+                      {isLoadingContracts ? '读取中...' : '读取合同'}
+                    </button>
+
+                    {availableContracts.length > 0 ? (
+                      <>
+                        <label className="min-w-[280px] flex-1">
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            选择合同
+                          </span>
+                          <select
+                            value={selectedContractId}
+                            onChange={(event) => setSelectedContractId(event.target.value)}
+                            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-slate-500 focus:ring-4 focus:ring-slate-200/80"
+                          >
+                            {availableContracts.map((contract) => (
+                              <option key={contract.id} value={contract.id}>
+                                {contractTitleFromContract(contract)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={importSelectedContract}
+                          className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+                        >
+                          加载到已下单
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                  {contractImportNotice ? (
+                    <p className="mt-3 text-sm font-medium text-slate-500">{contractImportNotice}</p>
+                  ) : null}
+                </div>
                 {crm.orders.map((order) => (
                   <div
                     key={order.id}
