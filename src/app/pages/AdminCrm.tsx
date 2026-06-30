@@ -10,6 +10,7 @@ import {
   Trash2,
   UsersRound,
 } from 'lucide-react';
+import { getErrorMessage, loadContracts, type VehicleContract } from '../lib/contracts';
 
 const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'innogroup2026';
@@ -37,6 +38,7 @@ interface CrmLead {
 interface CrmOrder {
   id: string;
   sourceLeadId?: string;
+  sourceContractId?: string;
   customerName: string;
   orderDate: string;
   customerPhone: string;
@@ -183,6 +185,7 @@ function loadCrm(): CrmState {
       orders: Array.isArray(parsed.orders)
         ? parsed.orders.map((order) => ({
             ...order,
+            sourceContractId: order.sourceContractId ?? '',
             customerPhone: order.customerPhone ?? '',
             year: order.year ?? '',
             plateOrVin: order.plateOrVin ?? '',
@@ -195,6 +198,124 @@ function loadCrm(): CrmState {
   } catch {
     return EXCEL_SEED_CRM;
   }
+}
+
+function formatContractDate(value?: string) {
+  return value ? value.slice(0, 10) : new Date().toISOString().slice(0, 10);
+}
+
+function vehicleNameFromContract(contract: VehicleContract) {
+  if (contract.contractType === 'deposit') {
+    return contract.depositAgreement?.preOrderVehicle?.trim() || 'Pre-order vehicle';
+  }
+
+  return [contract.purchasedVehicle.make, contract.purchasedVehicle.model]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}
+
+function salePriceFromContract(contract: VehicleContract) {
+  if (contract.contractType === 'deposit') {
+    return contract.depositAgreement?.depositAmount?.trim() ?? '';
+  }
+
+  return (
+    contract.payment.salePriceIncGst ||
+    contract.payment.netPrice ||
+    contract.payment.totalPayments ||
+    contract.consignmentAgreement?.listingPrice ||
+    ''
+  );
+}
+
+function paymentStageFromContract(contract: VehicleContract) {
+  const balance = contract.payment.balanceOutstanding?.trim();
+  if (balance === '0' || balance === '$0') return '已付全款';
+  if (contract.payment.depositOnSigning?.trim() || contract.depositAgreement?.depositAmount?.trim()) {
+    return '已付半款';
+  }
+  return '';
+}
+
+function noteFromContract(contract: VehicleContract) {
+  const typeLabel =
+    contract.contractType === 'deposit'
+      ? 'Deposit contract'
+      : contract.contractType === 'consignment'
+        ? 'Consignment contract'
+        : 'Vehicle purchase contract';
+  const signedAt = contract.signedAt ? `Signed ${formatContractDate(contract.signedAt)}` : 'Signed';
+  const parts = [
+    `${signedAt} from ${typeLabel}.`,
+    contract.client.email ? `Email: ${contract.client.email}` : '',
+    contract.client.address ? `Address: ${contract.client.address}` : '',
+    contract.payment.financeBy ? `Finance: ${contract.payment.financeBy}` : '',
+    contract.depositAgreement?.nextStepContactName
+      ? `Next contact: ${contract.depositAgreement.nextStepContactName}`
+      : '',
+  ];
+
+  return parts.filter(Boolean).join(' ');
+}
+
+function orderFromSignedContract(contract: VehicleContract): CrmOrder {
+  return {
+    id: `contract-${contract.id}`,
+    sourceContractId: contract.id,
+    customerName: contract.client.name || contract.depositAgreement?.clientName || '',
+    orderDate: formatContractDate(contract.signedAt),
+    customerPhone: contract.client.phone,
+    vehicleModel: vehicleNameFromContract(contract),
+    year: contract.purchasedVehicle.year,
+    plateOrVin: contract.purchasedVehicle.vinOrRegistration,
+    paymentStage: paymentStageFromContract(contract),
+    balanceRemaining: contract.payment.balanceOutstanding,
+    salePrice: salePriceFromContract(contract),
+    complianceStage: '',
+    note: noteFromContract(contract),
+  };
+}
+
+function mergeContractOrders(current: CrmState, contractOrders: CrmOrder[]) {
+  if (contractOrders.length === 0) return current;
+
+  let changed = false;
+  const contractOrderIds = new Set(contractOrders.map((order) => order.sourceContractId));
+  const mergedOrders = current.orders.map((order) => {
+    if (!order.sourceContractId || !contractOrderIds.has(order.sourceContractId)) return order;
+
+    const fromContract = contractOrders.find(
+      (contractOrder) => contractOrder.sourceContractId === order.sourceContractId
+    );
+    if (!fromContract) return order;
+
+    changed = true;
+    return {
+      ...order,
+      ...fromContract,
+      id: order.id,
+      sourceLeadId: order.sourceLeadId,
+      paymentStage: order.paymentStage || fromContract.paymentStage,
+      complianceStage: order.complianceStage || fromContract.complianceStage,
+      note: order.note || fromContract.note,
+    };
+  });
+
+  const existingContractIds = new Set(
+    mergedOrders.map((order) => order.sourceContractId).filter(Boolean)
+  );
+  const newOrders = contractOrders.filter(
+    (order) => order.sourceContractId && !existingContractIds.has(order.sourceContractId)
+  );
+
+  if (newOrders.length > 0) changed = true;
+  if (!changed) return current;
+
+  return {
+    ...current,
+    orders: [...newOrders, ...mergedOrders],
+  };
 }
 
 function statusClass(status: LeadStatus) {
@@ -362,6 +483,7 @@ export function AdminCrm() {
   const [activeLeadId, setActiveLeadId] = useState(initialCrm.leads[0]?.id ?? '');
   const [query, setQuery] = useState('');
   const [savedAt, setSavedAt] = useState('');
+  const [contractSyncNotice, setContractSyncNotice] = useState('');
 
   useEffect(() => {
     document.title = 'Inno Group CRM Admin';
@@ -384,6 +506,40 @@ export function AdminCrm() {
       setSavedAt(new Date().toLocaleTimeString('en-NZ', { hour: '2-digit', minute: '2-digit' }));
     }
   }, [crm]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let isMounted = true;
+
+    const syncSignedContracts = async () => {
+      try {
+        const contracts = await loadContracts();
+        const signedOrders = contracts
+          .filter((contract) => contract.status === 'signed')
+          .map(orderFromSignedContract);
+
+        if (!isMounted) return;
+        setCrm((current) => mergeContractOrders(current, signedOrders));
+        setContractSyncNotice(
+          signedOrders.length > 0
+            ? `已同步 ${signedOrders.length} 份已签合同`
+            : '暂无已签合同可同步'
+        );
+      } catch (error) {
+        if (!isMounted) return;
+        setContractSyncNotice(`合同同步失败：${getErrorMessage(error)}`);
+      }
+    };
+
+    syncSignedContracts();
+    const intervalId = window.setInterval(syncSignedContracts, 30000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, [isAuthenticated]);
 
   const filteredLeads = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -630,6 +786,9 @@ export function AdminCrm() {
               <CheckCircle2 size={16} />
               已自动保存{savedAt ? ` ${savedAt}` : ''}
             </p>
+            {contractSyncNotice ? (
+              <p className="text-sm font-medium text-slate-500">{contractSyncNotice}</p>
+            ) : null}
             <label className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:w-96">
               <Search size={17} className="text-slate-400" />
               <input
@@ -923,6 +1082,11 @@ export function AdminCrm() {
                     {order.sourceLeadId ? (
                       <div className="mb-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
                         已从客户线索转入
+                      </div>
+                    ) : null}
+                    {order.sourceContractId ? (
+                      <div className="mb-3 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                        已从已签合同同步
                       </div>
                     ) : null}
                     <div className="grid gap-3 lg:grid-cols-[1fr_150px_150px_1fr_100px_150px_40px]">
