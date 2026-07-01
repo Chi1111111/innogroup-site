@@ -80,6 +80,9 @@ const PAYMENT_STAGE_OPTIONS = ['已付半款', '已付全款'];
 const COMPLIANCE_STAGE_OPTIONS = ['未到港', '处理中', 'MR2A已出', '罚款已交', '已上牌'];
 const LOAN_CAR_STATUS_OPTIONS = ['借出', '在店'];
 
+const CRM_ORDER_CONTRACT_TYPE = 'vehicle-purchase';
+const COMPLETED_COMPLIANCE_STAGE = '已上牌';
+
 const STAGES: Array<{ id: LeadFilter; label: string }> = [
   { id: 'all', label: '全部' },
   { id: 'followup', label: '待跟进' },
@@ -202,6 +205,10 @@ function loadCrm(): CrmState {
 
 function formatContractDate(value?: string) {
   return value ? value.slice(0, 10) : new Date().toISOString().slice(0, 10);
+}
+
+function isCrmOrderContract(contract: VehicleContract) {
+  return contract.contractType === CRM_ORDER_CONTRACT_TYPE;
 }
 
 function vehicleNameFromContract(contract: VehicleContract) {
@@ -533,7 +540,7 @@ export function AdminCrm() {
       try {
         const contracts = await loadContracts();
         const signedOrders = contracts
-          .filter((contract) => contract.status === 'signed')
+          .filter((contract) => isCrmOrderContract(contract) && contract.status === 'signed')
           .map(orderFromSignedContract);
 
         if (!isMounted) return;
@@ -586,6 +593,14 @@ export function AdminCrm() {
 
   const activeLead =
     crm.leads.find((lead) => lead.id === activeLeadId) ?? filteredLeads[0] ?? crm.leads[0] ?? null;
+  const activeOrders = useMemo(
+    () => crm.orders.filter((order) => order.complianceStage !== COMPLETED_COMPLIANCE_STAGE),
+    [crm.orders]
+  );
+  const completedOrders = useMemo(
+    () => crm.orders.filter((order) => order.complianceStage === COMPLETED_COMPLIANCE_STAGE),
+    [crm.orders]
+  );
 
   const addLead = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -610,10 +625,16 @@ export function AdminCrm() {
     setContractImportNotice('');
     try {
       const contracts = await loadContracts();
-      setAvailableContracts(contracts);
-      setSelectedContractId((current) => current || contracts[0]?.id || '');
+      const crmOrderContracts = contracts.filter(isCrmOrderContract);
+      setAvailableContracts(crmOrderContracts);
+      setSelectedContractId((current) => {
+        if (crmOrderContracts.some((contract) => contract.id === current)) return current;
+        return crmOrderContracts[0]?.id || '';
+      });
       setContractImportNotice(
-        contracts.length > 0 ? `已读取 ${contracts.length} 份合同` : '当前没有可读取的合同'
+        crmOrderContracts.length > 0
+          ? `已读取 ${crmOrderContracts.length} 份买车合同`
+          : '当前没有可读取的买车合同'
       );
     } catch (error) {
       setContractImportNotice(`读取合同失败：${getErrorMessage(error)}`);
@@ -626,6 +647,10 @@ export function AdminCrm() {
     const contract = availableContracts.find((item) => item.id === selectedContractId);
     if (!contract) {
       setContractImportNotice('请先选择一份合同。');
+      return;
+    }
+    if (!isCrmOrderContract(contract)) {
+      setContractImportNotice('这份合同不是买车合同，不能导入 CRM 订单。');
       return;
     }
 
@@ -1164,7 +1189,7 @@ export function AdminCrm() {
                     <p className="mt-3 text-sm font-medium text-slate-500">{contractImportNotice}</p>
                   ) : null}
                 </div>
-                {crm.orders.map((order) => (
+                {activeOrders.map((order) => (
                   <div
                     key={order.id}
                     className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
@@ -1257,6 +1282,108 @@ export function AdminCrm() {
                     </div>
                   </div>
                 ))}
+                {completedOrders.length > 0 ? (
+                  <details className="rounded-2xl border border-slate-200 bg-white">
+                    <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
+                      处理完 ({completedOrders.length})
+                    </summary>
+                    <div className="space-y-3 border-t border-slate-100 p-4">
+                      {completedOrders.map((order) => (
+                        <div
+                          key={order.id}
+                          className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                        >
+                          {order.sourceLeadId ? (
+                            <div className="mb-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                              已从客户线索转入
+                            </div>
+                          ) : null}
+                          {order.sourceContractId ? (
+                            <div className="mb-3 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                              已从已签合同同步
+                            </div>
+                          ) : null}
+                          <div className="grid gap-3 lg:grid-cols-[1fr_150px_150px_1fr_100px_150px_40px]">
+                            <Field
+                              label="客户姓名"
+                              value={order.customerName}
+                              onChange={(value) => updateOrder(order.id, { customerName: value })}
+                            />
+                            <Field
+                              label="下单日期"
+                              type="date"
+                              value={order.orderDate}
+                              onChange={(value) => updateOrder(order.id, { orderDate: value })}
+                            />
+                            <Field
+                              label="电话"
+                              value={order.customerPhone}
+                              onChange={(value) => updateOrder(order.id, { customerPhone: value })}
+                            />
+                            <Field
+                              label="车型"
+                              value={order.vehicleModel}
+                              onChange={(value) => updateOrder(order.id, { vehicleModel: value })}
+                            />
+                            <Field
+                              label="年份"
+                              value={order.year}
+                              onChange={(value) => updateOrder(order.id, { year: value })}
+                            />
+                            <Field
+                              label="Plate / VIN"
+                              value={order.plateOrVin}
+                              onChange={(value) => updateOrder(order.id, { plateOrVin: value })}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => deleteOrder(order.id)}
+                              className="mt-5 h-10 rounded-xl p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                              aria-label="Delete order"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                          <div className="mt-3 grid gap-3 lg:grid-cols-[150px_150px_150px_170px_1fr]">
+                            <ComboField
+                              label="款项阶段"
+                              value={order.paymentStage}
+                              onChange={(value) => updateOrder(order.id, { paymentStage: value })}
+                              options={PAYMENT_STAGE_OPTIONS}
+                            />
+                            <Field
+                              label="剩余款项"
+                              value={order.balanceRemaining}
+                              onChange={(value) => updateOrder(order.id, { balanceRemaining: value })}
+                            />
+                            <Field
+                              label="成交价"
+                              value={order.salePrice}
+                              onChange={(value) => updateOrder(order.id, { salePrice: value })}
+                            />
+                            <ComboField
+                              label="Compliance"
+                              value={order.complianceStage}
+                              onChange={(value) => updateOrder(order.id, { complianceStage: value })}
+                              options={COMPLIANCE_STAGE_OPTIONS}
+                            />
+                            <label className="block">
+                              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                NOTE
+                              </span>
+                              <textarea
+                                value={order.note}
+                                onChange={(event) => updateOrder(order.id, { note: event.target.value })}
+                                rows={2}
+                                className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-slate-500 focus:ring-4 focus:ring-slate-200/80"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ) : null}
               </div>
             ) : null}
 
