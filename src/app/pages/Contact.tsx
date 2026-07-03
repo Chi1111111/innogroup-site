@@ -73,10 +73,10 @@ export function Contact() {
               </div>
               <div>
                 <h3 className="mb-3 text-base font-bold text-foreground">{text({ en: 'Email', zh: '邮箱' })}</h3>
-                <p className="break-all text-muted-foreground">
+                <p className="whitespace-nowrap text-sm text-muted-foreground">
                   innogroup.shawn@gmail.com
                 </p>
-                <p className="mt-1 break-all text-muted-foreground">
+                <p className="mt-1 whitespace-nowrap text-sm text-muted-foreground">
                   innogroup.cao@gmail.com
                 </p>
                 <p className="mt-2 text-sm font-semibold text-primary">
