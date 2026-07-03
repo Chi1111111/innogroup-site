@@ -10,6 +10,14 @@ import {
   Trash2,
   UsersRound,
 } from 'lucide-react';
+import {
+  loadCrmState,
+  saveCrmState,
+  type CrmLead,
+  type CrmOrder,
+  type CrmState,
+  type LoanCar,
+} from '../lib/crm';
 import { getErrorMessage, loadContracts, type VehicleContract } from '../lib/contracts';
 
 const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
@@ -19,50 +27,6 @@ const CRM_STORAGE_KEY = 'inno:crm:v2';
 type LeadStatus = string;
 type LeadFilter = string;
 type CrmView = 'leads' | 'orders' | 'loanCars';
-
-interface CrmLead {
-  id: string;
-  createdAt: string;
-  name: string;
-  phone: string;
-  email: string;
-  contact: string;
-  channel: string;
-  interest: string;
-  budget: string;
-  status: LeadStatus;
-  nextFollowUp: string;
-  notes: string;
-}
-
-interface CrmOrder {
-  id: string;
-  sourceLeadId?: string;
-  sourceContractId?: string;
-  customerName: string;
-  orderDate: string;
-  customerPhone: string;
-  vehicleModel: string;
-  year: string;
-  plateOrVin: string;
-  paymentStage: string;
-  balanceRemaining: string;
-  salePrice: string;
-  complianceStage: string;
-  note: string;
-}
-
-interface LoanCar {
-  id: string;
-  vehicle: string;
-  status: string;
-}
-
-interface CrmState {
-  leads: CrmLead[];
-  orders: CrmOrder[];
-  loanCars: LoanCar[];
-}
 
 const LEAD_CHANNEL_OPTIONS = ['Ivan 小红书', 'Shawn 小红书', '网站', '介绍', 'Facebook', 'yuki'];
 const CONTACT_METHOD_OPTIONS = [
@@ -201,6 +165,33 @@ function loadCrm(): CrmState {
   } catch {
     return EXCEL_SEED_CRM;
   }
+}
+
+function normalizeCrmState(crm: CrmState | null | undefined): CrmState {
+  if (!crm) return EXCEL_SEED_CRM;
+
+  return {
+    leads: Array.isArray(crm.leads)
+      ? crm.leads.map((lead) => ({
+          ...lead,
+          createdAt: lead.createdAt ?? '',
+          email: lead.email ?? '',
+          status: normalizeLeadStatus(String(lead.status)),
+        }))
+      : EXCEL_SEED_CRM.leads,
+    orders: Array.isArray(crm.orders)
+      ? crm.orders.map((order) => ({
+          ...order,
+          sourceContractId: order.sourceContractId ?? '',
+          customerPhone: order.customerPhone ?? '',
+          year: order.year ?? '',
+          plateOrVin: order.plateOrVin ?? '',
+          balanceRemaining: order.balanceRemaining ?? '',
+          note: order.note ?? '',
+        }))
+      : EXCEL_SEED_CRM.orders,
+    loanCars: Array.isArray(crm.loanCars) ? crm.loanCars : EXCEL_SEED_CRM.loanCars,
+  };
 }
 
 function formatContractDate(value?: string) {
@@ -503,6 +494,9 @@ export function AdminCrm() {
   const [activeLeadId, setActiveLeadId] = useState(initialCrm.leads[0]?.id ?? '');
   const [query, setQuery] = useState('');
   const [savedAt, setSavedAt] = useState('');
+  const [cloudSyncNotice, setCloudSyncNotice] = useState('等待登录后同步 Supabase');
+  const [hasLoadedCloudCrm, setHasLoadedCloudCrm] = useState(false);
+  const [isSavingCloudCrm, setIsSavingCloudCrm] = useState(false);
   const [contractSyncNotice, setContractSyncNotice] = useState('');
   const [availableContracts, setAvailableContracts] = useState<VehicleContract[]>([]);
   const [selectedContractId, setSelectedContractId] = useState('');
@@ -527,12 +521,70 @@ export function AdminCrm() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(CRM_STORAGE_KEY, JSON.stringify(crm));
-      setSavedAt(new Date().toLocaleTimeString('en-NZ', { hour: '2-digit', minute: '2-digit' }));
     }
-  }, [crm]);
+
+    if (!isAuthenticated || !hasLoadedCloudCrm) return;
+
+    let isMounted = true;
+    setIsSavingCloudCrm(true);
+
+    saveCrmState(crm)
+      .then(() => {
+        if (!isMounted) return;
+        const nextSavedAt = new Date().toLocaleTimeString('en-NZ', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        setSavedAt(nextSavedAt);
+        setCloudSyncNotice(`Supabase 已保存 ${nextSavedAt}`);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setCloudSyncNotice(`Supabase 保存失败，本机已缓存：${getErrorMessage(error)}`);
+      })
+      .finally(() => {
+        if (isMounted) setIsSavingCloudCrm(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [crm, hasLoadedCloudCrm, isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
+
+    let isMounted = true;
+
+    const loadCloudCrm = async () => {
+      setCloudSyncNotice('正在从 Supabase 同步 CRM...');
+      try {
+        const cloudCrm = await loadCrmState();
+        if (!isMounted) return;
+        const nextCrm = normalizeCrmState(cloudCrm ?? loadCrm());
+        setCrm(nextCrm);
+        setActiveLeadId(nextCrm.leads[0]?.id ?? '');
+        setHasLoadedCloudCrm(true);
+        setCloudSyncNotice(cloudCrm ? '已从 Supabase 同步 CRM' : 'Supabase 暂无 CRM 数据，已使用本机缓存');
+      } catch (error) {
+        if (!isMounted) return;
+        const localCrm = loadCrm();
+        setCrm(localCrm);
+        setActiveLeadId(localCrm.leads[0]?.id ?? '');
+        setHasLoadedCloudCrm(true);
+        setCloudSyncNotice(`Supabase 读取失败，暂用本机缓存：${getErrorMessage(error)}`);
+      }
+    };
+
+    loadCloudCrm();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !hasLoadedCloudCrm) return;
 
     let isMounted = true;
 
@@ -563,7 +615,7 @@ export function AdminCrm() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [isAuthenticated]);
+  }, [hasLoadedCloudCrm, isAuthenticated]);
 
   const filteredLeads = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -860,6 +912,10 @@ export function AdminCrm() {
             {contractSyncNotice ? (
               <p className="text-sm font-medium text-slate-500">{contractSyncNotice}</p>
             ) : null}
+            <p className="text-sm font-medium text-slate-500">
+              {cloudSyncNotice}
+              {isSavingCloudCrm ? '，保存中...' : ''}
+            </p>
             <label className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:w-96">
               <Search size={17} className="text-slate-400" />
               <input
