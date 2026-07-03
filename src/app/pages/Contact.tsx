@@ -57,7 +57,7 @@ export function Contact() {
               <div>
                 <h3 className="mb-3 text-base font-bold text-foreground">WhatsApp</h3>
                 <a
-                  href="https://wa.me/642885307225"
+                  href="https://wa.me/64272858065"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold text-green-600 transition-colors hover:text-green-700"
@@ -75,6 +75,9 @@ export function Contact() {
                 <h3 className="mb-3 text-base font-bold text-foreground">{text({ en: 'Email', zh: '邮箱' })}</h3>
                 <p className="break-all text-muted-foreground">
                   innogroup.shawn@gmail.com
+                </p>
+                <p className="mt-1 break-all text-muted-foreground">
+                  innogroup.cao@gmail.com
                 </p>
                 <p className="mt-2 text-sm font-semibold text-primary">
                   {text({ en: 'Please use the form below', zh: '请优先填写下方表格' })}

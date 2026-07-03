@@ -87,7 +87,7 @@ export function Services() {
               {text({ en: 'Contact Us', zh: '联系我们' })}
             </Link>
             <a
-              href="https://wa.me/642885307225"
+              href="https://wa.me/64272858065"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/8 px-8 py-4 text-lg font-semibold text-white transition-all hover:scale-105 hover:border-primary/40 hover:bg-white/12"

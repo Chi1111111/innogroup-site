@@ -782,7 +782,7 @@ export function JpaucFeed() {
                   `${priceSourceLabel}: ${japanPrice}`,
                   `Link: ${vehicleLink}`,
                 ].join('\n');
-                const whatsappUrl = `https://wa.me/642885307225?text=${encodeURIComponent(enquiryMessage)}`;
+                const whatsappUrl = `https://wa.me/64272858065?text=${encodeURIComponent(enquiryMessage)}`;
                 const contactParams = new URLSearchParams({
                   source: 'jpauc',
                   feed: activeFeed === 'auction' ? 'Auction' : 'One Price Japan',

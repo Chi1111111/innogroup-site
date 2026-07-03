@@ -6,7 +6,7 @@ export const SEO_CONFIG = {
   defaultDescription:
     'Inno Group helps New Zealand customers, dealers and partners source quality vehicles through suitable overseas channels, with local support in New Zealand.',
   defaultImage: '/og-image.png',
-  phone: '+642885307225',
+  phone: '+64272858065',
   email: 'innogroup.shawn@gmail.com',
   priceRange: '$$',
   openingHours: ['Mo-Fr 10:00-17:00'],

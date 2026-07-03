@@ -55,7 +55,8 @@ export function ContactSection() {
               <div>
                 <h4 className="font-bold mb-3 text-foreground text-lg">Email Us</h4>
                 <p className="text-muted-foreground leading-relaxed mb-3">
-                  innogroup.shawn@gmail.com
+                  innogroup.shawn@gmail.com<br />
+                  innogroup.cao@gmail.com
                 </p>
                 <p className="text-sm text-primary font-semibold">
                   24-Hour Response

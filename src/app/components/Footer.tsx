@@ -77,13 +77,14 @@ export function Footer() {
               </li>
               <li>
                 <strong className="text-white">WhatsApp</strong><br />
-                <a href="https://wa.me/642885307225" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-primary">
-                  +64 28 8530 7225
+                <a href="https://wa.me/64272858065" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-primary">
+                  +64 27 285 8065
                 </a>
               </li>
               <li>
                 <strong className="text-white">{text({ en: 'Email', zh: '邮箱' })}</strong><br />
-                <a href="mailto:innogroup.shawn@gmail.com" className="transition-colors hover:text-primary">innogroup.shawn@gmail.com</a>
+                <a href="mailto:innogroup.shawn@gmail.com" className="transition-colors hover:text-primary">innogroup.shawn@gmail.com</a><br />
+                <a href="mailto:innogroup.cao@gmail.com" className="transition-colors hover:text-primary">innogroup.cao@gmail.com</a>
               </li>
               <li>
                 <strong className="text-white">{text({ en: 'Address', zh: '地址' })}</strong><br />

@@ -46,7 +46,7 @@ export function StickyCTA() {
             </a>
           ) : null}
           <a
-            href="https://wa.me/642885307225"
+            href="https://wa.me/64272858065"
             target="_blank"
             rel="noopener noreferrer"
             className={`${showCalculatorCta ? 'flex-1' : 'w-full'} flex items-center justify-center gap-2 rounded-[18px] bg-[#151515] px-4 py-3 text-center text-sm font-semibold text-white transition-all active:scale-95`}
@@ -71,7 +71,7 @@ export function StickyCTA() {
             ) : null}
 
             <a
-              href="https://wa.me/642885307225"
+              href="https://wa.me/64272858065"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center gap-3 rounded-2xl bg-[#151515] px-6 py-4 font-semibold text-white shadow-[0_22px_50px_rgba(17,17,17,0.28)] transition-all hover:scale-[1.02] hover:bg-[#202020]"
