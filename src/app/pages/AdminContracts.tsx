@@ -23,6 +23,73 @@ type WorkspaceTab = 'status' | 'library' | 'editor';
 type Section = 'client' | 'vehicle' | 'trade' | 'payment' | 'checks' | 'deposit' | 'consignment';
 type Notice = { type: 'success' | 'error' | 'info'; text: string } | null;
 
+const UI_LABELS: Record<string, string> = {
+  Client: '客户',
+  Password: '密码',
+  'Deposit Form': '订金表格',
+  Consignment: '寄售',
+  Vehicle: '车辆',
+  Checks: '确认项',
+  Payment: '付款',
+  Name: '姓名',
+  'Driver Licence No.': '驾照号',
+  Address: '地址',
+  'Email(s)': '邮箱（可多个）',
+  Phone: '电话',
+  Date: '日期',
+  'In anticipation of': '预定/意向事项',
+  'Applicant name': '申请人姓名',
+  'Refundable deposit amount': '可退订金金额',
+  'Next step contact name': '下一步联系人',
+  'Return email': '回传邮箱',
+  'Contact person': '联系人',
+  'Contact availability': '可联系时间',
+  'Acknowledgement name': '确认人姓名',
+  'Pre-order vehicle': '预定车辆',
+  'Inno Group signer': 'Inno Group 签署人',
+  'Agreement date': '协议日期',
+  'Owner name': '车主姓名',
+  'Owner ID / company no.': '车主 ID / 公司号',
+  'Owner bank account': '车主银行账户',
+  'Listing / target price': '挂牌/目标价格',
+  'Minimum sale price': '最低成交价',
+  'Term end date': '期限结束日期',
+  'Commission rate %': '服务费比例 %',
+  'Settlement business days': '结算工作日',
+  'Additional costs / notes': '额外费用/备注',
+  'Owner email(s)': '车主邮箱（可多个）',
+  'Owner phone': '车主电话',
+  'Owner address': '车主地址',
+  Make: '品牌',
+  'Vehicle Year': '车辆年份',
+  Model: '型号',
+  'VIN or Registration No.': 'VIN 或车牌号',
+  Odometer: '公里数',
+  'Fuel Type': '燃油类型',
+  Colour: '颜色',
+  'Engine Capacity': '排量',
+  'WOF Details': 'WOF 信息',
+  'First Registered NZ': '新西兰首次注册',
+  'Special Purpose': '特殊用途',
+  Year: '年份',
+  'Sale Price inc GST': '含 GST 售价',
+  Accessories: '配件',
+  'Accessories Value': '配件金额',
+  Subtotal: '小计',
+  'Net Price': '净价',
+  Deposit: '订金',
+  'Due on Delivery': '交付时应付',
+  'Balance Outstanding': '剩余尾款',
+  'Finance By': '金融机构',
+  'Finance Term Months': '贷款期数（月）',
+  'Salesperson Name': '销售姓名',
+  'Inno Group Signer': 'Inno Group 签署人',
+};
+
+function uiLabel(label: string) {
+  return UI_LABELS[label] ?? label;
+}
+
 const CONTRACT_TYPES: Array<{
   id: ContractType | 'consignment' | 'finance';
   name: string;
@@ -31,26 +98,26 @@ const CONTRACT_TYPES: Array<{
 }> = [
   {
     id: 'vehicle-purchase',
-    name: 'Vehicle Purchase Agreement',
-    description: 'Motor vehicle offer, payment, acknowledgements, and purchaser signature.',
+    name: '车辆购买合同',
+    description: '车辆信息、付款、确认事项和买方签名。',
     available: true,
   },
   {
     id: 'deposit',
-    name: 'Deposit Agreement',
-    description: 'Expression of interest / pre-order deposit form based on the Inno Group deposit template.',
+    name: '订金协议',
+    description: '用于预定和意向订金的表格。',
     available: true,
   },
   {
     id: 'consignment',
-    name: 'Consignment Agreement',
-    description: 'Owner vehicle consignment, 7% success fee, sale authority, and 5-business-day settlement.',
+    name: '寄售协议',
+    description: '车主寄售、成交服务费、销售授权和结算安排。',
     available: true,
   },
   {
     id: 'finance',
-    name: 'Finance Authority',
-    description: 'Coming next: finance consent, document collection, and lender authority.',
+    name: '金融授权',
+    description: '后续开放：金融授权、资料收集和贷款机构授权。',
     available: false,
   },
 ];
@@ -58,7 +125,7 @@ const CONTRACT_TYPES: Array<{
 function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
     <label className="space-y-1.5">
-      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{uiLabel(label)}</span>
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -72,7 +139,7 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
   return (
     <label className={`flex gap-3 rounded-2xl border p-4 text-sm text-slate-700 transition-all duration-200 ${checked ? 'border-emerald-200 bg-emerald-50/80 shadow-sm' : 'border-slate-200 bg-white/90 hover:border-slate-300 hover:bg-white'}`}>
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-0.5 accent-slate-950" />
-      <span>{label}</span>
+      <span>{uiLabel(label)}</span>
     </label>
   );
 }
@@ -177,7 +244,7 @@ function SignaturePad({
           onClick={clearSignature}
           className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all duration-200 hover:border-slate-300 hover:text-slate-950"
         >
-          Clear
+          清除
         </button>
       </div>
       <canvas
@@ -191,7 +258,7 @@ function SignaturePad({
         onPointerLeave={() => setIsDrawing(false)}
         className="mt-3 h-36 w-full touch-none rounded-2xl border border-slate-200 bg-white shadow-inner shadow-slate-100"
       />
-      <p className="mt-2 text-xs leading-5 text-slate-500">Draw here, then click Save Draft or Send Email to store it.</p>
+      <p className="mt-2 text-xs leading-5 text-slate-500">在这里签名，然后点击保存草稿或发送邮件保存。</p>
     </div>
   );
 }
@@ -203,11 +270,11 @@ function noticeClass(type: NonNullable<Notice>['type']) {
 }
 
 function statusLabel(status: VehicleContract['status']) {
-  if (status === 'draft') return 'Draft';
-  if (status === 'sent') return 'Sent / pending';
-  if (status === 'viewed') return 'Viewed';
-  if (status === 'signed') return 'Signed';
-  return 'Cancelled';
+  if (status === 'draft') return '草稿';
+  if (status === 'sent') return '已发送 / 待签';
+  if (status === 'viewed') return '已查看';
+  if (status === 'signed') return '已签署';
+  return '已取消';
 }
 
 function statusClass(status: VehicleContract['status']) {
@@ -221,20 +288,20 @@ function statusClass(status: VehicleContract['status']) {
 function contractTitle(contract: VehicleContract) {
   if (contract.contractType === 'deposit') {
     const vehicle = contract.depositAgreement?.preOrderVehicle?.trim();
-    return vehicle ? `Deposit Agreement - ${vehicle}` : 'Deposit Agreement';
+    return vehicle ? `订金协议 - ${vehicle}` : '订金协议';
   }
 
   if (contract.contractType === 'consignment') {
     const vehicle = [contract.purchasedVehicle.year, contract.purchasedVehicle.make, contract.purchasedVehicle.model]
       .filter(Boolean)
       .join(' ');
-    return vehicle ? `Consignment Agreement - ${vehicle}` : 'Consignment Agreement';
+    return vehicle ? `寄售协议 - ${vehicle}` : '寄售协议';
   }
 
   const vehicle = [contract.purchasedVehicle.year, contract.purchasedVehicle.make, contract.purchasedVehicle.model]
     .filter(Boolean)
     .join(' ');
-  return vehicle || 'Vehicle Purchase Agreement';
+  return vehicle || '车辆购买合同';
 }
 
 function StatCard({ label, value }: { label: string; value: number }) {
@@ -260,7 +327,7 @@ export function AdminContracts() {
   useEffect(() => {
     loadContracts()
       .then(setContracts)
-      .catch((error) => setNotice({ type: 'error', text: `Could not load contracts: ${getErrorMessage(error)}` }));
+      .catch((error) => setNotice({ type: 'error', text: `无法加载合同：${getErrorMessage(error)}` }));
     document.title = 'Inno Group Contract Admin';
   }, []);
 
@@ -282,7 +349,7 @@ export function AdminContracts() {
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (password.trim() !== ADMIN_PASSWORD) {
-      setLoginError('Password not correct, please try again.');
+      setLoginError('密码不正确，请重试。');
       return;
     }
     window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'authenticated');
@@ -308,7 +375,7 @@ export function AdminContracts() {
       setSection(contractType === 'deposit' ? 'deposit' : contractType === 'consignment' ? 'consignment' : 'client');
       setNotice(null);
     } catch (error) {
-      setNotice({ type: 'error', text: `Could not create contract: ${getErrorMessage(error)}` });
+      setNotice({ type: 'error', text: `无法创建合同：${getErrorMessage(error)}` });
     } finally {
       setIsBusy(false);
     }
@@ -325,10 +392,10 @@ export function AdminContracts() {
       const nextContracts = await upsertContract(next);
       setContracts(nextContracts);
       setActive(next);
-      setNotice({ type: 'success', text: status === 'sent' ? 'Contract saved as sent.' : 'Contract draft saved.' });
+      setNotice({ type: 'success', text: status === 'sent' ? '合同已保存为已发送。' : '合同草稿已保存。' });
       return next;
     } catch (error) {
-      setNotice({ type: 'error', text: `Could not save contract: ${getErrorMessage(error)}` });
+      setNotice({ type: 'error', text: `无法保存合同：${getErrorMessage(error)}` });
       return null;
     } finally {
       setIsBusy(false);
@@ -345,7 +412,7 @@ export function AdminContracts() {
     if (emails.length === 0) {
       setSection('client');
       setWorkspaceTab('editor');
-      setNotice({ type: 'error', text: 'Add at least one customer email before sending.' });
+      setNotice({ type: 'error', text: '发送前请至少填写一个客户邮箱。' });
       return;
     }
 
@@ -382,12 +449,12 @@ export function AdminContracts() {
         )
       );
 
-      setNotice({ type: 'success', text: `Contract saved and sent to ${emails.length} email${emails.length === 1 ? '' : 's'} through EmailJS.` });
+      setNotice({ type: 'success', text: `合同已保存，并通过 EmailJS 发送到 ${emails.length} 个邮箱。` });
       return;
     } catch (error) {
       setNotice({
         type: 'error',
-        text: `Contract was saved, but EmailJS did not send it. ${getErrorMessage(error)}`,
+        text: `合同已保存，但 EmailJS 未发送成功：${getErrorMessage(error)}`,
       });
       setIsBusy(false);
       return;
@@ -397,15 +464,15 @@ export function AdminContracts() {
   };
 
   const remove = async () => {
-    if (!window.confirm('Delete current contract?')) return;
+    if (!window.confirm('确定删除当前合同吗？')) return;
     setIsBusy(true);
     try {
       setContracts(await deleteContract(active.id));
       setActive(createEmptyContract());
       setWorkspaceTab('library');
-      setNotice({ type: 'success', text: 'Contract deleted.' });
+      setNotice({ type: 'success', text: '合同已删除。' });
     } catch (error) {
-      setNotice({ type: 'error', text: `Could not delete contract: ${getErrorMessage(error)}` });
+      setNotice({ type: 'error', text: `无法删除合同：${getErrorMessage(error)}` });
     } finally {
       setIsBusy(false);
     }
@@ -439,16 +506,16 @@ export function AdminContracts() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#f8f4ec_0,#eef3f8_38%,#f8fafc_100%)] px-4 py-12">
         <div className="w-full max-w-md animate-[fadeIn_0.45s_ease-out] rounded-[32px] border border-white/70 bg-white/85 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5 backdrop-blur-xl">
-          <h1 className="text-2xl font-semibold text-slate-900">Admin Login</h1>
-          <p className="mt-2 text-sm text-slate-600">Contract Workspace</p>
+          <h1 className="text-2xl font-semibold text-slate-900">后台登录</h1>
+          <p className="mt-2 text-sm text-slate-600">合同管理后台</p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <TextInput label="Password" value={password} onChange={setPassword} />
             {loginError ? <p className="text-sm text-red-600">{loginError}</p> : null}
             <button type="submit" className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black active:translate-y-0">
-              Sign In
+              登录
             </button>
           </form>
-          <Link to="/" className="mt-4 inline-flex text-sm text-slate-700 hover:text-slate-900">Back to website</Link>
+          <Link to="/" className="mt-4 inline-flex text-sm text-slate-700 hover:text-slate-900">返回网站</Link>
         </div>
       </div>
     );
@@ -462,7 +529,7 @@ export function AdminContracts() {
         workspaceTab === id ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/15' : 'text-slate-500 hover:bg-white hover:text-slate-950'
       }`}
     >
-      {label}
+      {uiLabel(label)}
     </button>
   );
 
@@ -485,20 +552,20 @@ export function AdminContracts() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#c7a06d]">Inno Group e-sign</p>
-              <h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-950">Contract Workspace</h1>
-              <p className="mt-2 text-sm text-slate-600">Track sent agreements, manage contract types, and prepare signing links.</p>
+              <h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-950">合同管理后台</h1>
+              <p className="mt-2 text-sm text-slate-600">管理合同草稿、发送邮件、复制签署链接和查看签署状态。</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link to="/admin" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">Content Admin</Link>
-              <Link to="/admin/crm" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">CRM Admin</Link>
-              <button onClick={() => createNewContract()} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">New Contract</button>
+              <Link to="/admin" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">内容管理</Link>
+              <Link to="/admin/crm" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">CRM 管理</Link>
+              <button onClick={() => createNewContract()} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">新建合同</button>
             </div>
           </div>
 
           <div className="mt-6 flex flex-wrap gap-2 rounded-full border border-slate-200/80 bg-slate-100/70 p-1.5">
-            {navButton('status', 'Status Board')}
-            {navButton('library', 'Contract Library')}
-            {navButton('editor', 'Prepare & Send')}
+            {navButton('status', '状态看板')}
+            {navButton('library', '合同库')}
+            {navButton('editor', '编辑与发送')}
           </div>
 
           {notice ? <div className={`mt-4 rounded-xl border px-4 py-3 text-sm ${noticeClass(notice.type)}`}>{notice.text}</div> : null}
@@ -507,36 +574,36 @@ export function AdminContracts() {
         {workspaceTab === 'status' ? (
           <section className="space-y-5">
             <div className="grid gap-4 md:grid-cols-4">
-              <StatCard label="Drafts" value={stats.draft} />
-              <StatCard label="Sent / pending" value={stats.sent} />
-              <StatCard label="Viewed" value={stats.viewed} />
-              <StatCard label="Signed" value={stats.signed} />
+              <StatCard label="草稿" value={stats.draft} />
+              <StatCard label="已发送 / 待签" value={stats.sent} />
+              <StatCard label="已查看" value={stats.viewed} />
+              <StatCard label="已签署" value={stats.signed} />
             </div>
 
             <div className="overflow-hidden rounded-[32px] border border-white/70 bg-white/85 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-slate-900/5 backdrop-blur-xl">
               <div className="border-b border-slate-100 px-6 py-5">
-                <h2 className="text-lg font-semibold text-slate-950">Sent contract status</h2>
+                <h2 className="text-lg font-semibold text-slate-950">合同发送状态</h2>
               </div>
               <div className="divide-y divide-slate-100">
                 {contracts.length === 0 ? (
-                  <p className="p-5 text-sm text-slate-500">No contracts yet.</p>
+                  <p className="p-5 text-sm text-slate-500">暂无合同。</p>
                 ) : (
                   contracts.map((contract) => (
                     <div key={contract.id} className="grid gap-3 p-6 transition-all duration-200 hover:bg-slate-50/80 lg:grid-cols-[1.2fr_160px_1fr_auto] lg:items-center">
                       <div>
-                        <p className="font-semibold text-slate-950">{contract.client.name || 'Unnamed client'}</p>
+                        <p className="font-semibold text-slate-950">{contract.client.name || '未命名客户'}</p>
                         <p className="mt-1 text-sm text-slate-500">{contractTitle(contract)}</p>
-                        <p className="mt-1 text-xs text-slate-400">{contract.client.email || 'No email'}</p>
+                        <p className="mt-1 text-xs text-slate-400">{contract.client.email || '暂无邮箱'}</p>
                       </div>
                       <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${statusClass(contract.status)}`}>{statusLabel(contract.status)}</span>
                       <p className="text-xs leading-5 text-slate-500">
-                        Sent {formatDateTime(contract.sentAt)}<br />
-                        Viewed {formatDateTime(contract.viewedAt)}<br />
-                        Signed {formatDateTime(contract.signedAt)}
+                        发送：{formatDateTime(contract.sentAt)}<br />
+                        查看：{formatDateTime(contract.viewedAt)}<br />
+                        签署：{formatDateTime(contract.signedAt)}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        <button onClick={() => activateContract(contract, 'editor')} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300">Open</button>
-                        <a href={`/sign/${contract.signingToken}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5">Signing page</a>
+                        <button onClick={() => activateContract(contract, 'editor')} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300">打开</button>
+                        <a href={`/sign/${contract.signingToken}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5">签署页</a>
                       </div>
                     </div>
                   ))
@@ -557,7 +624,7 @@ export function AdminContracts() {
                       <p className="mt-2 text-sm leading-6 text-slate-600">{type.description}</p>
                     </div>
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${type.available ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}`}>
-                      {type.available ? 'Ready' : 'Soon'}
+                      {type.available ? '可使用' : '即将开放'}
                     </span>
                   </div>
                   <button
@@ -566,17 +633,17 @@ export function AdminContracts() {
                     disabled={!type.available || isBusy}
                     className="mt-5 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                   >
-                    Use this contract
+                    使用这个合同
                   </button>
                 </div>
               ))}
             </div>
 
             <div className="rounded-[32px] border border-white/70 bg-white/85 p-6 shadow-[0_18px_60px_rgba(15,23,42,0.07)] ring-1 ring-slate-900/5 backdrop-blur-xl">
-              <h2 className="text-lg font-semibold text-slate-950">Existing documents</h2>
+              <h2 className="text-lg font-semibold text-slate-950">已有文件</h2>
               <div className="mt-4 space-y-3">
                 {contracts.length === 0 ? (
-                  <p className="text-sm text-slate-500">No saved contracts yet.</p>
+                  <p className="text-sm text-slate-500">暂无已保存合同。</p>
                 ) : (
                   contracts.map((contract) => (
                     <button
@@ -586,7 +653,7 @@ export function AdminContracts() {
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-slate-950">{contract.client.name || 'Unnamed client'}</p>
+                          <p className="font-semibold text-slate-950">{contract.client.name || '未命名客户'}</p>
                           <p className="mt-1 text-slate-500">{contractTitle(contract)}</p>
                         </div>
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass(contract.status)}`}>{statusLabel(contract.status)}</span>
@@ -604,18 +671,18 @@ export function AdminContracts() {
             <div className="space-y-5">
               <div className="rounded-[28px] border border-white/70 bg-white/85 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/5 backdrop-blur-xl">
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => save()} disabled={isBusy} className="rounded-full bg-[#d2a968] px-5 py-2.5 text-sm font-semibold text-black shadow-lg shadow-[#d2a968]/20 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300">Save Draft</button>
-                  <button onClick={sendEmail} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">Send Email</button>
-                  <button onClick={copyLink} disabled={isBusy} className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/15 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300">Copy Link</button>
-                  <button onClick={remove} disabled={isBusy} className="rounded-full border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">Delete</button>
+                  <button onClick={() => save()} disabled={isBusy} className="rounded-full bg-[#d2a968] px-5 py-2.5 text-sm font-semibold text-black shadow-lg shadow-[#d2a968]/20 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300">保存草稿</button>
+                  <button onClick={sendEmail} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">发送邮件</button>
+                  <button onClick={copyLink} disabled={isBusy} className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/15 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300">复制链接</button>
+                  <button onClick={remove} disabled={isBusy} className="rounded-full border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">删除</button>
                 </div>
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-700">
-                  Signing link: <span className="break-all font-medium text-slate-950">{signingLink}</span>
+                  签署链接：<span className="break-all font-medium text-slate-950">{signingLink}</span>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                   <span className={`rounded-full px-3 py-1 font-semibold ${statusClass(active.status)}`}>{statusLabel(active.status)}</span>
-                  <span>Viewed {formatDateTime(active.viewedAt)}</span>
-                  <span>Signed {formatDateTime(active.signedAt)}</span>
+                  <span>查看：{formatDateTime(active.viewedAt)}</span>
+                  <span>签署：{formatDateTime(active.signedAt)}</span>
                 </div>
               </div>
 
