@@ -7,6 +7,7 @@ import { LanguageSwitcher, useLanguage } from './SiteTranslator';
 const navigationLinks = [
   { to: '/', label: { en: 'Home', zh: '首页' } },
   { to: '/vehicles/china', label: { en: 'Cars from China', zh: '中国车源' } },
+  { to: '/vehicles/japan-special-order', label: { en: 'Japan Finds', zh: '日本精选车源' } },
   { to: '/jpauc-feed', label: { en: 'Cars From Japan', zh: '日本车源' } },
   { to: '/services', label: { en: 'Services', zh: '服务支持' } },
   { to: '/finance', label: { en: 'Finance', zh: '车辆贷款' } },
@@ -32,115 +33,77 @@ const GlobeIcon = () => (
 );
 
 export function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [logoError, setLogoError] = useState(false);
-  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+  const { pathname } = useLocation();
   const { text } = useLanguage();
 
-  const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
-    }
-    if (path === '/vehicles/china') {
-      return location.pathname.startsWith('/vehicles/china');
-    }
-    return location.pathname.startsWith(path);
-  };
-
-  const navLinkClass = (path: string) =>
-    `whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold uppercase tracking-[0.18em] transition-colors ${
-      isActive(path)
-        ? 'bg-primary/10 text-primary ring-1 ring-primary/18'
-        : 'text-foreground/72 hover:bg-black/4 hover:text-foreground'
-    }`;
-
-  const mobileNavLinkClass = (path: string) =>
-    `flex items-center justify-between rounded-[18px] px-4 py-3.5 text-sm font-semibold transition-colors ${
-      isActive(path)
-        ? 'bg-primary text-white shadow-[0_16px_35px_rgba(199,162,74,0.28)]'
-        : 'bg-black/[0.03] text-foreground/78 hover:bg-black/[0.05] hover:text-foreground'
-    }`;
+  const isActive = (to: string) => (to === '/' ? pathname === '/' : pathname.startsWith(to));
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-black/6 bg-[rgba(250,246,239,0.82)] shadow-[0_10px_40px_rgba(17,17,17,0.05)] backdrop-blur-xl">
-      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-black/5 bg-white/90 backdrop-blur-xl">
+      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link to="/" className="group flex items-center gap-3" onClick={() => setIsOpen(false)}>
+          <img
+            src={logoImage}
+            alt="Inno Group"
+            className="h-8 w-auto max-w-[170px] object-contain transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-90 sm:h-10 sm:max-w-none md:h-12"
+          />
+        </Link>
 
-      <div className="section-shell px-4 sm:px-6 lg:px-8">
-        <div className="flex h-[4.15rem] items-center justify-between gap-3 sm:h-[4.5rem] md:h-20 md:gap-6">
-          <div className="flex items-center">
-            <Link to="/" className="group">
-              {!logoError ? (
-                <img
-                  src={logoImage}
-                  alt="Inno Group Ltd"
-                  className="h-8 w-auto max-w-[170px] object-contain transition-all duration-300 group-hover:scale-[1.02] group-hover:opacity-90 sm:h-10 sm:max-w-none md:h-12"
-                  onError={() => setLogoError(true)}
-                />
-              ) : (
-                <div className="flex items-center gap-3">
-                  <GlobeIcon />
-                  <span className="text-2xl font-bold tracking-tight text-foreground">
-                    Inno Group <span className="text-primary">Ltd</span>
-                  </span>
-                </div>
-              )}
-            </Link>
-          </div>
-
-          <div className="hidden items-center gap-3 md:flex">
-            {navigationLinks.map((link) => (
-              <Link key={link.to} to={link.to} className={navLinkClass(link.to)}>
-                {text(link.label)}
-              </Link>
-            ))}
-          </div>
-
-          <div className="hidden items-center gap-3 md:flex">
-            <LanguageSwitcher />
+        <div className="hidden items-center gap-1 lg:flex">
+          {navigationLinks.map((item) => (
             <Link
-              to="/contact"
-              className="inline-flex items-center whitespace-nowrap rounded-full bg-[#151515] px-5 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-0.5 hover:bg-primary"
+              key={item.to}
+              to={item.to}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                isActive(item.to)
+                  ? 'bg-primary text-white shadow-[0_10px_30px_rgba(199,162,74,0.25)]'
+                  : 'text-foreground/70 hover:bg-black/[0.04] hover:text-foreground'
+              }`}
             >
-              {text({ en: 'Request Quote', zh: '获取报价' })}
+              {text(item.label)}
             </Link>
-          </div>
-
-          <button
-            className="rounded-full border border-black/8 bg-white/60 p-2.5 text-foreground shadow-sm md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          ))}
         </div>
 
-        {isMenuOpen && (
-          <div className="pb-4 md:hidden">
-            <div className="section-card space-y-2 p-2.5 sm:p-3">
-              {navigationLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={mobileNavLinkClass(link.to)}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span>{text(link.label)}</span>
-                  <span className="text-current/55">/</span>
-                </Link>
-              ))}
+        <div className="hidden items-center gap-3 lg:flex">
+          <LanguageSwitcher />
+          <GlobeIcon />
+        </div>
 
+        <button
+          type="button"
+          className="rounded-full border border-black/10 p-2 text-foreground lg:hidden"
+          onClick={() => setIsOpen((current) => !current)}
+          aria-label="Toggle navigation"
+        >
+          {isOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </nav>
+
+      {isOpen ? (
+        <div className="border-t border-black/5 bg-white px-4 py-4 shadow-lg lg:hidden">
+          <div className="mx-auto flex max-w-7xl flex-col gap-2">
+            {navigationLinks.map((item) => (
               <Link
-                to="/contact"
-                className="mt-3 inline-flex w-full items-center justify-center whitespace-nowrap rounded-2xl bg-[#151515] px-5 py-3.5 text-sm font-semibold uppercase tracking-[0.16em] text-white"
-                onClick={() => setIsMenuOpen(false)}
+                key={item.to}
+                to={item.to}
+                onClick={() => setIsOpen(false)}
+                className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
+                  isActive(item.to)
+                    ? 'bg-primary text-white'
+                    : 'text-foreground/75 hover:bg-black/[0.04]'
+                }`}
               >
-                {text({ en: 'Request Quote', zh: '获取报价' })}
+                {text(item.label)}
               </Link>
-
-              <LanguageSwitcher compact />
+            ))}
+            <div className="px-1 pt-2">
+              <LanguageSwitcher />
             </div>
           </div>
-        )}
-      </div>
-    </nav>
+        </div>
+      ) : null}
+    </header>
   );
 }

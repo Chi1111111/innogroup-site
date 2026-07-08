@@ -29,6 +29,12 @@ export const heroGalleryImages = [
 export {
   aboutAuctionYardImage,
   heroAuctionYardImage,
+  heroHondaCivicTypeRImage,
+  heroMazdaRx7Image,
+  heroSkylineGtrImage,
+  heroSportsCollectionImage,
+  heroToyotaSupraImage,
+  japanLuxurySedanImage,
   logoImage,
   logoMarkImage,
   partnerAsnetImage,

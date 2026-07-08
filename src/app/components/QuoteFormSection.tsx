@@ -40,15 +40,19 @@ export function QuoteFormSection() {
     if (typeof window === 'undefined') return;
 
     const params = new URLSearchParams(window.location.search);
-    if (params.get('source') !== 'jpauc') return;
+    const source = params.get('source');
+    if (source !== 'jpauc' && source !== 'japan-special-order') return;
 
     const message = params.get('message') ?? '';
     const vehicle = params.get('vehicle') ?? '';
     const year = params.get('year') ?? '';
     const price = params.get('price') ?? '';
-    const fallbackMessage = vehicle
-      ? `Hi Inno Group, I'm interested in this vehicle:\n${vehicle}`
-      : '';
+    const fallbackMessage =
+      source === 'japan-special-order'
+        ? `Hi Inno Group, I'm interested in a Japan special order search:\n${vehicle || 'Rare / classic / supercar from Japan'}`
+        : vehicle
+          ? `Hi Inno Group, I'm interested in this vehicle:\n${vehicle}`
+          : '';
 
     setFormData((current) => ({
       ...current,

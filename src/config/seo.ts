@@ -37,6 +37,13 @@ export const SEO_ROUTES = {
     keywords:
       'Cars from China NZ, China car import NZ, Chinese EV import NZ, Chinese MPV NZ, new energy vehicle NZ, BAW M8 NZ, WOX AIR NZ, WOX Nebula NZ, WOX Shera NZ, WOX Zeny NZ',
   },
+  '/vehicles/japan-special-order': {
+    title: 'Japan Fresh Car Finds NZ | Classic JDM, Rare Cars & Supercars',
+    description:
+      'Regularly updated interesting vehicles sent from Japan, including classic JDM, rare cars, unusual builds and high-end performance cars.',
+    keywords:
+      'Japan fresh car finds NZ, JDM import NZ, Japanese supercar import, Skyline GTR NZ, Supra import NZ, RX7 import NZ, rare car sourcing Japan',
+  },
   '/vehicles/china/baw-m8': {
     title: 'BAW M8 EV / REEV MPV Import NZ | 7/9-Seater Electric MPV',
     description:

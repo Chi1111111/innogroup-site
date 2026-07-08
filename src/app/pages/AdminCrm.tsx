@@ -845,20 +845,20 @@ export function AdminCrm() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
         <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">Admin Login</h1>
-          <p className="mt-2 text-sm text-slate-600">CRM Workspace</p>
+          <h1 className="text-2xl font-semibold text-slate-900">后台登录</h1>
+          <p className="mt-2 text-sm text-slate-600">CRM 客户管理</p>
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
-            <Field label="Password" type="password" value={password} onChange={setPassword} />
+            <Field label="密码" type="password" value={password} onChange={setPassword} />
             {loginError ? <p className="text-sm text-red-600">{loginError}</p> : null}
             <button
               type="submit"
               className="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-black"
             >
-              Sign In
+              登录
             </button>
           </form>
           <Link to="/" className="mt-4 inline-flex text-sm text-slate-700 hover:text-slate-900">
-            Back to website
+            返回网站
           </Link>
         </div>
       </div>
@@ -873,11 +873,11 @@ export function AdminCrm() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
-                  Inno Group Admin
+                  Inno Group 后台
                 </p>
                 <h1 className="mt-2 text-3xl font-semibold">CRM 客户管理</h1>
                 <p className="mt-2 text-sm text-slate-300">
-                  阶段用筛选管理，客户资料用宽卡片展示，避免文字被压缩。
+                  按阶段筛选客户、管理跟进、订单和借车记录。
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -885,13 +885,13 @@ export function AdminCrm() {
                   to="/admin"
                   className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
                 >
-                  Supplier
+                  内容管理
                 </Link>
                 <Link
                   to="/admin/contracts"
                   className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
                 >
-                  Contracts
+                  合同管理
                 </Link>
                 <button
                   type="button"
@@ -899,7 +899,7 @@ export function AdminCrm() {
                   className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-slate-100"
                 >
                   <Download size={16} />
-                  Export
+                  导出
                 </button>
               </div>
             </div>
