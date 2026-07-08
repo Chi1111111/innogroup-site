@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { japanSpecialOrderVehicles } from '../../data/japanSpecialOrders';
+import {
+  loadJapanSpecialOrdersState,
+  saveJapanSpecialOrdersState,
+} from '../lib/japanSpecialOrders';
 
 export interface JapanSpecialOrderVehicle {
   slug: string;
@@ -57,26 +61,55 @@ function readJapanSpecialOrders(): JapanSpecialOrderVehicle[] {
   }
 }
 
+function writeLocalJapanSpecialOrders(vehicles: JapanSpecialOrderVehicle[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(JAPAN_SPECIAL_ORDERS_STORAGE_KEY, JSON.stringify(vehicles));
+}
+
 export function useJapanSpecialOrders() {
   const [vehicles, setVehiclesState] = useState<JapanSpecialOrderVehicle[]>(() =>
     readJapanSpecialOrders()
   );
+  const [isLoadingCloudVehicles, setIsLoadingCloudVehicles] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(JAPAN_SPECIAL_ORDERS_STORAGE_KEY, JSON.stringify(vehicles));
-  }, [vehicles]);
+    let isMounted = true;
 
-  const setVehicles = (nextVehicles: JapanSpecialOrderVehicle[]) => {
+    setIsLoadingCloudVehicles(true);
+    loadJapanSpecialOrdersState()
+      .then((cloudVehicles) => {
+        if (!isMounted || !cloudVehicles || cloudVehicles.length === 0) return;
+        const validVehicles = cloudVehicles.filter(isValidVehicle);
+        if (validVehicles.length === 0) return;
+        setVehiclesState(validVehicles);
+        writeLocalJapanSpecialOrders(validVehicles);
+      })
+      .catch((error) => {
+        console.warn('Could not load Japan special orders from Supabase.', error);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingCloudVehicles(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const setVehicles = async (nextVehicles: JapanSpecialOrderVehicle[]) => {
     setVehiclesState(nextVehicles);
+    writeLocalJapanSpecialOrders(nextVehicles);
+    await saveJapanSpecialOrdersState(nextVehicles);
   };
 
   const resetVehicles = () => {
     setVehiclesState(japanSpecialOrderVehicles);
+    writeLocalJapanSpecialOrders(japanSpecialOrderVehicles);
   };
 
   return {
     vehicles,
+    isLoadingCloudVehicles,
     setVehicles,
     resetVehicles,
   };

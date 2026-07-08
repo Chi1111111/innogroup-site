@@ -482,7 +482,7 @@ export function AdminVehicles() {
     );
   };
 
-  const handleSaveJapanSpecialOrders = () => {
+  const handleSaveJapanSpecialOrders = async () => {
     const normalizedDrafts = uniquifyJapanFindSlugs(japanSpecialOrderDrafts);
     const nextVehicles = normalizedDrafts
       .map((draft) => toJapanSpecialOrderVehicle(draft))
@@ -496,8 +496,15 @@ export function AdminVehicles() {
       return;
     }
 
-    setJapanSpecialOrderVehicles(nextVehicles);
-    setNotice({ type: 'success', text: '日本精选车源已保存，并同步到前台。' });
+    try {
+      await setJapanSpecialOrderVehicles(nextVehicles);
+      setNotice({ type: 'success', text: '日本精选车源已保存到云端，并同步到前台。' });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: `保存失败：日本精选车源没有写入云端。请确认 Supabase 表已创建。${error instanceof Error ? ` ${error.message}` : ''}`,
+      });
+    }
   };
 
   const handleUploadJapanSpecialOrderImage = async (slug: string, files: FileList | null) => {
@@ -765,7 +772,7 @@ export function AdminVehicles() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleSaveJapanSpecialOrders}
+                  onClick={() => void handleSaveJapanSpecialOrders()}
                   className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
                 >
                   保存日本精选车源
