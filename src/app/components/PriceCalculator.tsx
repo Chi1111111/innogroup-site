@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Calculator, TrendingUp, DollarSign, Info } from 'lucide-react';
+
+const FALLBACK_NZD_TO_JPY_RATE = 86.5;
+const RATE_ADJUSTMENT = 5;
+const NZD_TO_JPY_RATE_URL = 'https://api.frankfurter.dev/v2/rates?base=NZD&quotes=JPY';
 
 export function PriceCalculator() {
   const [vehiclePrice, setVehiclePrice] = useState('');
-  const [exchangeRate, setExchangeRate] = useState('86.5'); // Default NZD to JPY rate
+  const [exchangeRate, setExchangeRate] = useState(FALLBACK_NZD_TO_JPY_RATE.toString());
+  const [rateDate, setRateDate] = useState('');
+  const [rateStatus, setRateStatus] = useState<'loading' | 'live' | 'fallback'>('loading');
   const [landedPrice, setLandedPrice] = useState<number | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
 
@@ -17,6 +23,48 @@ export function PriceCalculator() {
     final5Percent: 0,
     total: 0
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadExchangeRate() {
+      try {
+        const response = await fetch(NZD_TO_JPY_RATE_URL);
+
+        if (!response.ok) {
+          throw new Error('Exchange rate request failed');
+        }
+
+        const data: Array<{ date?: string; rate?: number }> = await response.json();
+        const marketRate = data[0]?.rate;
+
+        if (typeof marketRate !== 'number' || marketRate <= RATE_ADJUSTMENT) {
+          throw new Error('Exchange rate response was invalid');
+        }
+
+        const calculatorRate = marketRate - RATE_ADJUSTMENT;
+
+        if (isMounted) {
+          setExchangeRate(calculatorRate.toFixed(2));
+          setRateDate(data[0]?.date ?? '');
+          setRateStatus('live');
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (isMounted) {
+          setExchangeRate(FALLBACK_NZD_TO_JPY_RATE.toString());
+          setRateStatus('fallback');
+        }
+      }
+    }
+
+    loadExchangeRate();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const calculatePrice = () => {
     const x = parseFloat(vehiclePrice);
@@ -127,14 +175,18 @@ export function PriceCalculator() {
                       type="number"
                       step="0.01"
                       value={exchangeRate}
-                      onChange={(e) => setExchangeRate(e.target.value)}
                       placeholder="91.50"
+                      readOnly
                       className="w-full rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 py-3.5 pl-11 pr-4 text-base font-medium shadow-sm transition-all hover:shadow-md focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/30 sm:py-4 sm:pl-12 sm:pr-6 sm:text-lg"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Info className="w-4 h-4" />
-                    Current market rate: 1 NZD = {exchangeRate} JPY
+                    {rateStatus === 'loading'
+                      ? 'Updating today’s reference rate...'
+                      : rateStatus === 'fallback'
+                        ? `Reference rate: 1 NZD = ${exchangeRate} JPY`
+                        : `Today's reference rate${rateDate ? ` (${rateDate})` : ''}: 1 NZD = ${exchangeRate} JPY`}
                   </p>
                 </div>
 

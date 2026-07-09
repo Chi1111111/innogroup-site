@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, ArrowRight, ShieldCheck, Clock, Award, Upload, X } from 'lucide-react';
+import { ArrowRight, Upload, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
 import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
@@ -8,18 +8,13 @@ import { tradeMeMakes, tradeMeVehicleCatalog } from '../../data/tradeMeVehicleCa
 const carBrands = [...tradeMeMakes];
 const carModels = tradeMeVehicleCatalog;
 
-const fieldLabelClass = 'flex items-center gap-2 text-sm font-bold text-foreground sm:text-base md:text-lg';
+const fieldLabelClass = 'text-xs font-bold uppercase tracking-[0.16em] text-[#151C26]/62';
 const fieldClass =
-  'w-full rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 px-4 py-3 text-base font-medium shadow-sm transition-all hover:shadow-md focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/30 sm:px-5 sm:py-3.5 md:px-6 md:py-4 md:text-lg';
-const helperCardClass =
-  'group rounded-[22px] border border-white/10 bg-white/5 p-4 backdrop-blur-md transition-all hover:border-primary/50 sm:p-5 md:rounded-[24px] md:p-6';
+  'w-full rounded-lg border border-[#151C26]/12 bg-[#F7F4EE] px-4 py-3.5 text-base font-medium text-[#151C26] transition-all placeholder:text-[#151C26]/35 focus:border-[#C6A54A] focus:outline-none focus:ring-1 focus:ring-[#C6A54A]';
 const CONTACT_FORM_RECIPIENT = 'innogroup.shawn@gmail.com';
 
-function FieldDot() {
-  return <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full bg-primary" />;
-}
-
 export function QuoteFormSection() {
+  const [briefStep, setBriefStep] = useState(1);
   const [formData, setFormData] = useState({
     inquiryType: 'buy',
     sourceType: 'japan',
@@ -191,155 +186,157 @@ export function QuoteFormSection() {
 
   const selectedModels = formData.brand ? carModels[formData.brand] ?? [] : [];
 
+  const chooseBriefType = (type: 'buy-local' | 'import-japan' | 'sell') => {
+    setFormData((current) => ({
+      ...current,
+      inquiryType: type === 'sell' ? 'sell' : 'buy',
+      sourceType: type === 'import-japan' ? 'japan' : 'local',
+    }));
+    setBriefStep(2);
+  };
+
+  const selectedBriefType =
+    formData.inquiryType === 'sell'
+      ? 'sell'
+      : formData.sourceType === 'japan'
+        ? 'import-japan'
+        : 'buy-local';
+
+  const briefOptions = [
+    { id: 'buy-local', label: 'Buy a Car', description: 'Browse our available vehicles' },
+    { id: 'import-japan', label: 'Import from Japan', description: 'Find the exact car you want' },
+    { id: 'sell', label: 'Sell My Car', description: 'Get a quick valuation' },
+  ] as const;
+
   return (
-    <section id="quote" className="relative overflow-hidden px-4 py-20 sm:py-24 md:py-32">
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-        <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-primary/10" />
-        <div className="absolute left-10 top-20 h-72 w-72 rounded-full bg-primary opacity-10 blur-3xl" />
-        <div className="absolute bottom-20 right-10 h-96 w-96 rounded-full bg-primary opacity-10 blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto max-w-7xl">
-        <div className="mb-12 space-y-4 text-center md:mb-16 md:space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/20 px-4 py-2.5 backdrop-blur-sm sm:px-5">
-            <Sparkles className="h-4 w-4 text-primary md:h-5 md:w-5" />
-            <span className="text-sm font-semibold text-primary">Start Your Vehicle Brief</span>
-          </div>
-
-          <h2 className="mb-4 text-[2rem] font-bold text-white sm:text-4xl md:mb-6 md:text-5xl">
-            Tell Us What You Want
-            <span className="mt-2 block bg-gradient-to-r from-primary via-yellow-300 to-primary bg-clip-text text-transparent">
-              to Drive
+    <section className="relative overflow-hidden bg-[#151C26] px-4 py-16 text-[#F3F0E9] sm:py-20 lg:py-24">
+      <div className="relative mx-auto grid max-w-[1440px] gap-12 lg:grid-cols-[0.4fr_0.6fr] lg:items-start xl:gap-16">
+        <div className="relative max-w-xl pt-2">
+          <div className="absolute -left-7 top-3 hidden h-32 w-px bg-[#C6A54A]/60 lg:block" />
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#C6A54A]">
+            Personalised Vehicle Sourcing
+          </p>
+          <h2 className="mt-7 max-w-xl text-4xl leading-[1.05] text-[#F3F0E9] sm:text-5xl xl:text-[3.7rem]">
+            Tell Us What You Want.
+            <span className="block">
+              We’ll Find <span className="text-[#C6A54A]">the Right One.</span>
             </span>
           </h2>
-
-          <p className="mx-auto max-w-3xl text-base leading-8 text-gray-300 sm:text-lg md:text-xl">
-            Share the make, model, budget, and features you want, and we will come back with
-            tailored options from Japan or selected local stock.
+          <p className="mt-7 max-w-lg text-base leading-8 text-[#F3F0E9]/70 sm:text-lg">
+            Share the model, specification and budget you have in mind. We’ll search our Japan
+            network and selected New Zealand stock, then return with options chosen for you.
           </p>
-        </div>
 
-        <div className="mx-auto mb-10 grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-3 md:mb-16 md:gap-6">
-          <div className={helperCardClass}>
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-primary/20 p-3">
-                <ShieldCheck className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-white">Tailored Search</p>
-                <p className="text-sm text-gray-400">Spec-led recommendations</p>
-              </div>
-            </div>
-          </div>
-
-          <div className={helperCardClass}>
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-primary/20 p-3">
-                <Clock className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-white">Quick Response</p>
-                <p className="text-sm text-gray-400">Within 24 Hours</p>
-              </div>
-            </div>
-          </div>
-
-          <div className={helperCardClass}>
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl bg-primary/20 p-3">
-                <Award className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-white">After Delivery</p>
-                <p className="text-sm text-gray-400">Support continues after purchase</p>
-              </div>
-            </div>
+          <div className="mt-14 flex flex-wrap items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-[#F3F0E9]/58">
+            <span>Japan Network</span>
+            <span className="h-px w-7 bg-[#C6A54A]/55" />
+            <span>Selected NZ Stock</span>
+            <span className="h-px w-7 bg-[#C6A54A]/55" />
+            <span>Personal Response</span>
           </div>
         </div>
 
-        <div className="mx-auto max-w-4xl">
-          <div className="relative">
-            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-primary via-yellow-300 to-primary opacity-20 blur-2xl" />
-
-            <div className="relative overflow-hidden rounded-3xl bg-white shadow-2xl">
-              <div className="h-2 bg-gradient-to-r from-primary via-yellow-300 to-primary" />
-
-              <div className="p-4 sm:p-8 md:p-14">
-                <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
-                  <div className="space-y-3">
-                    <label className={fieldLabelClass}>
-                      <FieldDot />
-                      I Want To
-                    </label>
-                    <select
-                      name="inquiryType"
-                      value={formData.inquiryType}
-                      onChange={handleChange}
-                      required
-                      className={fieldClass}
+        <div className="w-full lg:min-w-[650px]">
+          <div className="rounded-xl border border-[#F7F4EE]/10 bg-[#F7F4EE] p-6 text-[#151C26] sm:p-8 lg:p-10">
+            <form onSubmit={handleSubmit}>
+              <div key={briefStep} className="animate-fadeIn">
+                <div className="mb-8 flex items-center justify-between border-b border-[#151C26]/10 pb-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#151C26]/48">
+                    {String(briefStep).padStart(2, '0')} / 03
+                  </p>
+                  {briefStep > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setBriefStep(briefStep - 1)}
+                      className="text-xs font-bold uppercase tracking-[0.16em] text-[#151C26]/45 hover:text-[#151C26]"
                     >
-                      <option value="buy">Buy a Car</option>
-                      <option value="sell">Sell My Car</option>
-                    </select>
-                  </div>
-
-                  {formData.inquiryType === 'buy' && (
-                    <div className="animate-fadeIn space-y-3">
-                      <label className={fieldLabelClass}>
-                        <FieldDot />
-                        Vehicle Source
-                      </label>
-                      <select
-                        name="sourceType"
-                        value={formData.sourceType}
-                        onChange={handleChange}
-                        required
-                        className={fieldClass}
-                      >
-                        <option value="japan">Import from Japan</option>
-                        <option value="local">Buy Local Stock (NZ)</option>
-                      </select>
-                    </div>
+                      Back
+                    </button>
                   )}
+                </div>
 
-                  {formData.inquiryType === 'sell' && (
-                    <div className="animate-fadeIn rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 md:p-6">
-                      <p className="font-medium leading-relaxed text-foreground">
-                        We buy quality vehicles for local stock and export channels. Tell us about
-                        your car and we will get back to you with a valuation.
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {briefStep === 1 && (
+                  <div>
                     <div className="space-y-3">
-                      <label className={fieldLabelClass}>
-                        <FieldDot />
-                        Vehicle Brand {formData.inquiryType === 'sell' && <span className="text-red-500">*</span>}
-                      </label>
-                      <select
-                        name="brand"
-                        value={formData.brand}
-                        onChange={handleChange}
-                        required={formData.inquiryType === 'sell'}
-                        className={fieldClass}
-                      >
-                        <option value="">Select Brand</option>
-                        {carBrands.map((brand) => (
-                          <option key={brand} value={brand}>
-                            {brand}
-                          </option>
-                        ))}
-                      </select>
+                      <h3 className="font-display text-[2.35rem] font-bold leading-tight text-[#151C26] sm:text-[2.65rem]">
+                        How can we help?
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <p className="text-base font-medium text-[#151C26]/62">
+                          Choose an option to get started.
+                        </p>
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#151C26]/38">
+                          Takes less than 2 minutes
+                        </p>
+                      </div>
                     </div>
 
-                    {formData.brand && (
-                      <div className="animate-fadeIn space-y-3">
-                        <label className={fieldLabelClass}>
-                          <FieldDot />
-                          Vehicle Model {formData.inquiryType === 'sell' && <span className="text-red-500">*</span>}
-                        </label>
-                        {selectedModels.length > 0 ? (
+                    <div className="mt-8 space-y-3">
+                      {briefOptions.map((option) => {
+                        const isSelected = selectedBriefType === option.id;
+
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => chooseBriefType(option.id)}
+                            className={`group flex min-h-[86px] w-full items-center justify-between gap-5 rounded-xl border px-5 py-4 text-left transition-all duration-200 hover:-translate-y-px hover:bg-[#ebe5d9] ${
+                              isSelected
+                                ? 'border-[#C6A54A] bg-[#eee6d8]'
+                                : 'border-[#151C26]/10 bg-[#f1eee7]'
+                            }`}
+                          >
+                            <span>
+                              <span className="block text-xl font-semibold text-[#151C26]">{option.label}</span>
+                              <span className="mt-1 block text-sm font-medium text-[#151C26]/55">
+                                {option.description}
+                              </span>
+                            </span>
+                            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-[#151C26]/12 text-[#151C26]/55 transition-all duration-200 group-hover:border-[#151C26] group-hover:bg-[#151C26] group-hover:text-[#F7F4EE]">
+                              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {briefStep === 2 && (
+                  <div>
+                    <h3 className="font-display text-3xl font-bold text-[#151C26] sm:text-4xl">
+                      Tell us about the car.
+                    </h3>
+
+                    {formData.inquiryType === 'sell' && (
+                      <p className="mt-4 max-w-2xl text-sm leading-6 text-[#151C26]/60">
+                        We buy quality vehicles for local stock and export channels. Share the key
+                        details and optional photos for a more accurate valuation.
+                      </p>
+                    )}
+
+                    <div className="mt-8 grid gap-5 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className={fieldLabelClass}>Make</label>
+                        <select
+                          name="brand"
+                          value={formData.brand}
+                          onChange={handleChange}
+                          required={formData.inquiryType === 'sell'}
+                          className={fieldClass}
+                        >
+                          <option value="">Select make</option>
+                          {carBrands.map((brand) => (
+                            <option key={brand} value={brand}>
+                              {brand}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className={fieldLabelClass}>Model</label>
+                        {formData.brand && selectedModels.length > 0 ? (
                           <select
                             name="model"
                             value={formData.model}
@@ -347,7 +344,7 @@ export function QuoteFormSection() {
                             required={formData.inquiryType === 'sell' && formData.brand !== ''}
                             className={fieldClass}
                           >
-                            <option value="">Select Model</option>
+                            <option value="">Select model</option>
                             {selectedModels.map((model) => (
                               <option key={model} value={model}>
                                 {model}
@@ -362,203 +359,171 @@ export function QuoteFormSection() {
                             onChange={handleChange}
                             required={formData.inquiryType === 'sell' && formData.brand !== ''}
                             className={fieldClass}
-                            placeholder="Enter model"
+                            placeholder={formData.brand ? 'Enter model' : 'Model or trim'}
                           />
                         )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div className="space-y-3">
-                      <label className={fieldLabelClass}>
-                        <FieldDot />
-                        Year {formData.inquiryType === 'sell' && <span className="text-red-500">*</span>}
-                      </label>
-                      <input
-                        type="text"
-                        name="year"
-                        value={formData.year}
-                        onChange={handleChange}
-                        required={formData.inquiryType === 'sell'}
-                        className={fieldClass}
-                        placeholder="e.g. 2022"
-                      />
+                      <div className="space-y-2">
+                        <label className={fieldLabelClass}>Preferred Year</label>
+                        <input
+                          type="text"
+                          name="year"
+                          value={formData.year}
+                          onChange={handleChange}
+                          required={formData.inquiryType === 'sell'}
+                          className={fieldClass}
+                          placeholder="e.g. 2018 - 2023"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className={fieldLabelClass}>
+                          {formData.inquiryType === 'buy' ? 'Approximate Budget' : 'Expected Price'}
+                        </label>
+                        <input
+                          type="text"
+                          name="budget"
+                          value={formData.budget}
+                          onChange={handleChange}
+                          className={fieldClass}
+                          placeholder={formData.inquiryType === 'buy' ? '$40,000 - $50,000' : '$35,000'}
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label className={fieldLabelClass}>Additional Preferences</label>
+                        <textarea
+                          name="message"
+                          value={formData.message}
+                          onChange={handleChange}
+                          rows={4}
+                          className={fieldClass}
+                          placeholder={
+                            formData.inquiryType === 'buy'
+                              ? 'Colour, transmission, features, mileage, timing...'
+                              : 'Mileage, condition, service history, modifications...'
+                          }
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <label className={fieldLabelClass}>
-                        <FieldDot />
-                        {formData.inquiryType === 'buy' ? 'Budget Range' : 'Expected Price'}
-                      </label>
-                      <input
-                        type="text"
-                        name="budget"
-                        value={formData.budget}
-                        onChange={handleChange}
-                        className={fieldClass}
-                        placeholder={formData.inquiryType === 'buy' ? '$40,000 - $50,000' : '$35,000'}
-                      />
-                    </div>
-                  </div>
+                    {formData.inquiryType === 'sell' && (
+                      <div className="mt-6 space-y-3">
+                        <label className={fieldLabelClass}>Vehicle Photos (Optional, Max 8)</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="imageUpload"
+                        />
+                        <label
+                          htmlFor="imageUpload"
+                          className="flex cursor-pointer items-center justify-center gap-3 rounded-lg border border-dashed border-[#151C26]/18 px-4 py-5 text-sm font-semibold text-[#151C26]/65 transition-colors hover:border-[#C6A54A] hover:text-[#151C26]"
+                        >
+                          <Upload className="h-5 w-5" />
+                          Upload clear photos
+                        </label>
 
-                  <div className="space-y-3">
-                    <label className={fieldLabelClass}>
-                      <FieldDot />
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className={fieldClass}
-                      placeholder="Enter your name"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div className="space-y-3">
-                      <label className={fieldLabelClass}>
-                        <FieldDot />
-                        Phone <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        required
-                        className={fieldClass}
-                        placeholder="+64 21 XXX XXXX"
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <label className={fieldLabelClass}>
-                        <FieldDot />
-                        Email <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        className={fieldClass}
-                        placeholder="your@email.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className={fieldLabelClass}>
-                      <FieldDot />
-                      Additional Details
-                    </label>
-                    <textarea
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      rows={5}
-                      className={fieldClass}
-                      placeholder={
-                        formData.inquiryType === 'buy'
-                          ? 'Tell us your preferred colour, transmission, features, and timeline...'
-                          : 'Tell us about mileage, condition, service history, and modifications...'
-                      }
-                    />
-                  </div>
-
-                  {formData.inquiryType === 'sell' && (
-                    <div className="animate-fadeIn space-y-4">
-                      <label className={fieldLabelClass}>
-                        <FieldDot />
-                        Vehicle Photos (Optional, Max 8)
-                      </label>
-                      <p className="text-sm text-muted-foreground">
-                        Upload clear photos from different angles for a more accurate valuation.
-                      </p>
-
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        id="imageUpload"
-                      />
-                      <label
-                        htmlFor="imageUpload"
-                        className="group flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 to-transparent px-4 py-5 transition-all hover:border-primary hover:bg-primary/10 md:px-6 md:py-8"
-                      >
-                        <Upload className="h-7 w-7 text-primary transition-transform group-hover:scale-110 md:h-8 md:w-8" />
-                        <div className="text-center">
-                          <p className="font-semibold text-foreground">Click to upload images</p>
-                          <p className="text-sm text-muted-foreground">PNG or JPG up to 10MB each</p>
-                        </div>
-                      </label>
-
-                      {uploadedImages.length > 0 && (
-                        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-                          {uploadedImages.map((image, index) => (
-                            <div key={index} className="group relative">
-                              <img
-                                src={URL.createObjectURL(image)}
-                                alt={`Vehicle ${index + 1}`}
-                                className="h-28 w-full rounded-xl border-2 border-gray-200 object-cover transition-all group-hover:border-primary sm:h-32"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeImage(index)}
-                                className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1.5 text-white shadow-lg transition-all hover:scale-110 hover:bg-red-600"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                              <div className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-1 text-xs text-white">
-                                Photo {index + 1}
+                        {uploadedImages.length > 0 && (
+                          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                            {uploadedImages.map((image, index) => (
+                              <div key={index} className="group relative">
+                                <img
+                                  src={URL.createObjectURL(image)}
+                                  alt={`Vehicle ${index + 1}`}
+                                  className="h-24 w-full rounded-lg border border-[#151C26]/10 object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index)}
+                                  className="absolute -right-2 -top-2 rounded-full bg-[#151C26] p-1.5 text-[#F7F4EE] transition-transform hover:scale-105"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                      {uploadedImages.length > 0 && (
-                        <p className="text-center text-sm text-muted-foreground">
-                          {uploadedImages.length} of 8 images uploaded
-                        </p>
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => setBriefStep(3)}
+                      className="group mt-8 flex w-full items-center justify-between rounded-lg border border-[#151C26] px-5 py-4 text-base font-bold text-[#151C26] transition-colors hover:border-[#C6A54A]"
+                    >
+                      Continue
+                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </button>
+                  </div>
+                )}
+
+                {briefStep === 3 && (
+                  <div>
+                    <h3 className="font-display text-3xl font-bold text-[#151C26] sm:text-4xl">
+                      Where should we send your options?
+                    </h3>
+
+                    <div className="mt-8 grid gap-5 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <label className={fieldLabelClass}>Full Name</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          required
+                          className={fieldClass}
+                          placeholder="Your name"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className={fieldLabelClass}>Phone</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          required
+                          className={fieldClass}
+                          placeholder="+64 21..."
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className={fieldLabelClass}>Email</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                          className={fieldClass}
+                          placeholder="your@email.com"
+                        />
+                      </div>
                     </div>
-                  )}
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-yellow-400 to-primary py-4 text-base font-bold text-white shadow-2xl transition-all hover:scale-[1.01] hover:shadow-primary/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 sm:text-lg md:py-6 md:text-xl"
-                  >
-                    <div className="absolute inset-0 translate-x-[-200%] bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-[200%]" />
-                    <span className="relative flex items-center justify-center gap-3">
-                      {isSubmitting ? (
-                        <>
-                          <div className="h-6 w-6 animate-spin rounded-full border-3 border-white border-t-transparent" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          {formData.inquiryType === 'buy' ? 'Request My Options' : 'Get My Valuation'}
-                          <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-2" />
-                        </>
-                      )}
-                    </span>
-                  </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="group mt-9 flex w-full items-center justify-between rounded-lg bg-[#151C26] px-5 py-4 text-base font-bold text-[#F7F4EE] transition-colors hover:bg-[#1d2735] disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      <span>{isSubmitting ? 'Sending...' : formData.inquiryType === 'sell' ? 'Get My Valuation' : 'Request My Options'}</span>
+                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </button>
 
-                  <p className="text-center text-sm text-gray-500">
-                    Your information is secure and confidential. We respect your privacy.
-                  </p>
-                </form>
+                    <p className="mt-5 text-center text-xs font-medium text-[#151C26]/45">
+                      Your information is secure and confidential. We respect your privacy.
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </div>
