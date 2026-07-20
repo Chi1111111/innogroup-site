@@ -4,6 +4,7 @@ import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 import type { PartnerPlaceholder } from '../../data/services';
 import {
   type JapanSpecialOrderVehicle,
+  type JapanWeeklyReportMeta,
   useJapanSpecialOrders,
 } from '../hooks/useJapanSpecialOrders';
 import { usePartnersCatalog } from '../hooks/usePartnersCatalog';
@@ -55,6 +56,17 @@ const EMPTY_JAPAN_SPECIAL_ORDER_DRAFT: JapanSpecialOrderDraft = {
   status: '',
   summary: '',
   zhSummary: '',
+  japanPrice: '',
+  landedEstimate: '',
+  nzMarketRange: '',
+  opportunityScore: undefined,
+  recommendation: '',
+  zhRecommendation: '',
+  risk: '',
+  zhRisk: '',
+  recommendedFor: '',
+  zhRecommendedFor: '',
+  updatedAt: '',
 };
 
 const VEHICLE_TERM_TRANSLATIONS: Array<[RegExp, string]> = [
@@ -152,7 +164,7 @@ function toJapanSpecialOrderDraft(vehicle: JapanSpecialOrderVehicle): JapanSpeci
 function toJapanSpecialOrderVehicle(draft: JapanSpecialOrderDraft): JapanSpecialOrderVehicle | null {
   const images = splitImageText(draft.imagesText);
   const primaryImage = images[0] || draft.image.trim();
-  const vehicle = {
+  const requiredVehicle = {
     slug: draft.slug.trim(),
     title: draft.title.trim(),
     zhTitle: draft.zhTitle.trim(),
@@ -167,12 +179,27 @@ function toJapanSpecialOrderVehicle(draft: JapanSpecialOrderDraft): JapanSpecial
     zhSummary: draft.zhSummary.trim(),
   };
 
-  const isComplete = Object.entries(vehicle).every(([key, value]) => {
+  const isComplete = Object.entries(requiredVehicle).every(([key, value]) => {
     if (key === 'images') return true;
     return Boolean(value);
   });
 
-  return isComplete ? vehicle : null;
+  if (!isComplete) return null;
+
+  return {
+    ...requiredVehicle,
+    japanPrice: draft.japanPrice?.trim() || undefined,
+    landedEstimate: draft.landedEstimate?.trim() || undefined,
+    nzMarketRange: draft.nzMarketRange?.trim() || undefined,
+    opportunityScore: draft.opportunityScore,
+    recommendation: draft.recommendation?.trim() || undefined,
+    zhRecommendation: draft.zhRecommendation?.trim() || undefined,
+    risk: draft.risk?.trim() || undefined,
+    zhRisk: draft.zhRisk?.trim() || undefined,
+    recommendedFor: draft.recommendedFor?.trim() || undefined,
+    zhRecommendedFor: draft.zhRecommendedFor?.trim() || undefined,
+    updatedAt: draft.updatedAt?.trim() || undefined,
+  };
 }
 
 function normalizeSmartSourceText(value: string) {
@@ -314,8 +341,9 @@ function getNoticeClass(type: AdminNotice['type']) {
 export function AdminVehicles() {
   const { partners, setPartners, resetPartners } = usePartnersCatalog();
   const {
+    report: japanWeeklyReport,
     vehicles: japanSpecialOrderVehicles,
-    setVehicles: setJapanSpecialOrderVehicles,
+    setReport: setJapanWeeklyReport,
   } = useJapanSpecialOrders();
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -328,6 +356,16 @@ export function AdminVehicles() {
   const [japanSpecialOrderDrafts, setJapanSpecialOrderDrafts] = useState<
     JapanSpecialOrderDraft[]
   >([]);
+  const [weeklyReportDraft, setWeeklyReportDraft] = useState<JapanWeeklyReportMeta>(() => ({
+    issueNumber: japanWeeklyReport.issueNumber,
+    publishedAt: japanWeeklyReport.publishedAt,
+    exchangeRate: japanWeeklyReport.exchangeRate,
+    dataUpdatedAt: japanWeeklyReport.dataUpdatedAt,
+    marketSummary: japanWeeklyReport.marketSummary,
+    zhMarketSummary: japanWeeklyReport.zhMarketSummary,
+    marketNotes: japanWeeklyReport.marketNotes,
+    zhMarketNotes: japanWeeklyReport.zhMarketNotes,
+  }));
   const [expandedPartnerId, setExpandedPartnerId] = useState<string | null>(null);
   const [expandedJapanSpecialOrderSlug, setExpandedJapanSpecialOrderSlug] = useState<
     string | null
@@ -374,6 +412,11 @@ export function AdminVehicles() {
     setExpandedJapanSpecialOrderSlug((current) => current ?? nextDrafts[0]?.slug ?? null);
   }, [japanSpecialOrderVehicles]);
 
+  useEffect(() => {
+    const { vehicles: _vehicles, ...meta } = japanWeeklyReport;
+    setWeeklyReportDraft(meta);
+  }, [japanWeeklyReport]);
+
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -411,6 +454,15 @@ export function AdminVehicles() {
     );
   };
 
+  const updateWeeklyReportField = (key: keyof JapanWeeklyReportMeta, value: string) => {
+    setWeeklyReportDraft((current) => ({
+      ...current,
+      [key]: key === 'marketNotes' || key === 'zhMarketNotes'
+        ? value.split('\n').map((item) => item.trim()).filter(Boolean)
+        : value,
+    }));
+  };
+
   const addJapanSpecialOrderDraft = () => {
     const nextSlug = createId('special-order');
     setJapanSpecialOrderDrafts((current) => [
@@ -425,6 +477,8 @@ export function AdminVehicles() {
         mileage: 'To be confirmed',
         location: 'Japan',
         status: 'Japan channel update',
+        opportunityScore: 75,
+        updatedAt: new Date().toLocaleDateString('en-NZ'),
       },
     ]);
     setExpandedJapanSpecialOrderSlug(nextSlug);
@@ -497,8 +551,8 @@ export function AdminVehicles() {
     }
 
     try {
-      await setJapanSpecialOrderVehicles(nextVehicles);
-      setNotice({ type: 'success', text: '日本精选车源已保存到云端，并同步到前台。' });
+      await setJapanWeeklyReport({ ...weeklyReportDraft, vehicles: nextVehicles });
+      setNotice({ type: 'success', text: '日本市场周报已保存到云端，并同步到前台。' });
     } catch (error) {
       setNotice({
         type: 'error',
@@ -751,14 +805,14 @@ export function AdminVehicles() {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">日本精选车源更新</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Japan Market Weekly 管理</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  编辑日本精选车源页面 hero 后方显示的车源卡片。
+                  编辑周报期数、市场观察和本周车辆。现有 Supabase 数据会继续使用。
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link
-                  to="/vehicles/japan-special-order"
+                  to="/weekly-report"
                   className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
                 >
                   预览页面
@@ -775,9 +829,24 @@ export function AdminVehicles() {
                   onClick={() => void handleSaveJapanSpecialOrders()}
                   className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
                 >
-                  保存日本精选车源
+                  保存完整周报
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h3 className="text-base font-semibold text-slate-900">周报基础信息</h3>
+            <p className="mt-1 text-sm text-slate-500">这些信息会显示在周报顶部和市场观察区域。</p>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <TextInput label="期数" value={weeklyReportDraft.issueNumber} onChange={(value) => updateWeeklyReportField('issueNumber', value)} placeholder="029" />
+              <TextInput label="发布时间" value={weeklyReportDraft.publishedAt} onChange={(value) => updateWeeklyReportField('publishedAt', value)} placeholder="20 July 2026" />
+              <TextInput label="汇率快照" value={weeklyReportDraft.exchangeRate} onChange={(value) => updateWeeklyReportField('exchangeRate', value)} placeholder="NZD 1 = JPY 86.5" />
+              <TextInput label="数据更新时间" value={weeklyReportDraft.dataUpdatedAt} onChange={(value) => updateWeeklyReportField('dataUpdatedAt', value)} placeholder="20 July 2026, 4:30 PM" />
+              <TextareaInput label="英文市场摘要" value={weeklyReportDraft.marketSummary} onChange={(value) => updateWeeklyReportField('marketSummary', value)} />
+              <TextareaInput label="中文市场摘要" value={weeklyReportDraft.zhMarketSummary} onChange={(value) => updateWeeklyReportField('zhMarketSummary', value)} />
+              <TextareaInput label="英文市场观察（每行一条）" value={weeklyReportDraft.marketNotes.join('\n')} onChange={(value) => updateWeeklyReportField('marketNotes', value)} />
+              <TextareaInput label="中文市场观察（每行一条）" value={weeklyReportDraft.zhMarketNotes.join('\n')} onChange={(value) => updateWeeklyReportField('zhMarketNotes', value)} />
             </div>
           </div>
 
@@ -789,7 +858,7 @@ export function AdminVehicles() {
               >
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-base font-semibold text-slate-900">
-                    日本精选车源 #{index + 1} - {draft.title || '未命名'}
+                    周报车辆 #{index + 1} - {draft.title || '未命名'}
                   </h3>
                   <div className="flex gap-2">
                     <button
@@ -967,6 +1036,37 @@ export function AdminVehicles() {
                         placeholder="Japan channel update"
                         className="md:col-span-2"
                       />
+                      <TextInput
+                        label="日本价格"
+                        value={draft.japanPrice ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'japanPrice', value)}
+                        placeholder="JPY 3,500,000"
+                      />
+                      <TextInput
+                        label="预计新西兰落地价"
+                        value={draft.landedEstimate ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'landedEstimate', value)}
+                        placeholder="$58,000 - $62,000 NZD"
+                      />
+                      <TextInput
+                        label="新西兰市场参考区间"
+                        value={draft.nzMarketRange ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'nzMarketRange', value)}
+                        placeholder="$65,000 - $72,000 NZD"
+                      />
+                      <TextInput
+                        label="Opportunity Score（0-100）"
+                        value={draft.opportunityScore?.toString() ?? ''}
+                        onChange={(value) => setJapanSpecialOrderDrafts((current) => current.map((item) => item.slug === draft.slug ? { ...item, opportunityScore: value ? Math.max(0, Math.min(100, Number(value))) : undefined } : item))}
+                        placeholder="82"
+                      />
+                      <TextInput
+                        label="车辆数据更新时间"
+                        value={draft.updatedAt ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'updatedAt', value)}
+                        placeholder="20 July 2026, 4:30 PM"
+                        className="md:col-span-2"
+                      />
                       <TextareaInput
                         label="英文简介 *"
                         value={draft.summary}
@@ -980,6 +1080,36 @@ export function AdminVehicles() {
                         onChange={(value) =>
                           updateJapanSpecialOrderDraftField(draft.slug, 'zhSummary', value)
                         }
+                      />
+                      <TextareaInput
+                        label="英文推荐理由"
+                        value={draft.recommendation ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'recommendation', value)}
+                      />
+                      <TextareaInput
+                        label="中文推荐理由"
+                        value={draft.zhRecommendation ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'zhRecommendation', value)}
+                      />
+                      <TextareaInput
+                        label="英文风险提示"
+                        value={draft.risk ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'risk', value)}
+                      />
+                      <TextareaInput
+                        label="中文风险提示"
+                        value={draft.zhRisk ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'zhRisk', value)}
+                      />
+                      <TextareaInput
+                        label="英文适合客户"
+                        value={draft.recommendedFor ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'recommendedFor', value)}
+                      />
+                      <TextareaInput
+                        label="中文适合客户"
+                        value={draft.zhRecommendedFor ?? ''}
+                        onChange={(value) => updateJapanSpecialOrderDraftField(draft.slug, 'zhRecommendedFor', value)}
                       />
                     </div>
 

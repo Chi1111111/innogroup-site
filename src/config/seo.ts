@@ -44,6 +44,27 @@ export const SEO_ROUTES = {
     keywords:
       'Japan fresh car finds NZ, JDM import NZ, Japanese supercar import, Skyline GTR NZ, Supra import NZ, RX7 import NZ, rare car sourcing Japan',
   },
+  '/weekly-report': {
+    title: 'Japan Market Weekly | Vehicle Opportunities for New Zealand',
+    description:
+      'Read Inno Group’s weekly Japan market observations and selected vehicle opportunities for New Zealand buyers and trade customers.',
+    keywords:
+      'Japan vehicle market weekly, Japan import opportunities NZ, Japanese car market report, Inno Group weekly report',
+  },
+  '/vehicles/japan-live-stock': {
+    title: 'Japan Live Stock NZ | Search Auctions & Fixed-Price Vehicles',
+    description:
+      'Search Japanese auction and fixed-price stock, review key vehicle details and request a confirmed landed estimate from Inno Group.',
+    keywords:
+      'Japan live stock NZ, Japan car auction search, Japanese fixed price vehicles, import car Japan NZ',
+  },
+  '/vehicles/find-my-car': {
+    title: 'Find My Car NZ | Custom Vehicle Sourcing from Japan',
+    description:
+      'Tell Inno Group the model, budget and specification you need. We search suitable Japan channels and explain condition, landed cost and delivery.',
+    keywords:
+      'find my car NZ, custom vehicle sourcing Japan, import specific car NZ, Japanese car sourcing Auckland',
+  },
   '/vehicles/china/baw-m8': {
     title: 'BAW M8 EV / REEV MPV Import NZ | 7/9-Seater Electric MPV',
     description:

@@ -3,7 +3,6 @@ import { Root } from './Root';
 import { Home } from './pages/Home';
 import { BawM8Page } from './pages/BawM8Page';
 import { ChinaVehicles } from './pages/ChinaVehicles';
-import { JapanSpecialOrder } from './pages/JapanSpecialOrder';
 import { WoxAirPage, WoxNebulaPage, WoxSheraPage, WoxZenyPage } from './pages/WoxVehiclePage';
 import { Services } from './pages/Services';
 import { About } from './pages/About';
@@ -14,6 +13,9 @@ import { AdminContracts } from './pages/AdminContracts';
 import { AdminCrm } from './pages/AdminCrm';
 import { SignContract } from './pages/SignContract';
 import { JpaucFeed } from './pages/JpaucFeed';
+import { WeeklyReport } from './pages/WeeklyReport';
+import { WeeklyVehicleDetail } from './pages/WeeklyVehicleDetail';
+import { FindMyCar } from './pages/FindMyCar';
 
 export const router = createBrowserRouter([
   {
@@ -22,7 +24,11 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Home },
       { path: 'vehicles/china', Component: ChinaVehicles },
-      { path: 'vehicles/japan-special-order', Component: JapanSpecialOrder },
+      { path: 'vehicles/japan-special-order', Component: () => <Navigate to="/weekly-report" replace /> },
+      { path: 'vehicles/japan-live-stock', Component: JpaucFeed },
+      { path: 'vehicles/find-my-car', Component: FindMyCar },
+      { path: 'weekly-report', Component: WeeklyReport },
+      { path: 'weekly-report/:issue/:slug', Component: WeeklyVehicleDetail },
       { path: 'vehicles/china/baw-m8', Component: BawM8Page },
       { path: 'vehicles/china/wox-air', Component: WoxAirPage },
       { path: 'vehicles/china/wox-nebula', Component: WoxNebulaPage },

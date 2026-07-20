@@ -18,7 +18,52 @@ export interface JapanSpecialOrderVehicle {
   status: string;
   summary: string;
   zhSummary: string;
+  japanPrice?: string;
+  landedEstimate?: string;
+  nzMarketRange?: string;
+  opportunityScore?: number;
+  recommendation?: string;
+  zhRecommendation?: string;
+  risk?: string;
+  zhRisk?: string;
+  recommendedFor?: string;
+  zhRecommendedFor?: string;
+  updatedAt?: string;
 }
+
+export interface JapanWeeklyReportMeta {
+  issueNumber: string;
+  publishedAt: string;
+  exchangeRate: string;
+  dataUpdatedAt: string;
+  marketSummary: string;
+  zhMarketSummary: string;
+  marketNotes: string[];
+  zhMarketNotes: string[];
+}
+
+export interface JapanWeeklyReportState extends JapanWeeklyReportMeta {
+  vehicles: JapanSpecialOrderVehicle[];
+}
+
+export const DEFAULT_JAPAN_WEEKLY_REPORT_META: JapanWeeklyReportMeta = {
+  issueNumber: '029',
+  publishedAt: '20 July 2026',
+  exchangeRate: 'Confirm at quotation',
+  dataUpdatedAt: 'Updated weekly',
+  marketSummary: 'A focused shortlist of Japan vehicle opportunities worth reviewing for New Zealand buyers and trade partners.',
+  zhMarketSummary: '为新西兰买家和车商筛选本周值得进一步了解的日本车源机会。',
+  marketNotes: [
+    'Condition and documentation matter more than headline price on enthusiast vehicles.',
+    'Dealer and private-channel stock can suit buyers who value specification over auction timing.',
+    'Every landed estimate must be reconfirmed against exchange rate, shipping and compliance.',
+  ],
+  zhMarketNotes: [
+    '玩家车型不能只看表面价格，车况和文件更加重要。',
+    '更重视配置而非拍卖时间的买家，可以关注车商和私人渠道。',
+    '所有落地价都需要根据汇率、海运和合规要求重新确认。',
+  ],
+};
 
 const JAPAN_SPECIAL_ORDERS_STORAGE_KEY = 'inno:japan-special-orders:v1';
 
@@ -42,34 +87,46 @@ export function getJapanSpecialOrderImages(vehicle: JapanSpecialOrderVehicle) {
   return Array.from(new Set([vehicle.image, ...(vehicle.images ?? [])].filter(Boolean)));
 }
 
-function readJapanSpecialOrders(): JapanSpecialOrderVehicle[] {
+function normalizeReportState(value: unknown): JapanWeeklyReportState {
+  if (Array.isArray(value)) {
+    return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: value.filter(isValidVehicle) };
+  }
+
+  if (value && typeof value === 'object' && 'vehicles' in value) {
+    const report = value as Partial<JapanWeeklyReportState>;
+    return {
+      ...DEFAULT_JAPAN_WEEKLY_REPORT_META,
+      ...report,
+      marketNotes: Array.isArray(report.marketNotes) ? report.marketNotes : DEFAULT_JAPAN_WEEKLY_REPORT_META.marketNotes,
+      zhMarketNotes: Array.isArray(report.zhMarketNotes) ? report.zhMarketNotes : DEFAULT_JAPAN_WEEKLY_REPORT_META.zhMarketNotes,
+      vehicles: Array.isArray(report.vehicles) ? report.vehicles.filter(isValidVehicle) : japanSpecialOrderVehicles,
+    };
+  }
+
+  return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
+}
+
+function readJapanSpecialOrders(): JapanWeeklyReportState {
   if (typeof window === 'undefined') {
-    return japanSpecialOrderVehicles;
+    return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
   }
 
   try {
     const raw = window.localStorage.getItem(JAPAN_SPECIAL_ORDERS_STORAGE_KEY);
-    if (!raw) return japanSpecialOrderVehicles;
-
-    const parsed = JSON.parse(raw) as Partial<JapanSpecialOrderVehicle>[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return japanSpecialOrderVehicles;
-
-    const nextVehicles = parsed.filter(isValidVehicle);
-    return nextVehicles.length > 0 ? nextVehicles : japanSpecialOrderVehicles;
+    if (!raw) return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
+    return normalizeReportState(JSON.parse(raw));
   } catch {
-    return japanSpecialOrderVehicles;
+    return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
   }
 }
 
-function writeLocalJapanSpecialOrders(vehicles: JapanSpecialOrderVehicle[]) {
+function writeLocalJapanSpecialOrders(report: JapanWeeklyReportState) {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(JAPAN_SPECIAL_ORDERS_STORAGE_KEY, JSON.stringify(vehicles));
+  window.localStorage.setItem(JAPAN_SPECIAL_ORDERS_STORAGE_KEY, JSON.stringify(report));
 }
 
 export function useJapanSpecialOrders() {
-  const [vehicles, setVehiclesState] = useState<JapanSpecialOrderVehicle[]>(() =>
-    readJapanSpecialOrders()
-  );
+  const [report, setReportState] = useState<JapanWeeklyReportState>(() => readJapanSpecialOrders());
   const [isLoadingCloudVehicles, setIsLoadingCloudVehicles] = useState(false);
 
   useEffect(() => {
@@ -77,12 +134,11 @@ export function useJapanSpecialOrders() {
 
     setIsLoadingCloudVehicles(true);
     loadJapanSpecialOrdersState()
-      .then((cloudVehicles) => {
-        if (!isMounted || !cloudVehicles || cloudVehicles.length === 0) return;
-        const validVehicles = cloudVehicles.filter(isValidVehicle);
-        if (validVehicles.length === 0) return;
-        setVehiclesState(validVehicles);
-        writeLocalJapanSpecialOrders(validVehicles);
+      .then((cloudReport) => {
+        if (!isMounted || !cloudReport) return;
+        const nextReport = normalizeReportState(cloudReport);
+        setReportState(nextReport);
+        writeLocalJapanSpecialOrders(nextReport);
       })
       .catch((error) => {
         console.warn('Could not load Japan special orders from Supabase.', error);
@@ -97,20 +153,30 @@ export function useJapanSpecialOrders() {
   }, []);
 
   const setVehicles = async (nextVehicles: JapanSpecialOrderVehicle[]) => {
-    setVehiclesState(nextVehicles);
-    writeLocalJapanSpecialOrders(nextVehicles);
-    await saveJapanSpecialOrdersState(nextVehicles);
+    const nextReport = { ...report, vehicles: nextVehicles };
+    setReportState(nextReport);
+    writeLocalJapanSpecialOrders(nextReport);
+    await saveJapanSpecialOrdersState(nextReport);
+  };
+
+  const setReport = async (nextReport: JapanWeeklyReportState) => {
+    setReportState(nextReport);
+    writeLocalJapanSpecialOrders(nextReport);
+    await saveJapanSpecialOrdersState(nextReport);
   };
 
   const resetVehicles = () => {
-    setVehiclesState(japanSpecialOrderVehicles);
-    writeLocalJapanSpecialOrders(japanSpecialOrderVehicles);
+    const nextReport = { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
+    setReportState(nextReport);
+    writeLocalJapanSpecialOrders(nextReport);
   };
 
   return {
-    vehicles,
+    report,
+    vehicles: report.vehicles,
     isLoadingCloudVehicles,
     setVehicles,
+    setReport,
     resetVehicles,
   };
 }

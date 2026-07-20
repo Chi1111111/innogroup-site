@@ -13,8 +13,12 @@ const fieldClass =
   'w-full rounded-lg border border-[#151C26]/12 bg-[#F7F4EE] px-4 py-3.5 text-base font-medium text-[#151C26] transition-all placeholder:text-[#151C26]/35 focus:border-[#C6A54A] focus:outline-none focus:ring-1 focus:ring-[#C6A54A]';
 const CONTACT_FORM_RECIPIENT = 'innogroup.shawn@gmail.com';
 
-export function QuoteFormSection() {
-  const [briefStep, setBriefStep] = useState(1);
+interface QuoteFormSectionProps {
+  focusedImport?: boolean;
+}
+
+export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProps = {}) {
+  const [briefStep, setBriefStep] = useState(focusedImport ? 2 : 1);
   const [formData, setFormData] = useState({
     inquiryType: 'buy',
     sourceType: 'japan',
@@ -36,18 +40,24 @@ export function QuoteFormSection() {
 
     const params = new URLSearchParams(window.location.search);
     const source = params.get('source');
-    if (source !== 'jpauc' && source !== 'japan-special-order') return;
-
     const message = params.get('message') ?? '';
+    const enquiryType = params.get('type') ?? '';
+    if (source !== 'jpauc' && source !== 'japan-special-order' && source !== 'weekly-report' && !message && !enquiryType) return;
+
     const vehicle = params.get('vehicle') ?? '';
     const year = params.get('year') ?? '';
     const price = params.get('price') ?? '';
+    const contextualMessage = enquiryType === 'finance'
+      ? 'Hi Inno Group, I would like help understanding vehicle finance.'
+      : enquiryType === 'support'
+        ? 'Hi Inno Group, I need help with vehicle ownership support.'
+        : '';
     const fallbackMessage =
-      source === 'japan-special-order'
+      source === 'japan-special-order' || source === 'weekly-report'
         ? `Hi Inno Group, I'm interested in a Japan special order search:\n${vehicle || 'Rare / classic / supercar from Japan'}`
         : vehicle
           ? `Hi Inno Group, I'm interested in this vehicle:\n${vehicle}`
-          : '';
+          : contextualMessage;
 
     setFormData((current) => ({
       ...current,
@@ -208,6 +218,9 @@ export function QuoteFormSection() {
     { id: 'sell', label: 'Sell My Car', description: 'Get a quick valuation' },
   ] as const;
 
+  const displayedStep = focusedImport ? briefStep - 1 : briefStep;
+  const totalSteps = focusedImport ? 2 : 3;
+
   return (
     <section className="relative overflow-hidden bg-[#151C26] px-4 py-16 text-[#F3F0E9] sm:py-20 lg:py-24">
       <div className="relative mx-auto grid max-w-[1440px] gap-12 lg:grid-cols-[0.4fr_0.6fr] lg:items-start xl:gap-16">
@@ -242,9 +255,9 @@ export function QuoteFormSection() {
               <div key={briefStep} className="animate-fadeIn">
                 <div className="mb-8 flex items-center justify-between border-b border-[#151C26]/10 pb-5">
                   <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#151C26]/48">
-                    {String(briefStep).padStart(2, '0')} / 03
+                    {String(displayedStep).padStart(2, '0')} / {String(totalSteps).padStart(2, '0')}
                   </p>
-                  {briefStep > 1 && (
+                  {briefStep > (focusedImport ? 2 : 1) && (
                     <button
                       type="button"
                       onClick={() => setBriefStep(briefStep - 1)}
