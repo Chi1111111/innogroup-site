@@ -7,7 +7,10 @@ import {
   Factory,
   Globe2,
   MapPin,
+  MessageSquareText,
+  Search,
   Ship,
+  Sparkles,
   Users,
 } from 'lucide-react';
 import { Link } from 'react-router';
@@ -36,6 +39,33 @@ const sourceMarkets = [
     title: { en: 'Other Markets', zh: '其他市场' },
     icon: Globe2,
     text: { en: 'We continue to explore supply channels from other right-hand-drive friendly overseas markets.', zh: '我们持续拓展其他适合右舵市场的海外车源渠道。' },
+  },
+];
+
+const startPaths = [
+  {
+    number: '01',
+    to: '/vehicles/japan-live-stock',
+    icon: Search,
+    title: { en: 'Search Japan Stock', zh: '搜索日本车源' },
+    text: { en: 'Best when you already know the make, model or specification you want.', zh: '适合已经知道品牌、车型或配置的客户。' },
+    action: { en: 'Search live vehicles', zh: '搜索实时车源' },
+  },
+  {
+    number: '02',
+    to: '/weekly-report',
+    icon: Sparkles,
+    title: { en: 'See This Week’s Picks', zh: '查看本周精选' },
+    text: { en: 'A short, manually reviewed list for buyers who want guidance first.', zh: '人工筛选的简明周报，适合希望先获得建议的客户。' },
+    action: { en: 'Open weekly report', zh: '打开本周周报' },
+  },
+  {
+    number: '03',
+    to: '/vehicles/find-my-car',
+    icon: MessageSquareText,
+    title: { en: 'Ask Inno to Find It', zh: '请 Inno 帮我找车' },
+    text: { en: 'Share your target model, budget and must-haves. We will search for you.', zh: '告诉我们目标车型、预算和必备配置，由我们帮你寻找。' },
+    action: { en: 'Send your brief', zh: '提交找车需求' },
   },
 ];
 
@@ -76,12 +106,54 @@ export function Home() {
     <>
       <Hero />
 
-      <section className="px-4 py-16 sm:py-20">
+      <section id="start-here" className="scroll-mt-24 border-b border-black/8 px-4 py-16 sm:py-20">
+        <div className="section-shell">
+          <div className="grid gap-8 border-b border-black/8 pb-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <div>
+              <div className="section-kicker">01 · {text({ en: 'Start here', zh: '从这里开始' })}</div>
+              <h2 className="mt-5 max-w-xl">{text({ en: 'Three clear ways to find your next car.', zh: '三种清晰方式，找到下一辆车。' })}</h2>
+            </div>
+            <p className="max-w-2xl text-base leading-8 text-foreground/62 lg:justify-self-end lg:text-right">
+              {text({
+                en: 'You do not need to understand auctions or importing before you begin. Choose the starting point that matches how much you already know.',
+                zh: '开始之前，你不需要先弄懂拍卖和进口流程。只要根据自己目前掌握的信息，选择合适的入口。',
+              })}
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            {startPaths.map((path) => {
+              const Icon = path.icon;
+
+              return (
+                <Link key={path.to} to={path.to} className="group section-card flex min-h-[270px] flex-col p-6 sm:p-7">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold tracking-[0.18em] text-primary">{path.number}</span>
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-black/10 bg-background text-foreground transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-white">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                  </div>
+                  <div className="mt-auto pt-12">
+                    <h3 className="text-2xl">{text(path.title)}</h3>
+                    <p className="mt-3 text-sm leading-7">{text(path.text)}</p>
+                    <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-foreground">
+                      {text(path.action)}
+                      <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white/45 px-4 py-16 sm:py-20">
         <div className="section-shell">
           <div className="mb-10 max-w-3xl space-y-4">
             <div className="section-kicker">
               <Globe2 className="h-4 w-4" />
-              {text({ en: 'Source Markets', zh: '车源市场' })}
+              02 · {text({ en: 'Source Markets', zh: '车源市场' })}
             </div>
             <h2>{text({ en: 'Import Sourcing Across Trusted Overseas Channels.', zh: '通过可信海外渠道寻找进口车源。' })}</h2>
             <p className="text-lg leading-8 text-foreground/70">
@@ -98,7 +170,7 @@ export function Home() {
 
               return (
                 <article key={text(market.title)} className="section-card p-6">
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#151515] text-primary">
+                  <div className="mb-8 flex h-11 w-11 items-center justify-center rounded-xl bg-[#151515] text-primary">
                     <Icon className="h-6 w-6" />
                   </div>
                   <h3>{text(market.title)}</h3>

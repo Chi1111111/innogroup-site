@@ -56,10 +56,10 @@ export function useLanguage() {
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { language, setLanguage } = useLanguage();
   const buttonBase =
-    'rounded-full px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-colors';
+    'rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-colors';
   const wrapperClass = compact
-    ? 'grid grid-cols-2 gap-2 rounded-2xl border border-black/8 bg-white/70 p-1.5'
-    : 'inline-flex items-center gap-1 rounded-full border border-black/8 bg-white/64 p-1 shadow-sm';
+    ? 'grid grid-cols-2 gap-2 rounded-xl border border-black/10 bg-white/60 p-1.5'
+    : 'inline-flex items-center gap-1 rounded-xl border border-black/10 bg-white/55 p-1';
 
   return (
     <div className={wrapperClass} aria-label="Language switcher">

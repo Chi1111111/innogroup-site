@@ -99,12 +99,12 @@ export function ChinaVehicles() {
               })}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <a href="#available-models" className="button-primary">
-                {text({ en: 'View Available Models', zh: '查看现有车型' })}
+              <a href="#buyer-paths" className="button-primary">
+                {text({ en: 'Choose How You’re Buying', zh: '选择你的购车方式' })}
                 <ArrowRight className="h-5 w-5" />
               </a>
               <a href="#business-partners" className="button-secondary-dark">
-                {text({ en: 'Become a Partner', zh: '成为合作伙伴' })}
+                {text({ en: 'Dealer & Distributor Enquiries', zh: '车商与经销合作' })}
                 <ArrowRight className="h-5 w-5" />
               </a>
             </div>
@@ -117,6 +117,16 @@ export function ChinaVehicles() {
                 <p className="text-sm font-semibold leading-6 text-white/74">{text(reason)}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="buyer-paths" className="px-4 py-12 sm:py-16">
+        <div className="section-shell">
+          <div className="mb-7"><p className="section-kicker">{text({ en: 'Start here', zh: '从这里开始' })}</p><h2 className="mt-5">{text({ en: 'What are you looking for?', zh: '你以什么身份了解中国车型？' })}</h2></div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <a href="#available-models" className="group section-card p-7"><Users className="h-7 w-7 text-primary"/><h3 className="mt-7">{text({ en: 'Private & Fleet Buyers', zh: '个人与车队买家' })}</h3><p className="mt-3">{text({ en: 'Compare available MPVs, EVs, SUVs and commercial models.', zh: '查看现有 MPV、EV、SUV 和商用车型。' })}</p><span className="mt-6 inline-flex items-center gap-2 font-bold">{text({ en: 'View vehicles', zh: '查看车型' })}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1"/></span></a>
+            <a href="#business-partners" className="group section-card p-7"><Building2 className="h-7 w-7 text-primary"/><h3 className="mt-7">{text({ en: 'Dealers & Distributors', zh: '车商与经销商' })}</h3><p className="mt-3">{text({ en: 'Discuss supply, market-entry, right-hand-drive and distribution requirements.', zh: '沟通供应、市场进入、右舵车型和经销需求。' })}</p><span className="mt-6 inline-flex items-center gap-2 font-bold">{text({ en: 'Business enquiries', zh: '商业合作咨询' })}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1"/></span></a>
           </div>
         </div>
       </section>

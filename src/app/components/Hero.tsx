@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, MapPin, MessageSquareText, Search, Sparkles } from 'lucide-react';
+import { Link } from 'react-router';
 import {
   heroGalleryImages,
   partnerAsnetImage,
@@ -7,32 +8,7 @@ import {
   partnerPekemaImage,
   partnerUssImage,
 } from '../../data/pic';
-import { BrandLogo } from './BrandLogo';
 import { useLanguage } from './SiteTranslator';
-
-const heroHighlights = [
-  { en: 'Overseas vehicle import support', zh: '海外车辆进口支持' },
-  { en: 'Sourcing, shipping and local handover support', zh: '车源寻找、运输协调与本地交付支持' },
-  { en: 'Japan, China and selected channels', zh: '日本、中国及精选渠道' },
-];
-
-const heroStats = [
-  {
-    label: { en: 'Vehicle choice', zh: '车辆选择' },
-    value: { en: 'Import Options', zh: '进口选择' },
-    note: { en: 'Dealer stock, auction access and selected overseas supply channels', zh: '车商库存、拍卖资源及精选海外供应渠道' },
-  },
-  {
-    label: { en: 'Supply channels', zh: '供应渠道' },
-    value: { en: 'Multi-Channel', zh: '多渠道' },
-    note: { en: 'We match the source market to the model, budget and use case', zh: '根据车型、预算和用途匹配合适车源市场' },
-  },
-  {
-    label: { en: 'NZ support', zh: '新西兰支持' },
-    value: { en: 'Local Delivery', zh: '本地交付' },
-    note: { en: 'Clear communication from sourcing brief to handover support', zh: '从找车需求到交付支持，全程清晰沟通' },
-  },
-];
 
 const supplierBadges = [
   { name: 'PEKEMA', image: partnerPekemaImage },
@@ -41,180 +17,148 @@ const supplierBadges = [
   { name: 'ASNET', image: partnerAsnetImage },
 ];
 
+const startingPoints = [
+  {
+    to: '/vehicles/japan-live-stock',
+    icon: Search,
+    number: '01',
+    title: { en: 'I know what I want', zh: '我知道想要什么车' },
+    note: { en: 'Search Japan live stock', zh: '搜索日本实时车源' },
+  },
+  {
+    to: '/weekly-report',
+    icon: Sparkles,
+    number: '02',
+    title: { en: 'Show me good options', zh: '先看看本周好车' },
+    note: { en: 'View this week’s selected vehicles', zh: '查看本周人工精选车辆' },
+  },
+  {
+    to: '/vehicles/find-my-car',
+    icon: MessageSquareText,
+    number: '03',
+    title: { en: 'Help me find a car', zh: '请 Inno 帮我找车' },
+    note: { en: 'Tell us your model and budget', zh: '告诉我们车型和预算' },
+  },
+];
+
 export function Hero() {
   const [currentImage, setCurrentImage] = useState(0);
   const { text } = useLanguage();
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImage((prev) => (prev + 1) % heroGalleryImages.length);
-    }, 5000);
+    const interval = window.setInterval(() => {
+      setCurrentImage((previous) => (previous + 1) % heroGalleryImages.length);
+    }, 6500);
 
-    return () => clearInterval(interval);
+    return () => window.clearInterval(interval);
   }, []);
 
   return (
-    <section className="relative overflow-hidden bg-[#090909] px-4 pb-14 pt-20 text-white sm:pb-20 sm:pt-28 md:pb-24">
-      <div className="absolute inset-0">
+    <section className="relative isolate min-h-[760px] overflow-hidden bg-[#101113] px-4 pb-12 pt-28 text-white sm:pt-32 lg:flex lg:min-h-[780px] lg:items-center lg:pb-16 lg:pt-36">
+      <div className="absolute inset-0 -z-20">
         {heroGalleryImages.map((image, index) => (
-          <div
+          <img
             key={image}
-            className={`absolute inset-0 transition-opacity duration-1500 ${
+            src={image}
+            alt=""
+            aria-hidden="true"
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1800ms] ${
               index === currentImage ? 'opacity-100' : 'opacity-0'
             }`}
-          >
-            <img
-              src={image}
-              alt={`Luxury vehicle collection ${index + 1}`}
-              className="h-full w-full scale-105 object-cover"
-            />
-          </div>
+          />
         ))}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/58 to-black/78" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/62 via-transparent to-black/86" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(199,162,74,0.22),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(199,162,74,0.12),transparent_30%)]" />
       </div>
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(10,11,13,0.97)_0%,rgba(10,11,13,0.83)_48%,rgba(10,11,13,0.42)_100%)]" />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(10,11,13,0.35)_0%,rgba(10,11,13,0.12)_48%,rgba(10,11,13,0.93)_100%)]" />
+      <div className="absolute -right-32 top-10 -z-10 h-[520px] w-[520px] rounded-full bg-primary/16 blur-[140px]" />
 
-      <div className="section-shell relative z-10">
-        <div className="grid gap-7 sm:gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-end lg:gap-12">
-          <div className="max-w-3xl">
-            <div className="mb-5 animate-slideUp sm:mb-8" style={{ animationDelay: '0.05s' }}>
-              <BrandLogo variant="hero" className="max-w-[220px] sm:max-w-fit" />
+      <div className="section-shell w-full">
+        <div className="grid gap-10 lg:grid-cols-[1.08fr_0.72fr] lg:items-end lg:gap-16">
+          <div className="max-w-4xl animate-slideUp">
+            <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-primary sm:text-xs sm:tracking-[0.25em]">
+              <span className="h-px w-8 bg-primary" />
+              <MapPin className="h-4 w-4" />
+              {text({ en: 'Auckland-based vehicle sourcing', zh: '奥克兰本地车辆采购服务' })}
             </div>
 
-            <div
-              className="mb-5 inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-white/12 bg-white/10 px-3.5 py-2 text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-white/76 animate-slideUp sm:mb-6 sm:gap-3 sm:px-5 sm:text-xs sm:tracking-[0.24em]"
-              style={{ animationDelay: '0.12s' }}
-            >
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              {text({ en: 'Auckland Based', zh: '奥克兰本地' })}
-              <span className="text-white/35">|</span>
-              {text({ en: 'Vehicle Imports', zh: '车辆进口' })}
-            </div>
-
-            <h1
-              className="animate-slideUp text-[2.55rem] leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-[5.75rem]"
-              style={{ animationDelay: '0.2s' }}
-            >
-              {text({ en: 'Vehicle', zh: '车辆' })} <span className="text-primary">{text({ en: 'imports', zh: '进口' })}</span>.
-              <br />
-              {text({ en: 'Delivered locally in New Zealand.', zh: '新西兰本地交付。' })}
+            <h1 className="mt-7 max-w-4xl font-sans text-[3.25rem] font-semibold leading-[0.94] tracking-[-0.055em] text-white sm:text-6xl md:text-7xl lg:text-[5.5rem]">
+              {text({ en: 'The right car.', zh: '找到对的车，' })}
+              <span className="mt-1 block text-primary">
+                {text({ en: 'A clearer way to import.', zh: '进口更简单。' })}
+              </span>
             </h1>
 
-            <p
-              className="mt-4 max-w-2xl animate-slideUp text-[0.98rem] leading-7 text-white/72 sm:mt-6 md:text-xl md:leading-8"
-              style={{ animationDelay: '0.3s' }}
-            >
+            <p className="mt-7 max-w-2xl text-base leading-8 text-white/68 sm:text-lg">
               {text({
-                en: 'Inno Group helps New Zealand customers, dealers and partners source quality vehicles through suitable overseas channels, including Japan, China, Macau and selected supply networks.',
-                zh: 'Inno Group 帮助新西兰客户、车商和合作伙伴通过合适的海外渠道寻找优质车辆，包括日本、中国、澳门及精选供应网络。',
+                en: 'Search live Japan stock, review our weekly shortlist, or tell us the exact vehicle you want. Inno coordinates the process through to New Zealand delivery.',
+                zh: '你可以搜索日本实时车源、查看每周精选，或直接告诉我们想要的车型。Inno 从找车到新西兰交付全程协助。',
               })}
             </p>
 
-            <div
-              className="mt-6 flex flex-wrap gap-2 animate-slideUp sm:mt-8 sm:gap-3"
-              style={{ animationDelay: '0.4s' }}
-            >
-              {heroHighlights.map((item) => (
-                <span
-                  key={text(item)}
-                  className="rounded-full border border-white/12 bg-white/7 px-3 py-1.5 text-[11px] leading-5 text-white/74 backdrop-blur-sm sm:px-4 sm:py-2 sm:text-sm"
-                >
-                  {text(item)}
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <a href="#start-here" className="button-primary w-full sm:w-auto">
+                {text({ en: 'Choose How to Start', zh: '选择找车方式' })}
+                <ArrowRight className="h-5 w-5" />
+              </a>
+              <Link to="/weekly-report" className="button-secondary-dark w-full sm:w-auto">
+                {text({ en: 'View Weekly Finds', zh: '查看每周精选' })}
+              </Link>
+            </div>
+          </div>
+
+          <aside className="overflow-hidden rounded-2xl border border-white/12 bg-black/38 shadow-[0_28px_90px_rgba(0,0,0,0.36)] backdrop-blur-xl">
+            <div className="border-b border-white/10 px-5 py-4 sm:px-6">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+                {text({ en: 'Start with what you know', zh: '从你现在的需求开始' })}
+              </p>
+            </div>
+            <div>
+              {startingPoints.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className="group grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b border-white/10 px-5 py-5 last:border-b-0 hover:bg-white/[0.06] sm:px-6"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-bold text-white">{text(item.title)}</span>
+                      <span className="mt-1 block text-xs leading-5 text-white/48">{text(item.note)}</span>
+                    </span>
+                    <span className="flex items-center gap-2 text-[10px] font-bold tracking-[0.15em] text-white/32">
+                      {item.number}
+                      <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </aside>
+        </div>
+
+        <div className="mt-12 flex flex-col gap-5 border-t border-white/12 pt-6 sm:flex-row sm:items-center sm:justify-between lg:mt-16">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/38">
+              {text({ en: 'Connected sourcing network', zh: '合作车源网络' })}
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              {supplierBadges.map((supplier) => (
+                <span key={supplier.name} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white p-1.5" title={supplier.name}>
+                  <img src={supplier.image} alt={supplier.name} className="h-full w-full rounded-full object-contain" />
                 </span>
               ))}
             </div>
-
-            <div
-              className="mt-8 flex flex-col gap-3 animate-slideUp sm:mt-10 sm:flex-row sm:gap-4"
-              style={{ animationDelay: '0.5s' }}
-            >
-              <a href="/jpauc-feed" className="button-primary w-full sm:w-auto">
-                {text({ en: 'Browse Japan Stock', zh: '浏览日本车源' })}
-                <ArrowRight className="h-5 w-5" />
-              </a>
-
-              <a href="#quote" className="button-secondary-dark w-full sm:w-auto">
-                {text({ en: 'Source a Vehicle', zh: '寻找车辆' })}
-                <ArrowRight className="h-5 w-5" />
-              </a>
-
-              <a href="#partners" className="button-secondary-dark w-full sm:w-auto">
-                {text({ en: 'Partner With Us', zh: '合作洽谈' })}
-                <ArrowRight className="h-5 w-5" />
-              </a>
-            </div>
           </div>
-
-          <div
-            className="section-card-dark animate-slideUp p-5 sm:p-8 md:p-10"
-            style={{ animationDelay: '0.45s' }}
-          >
-            <div className="mb-4 flex items-center gap-2 sm:mb-5 sm:gap-3">
-              {supplierBadges.map((supplier) => (
-                <div
-                  key={supplier.name}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-white p-1.5 shadow-[0_8px_20px_rgba(0,0,0,0.3)] sm:h-12 sm:w-12"
-                  title={supplier.name}
-                >
-                  <img
-                    src={supplier.image}
-                    alt={supplier.name}
-                    className="h-full w-full rounded-full object-contain"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
-                  {text({ en: 'Why Clients Start Here', zh: '客户为什么从这里开始' })}
-                </p>
-                <p className="mt-2 text-sm text-white/62">
-                  {text({ en: 'An import sourcing network built for New Zealand.', zh: '为新西兰打造的进口车源网络。' })}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-                {heroGalleryImages.map((image, index) => (
-                  <span
-                    key={image}
-                    className={`h-1.5 w-6 rounded-full transition-colors sm:w-9 ${
-                      index === currentImage ? 'bg-primary' : 'bg-white/15'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3 sm:mt-8 sm:space-y-4">
-              {heroStats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-[22px] border border-white/8 bg-black/18 p-4 sm:rounded-[24px] sm:p-5"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/42">
-                    {text(stat.label)}
-                  </p>
-                  <p className="mt-2 text-[1.7rem] font-semibold text-white sm:text-3xl">{text(stat.value)}</p>
-                  <p className="mt-2 text-sm leading-6 text-white/62 sm:leading-7">{text(stat.note)}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 rounded-[24px] border border-primary/18 bg-primary/10 p-4 sm:mt-8 sm:rounded-[26px] sm:p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/82">
-                {text({ en: 'Typical Brief', zh: '典型需求' })}
-              </p>
-              <p className="mt-3 text-base leading-7 text-white/86 sm:text-lg sm:leading-8">
-                {text({
-                  en: '"Find the right model, confirm the channel, understand the landed position, and deliver with local support."',
-                  zh: '“找到合适车型，确认车源渠道，算清落地成本，并提供本地交付支持。”',
-                })}
-              </p>
-            </div>
-          </div>
+          <p className="max-w-lg text-sm leading-6 text-white/48 sm:text-right">
+            {text({
+              en: 'Japan auctions and dealer stock · selected China supply · shipping, compliance and local handover support',
+              zh: '日本拍卖与车商库存 · 精选中国车源 · 海运、合规及本地交付支持',
+            })}
+          </p>
         </div>
       </div>
     </section>

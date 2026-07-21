@@ -71,7 +71,8 @@ function setJsonLd(id: string, data: Record<string, unknown>) {
 }
 
 function getRouteMeta(pathname: string) {
-  const routeKey = routeKeys.find((key) => key === pathname) ?? '/';
+  const routeKey = routeKeys.find((key) => key === pathname) ??
+    (pathname.startsWith('/weekly-report/') ? '/weekly-report' : '/');
   return SEO_ROUTES[routeKey];
 }
 
@@ -79,6 +80,9 @@ function getBreadcrumbItems(pathname: string) {
   const segments = pathname.split('/').filter(Boolean);
   const names: Record<string, string> = {
     vehicles: 'Vehicles',
+    'weekly-report': 'Japan Market Weekly',
+    'japan-live-stock': 'Japan Live Stock',
+    'find-my-car': 'Find My Car',
     china: 'Cars from China',
     services: 'Services',
     finance: 'Finance',
@@ -254,4 +258,3 @@ export function SEO() {
 
   return null;
 }
-

@@ -113,26 +113,25 @@ export function PriceCalculator() {
   };
 
   return (
-    <section className="bg-gradient-to-br from-white via-gray-50 to-white px-4 py-12 sm:py-16">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8 space-y-3 text-center sm:mb-10">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2.5 sm:px-6 sm:py-3">
-            <Calculator className="w-5 h-5 text-primary" />
-            <span className="text-primary font-semibold">Import Cost Calculator</span>
+    <section className="border-y border-black/8 bg-white/45 px-4 py-16 sm:py-20">
+      <div className="section-shell">
+        <div className="mb-10 grid gap-5 border-b border-black/8 pb-9 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+          <div>
+            <div className="section-kicker">
+              <Calculator className="h-4 w-4" />
+              03 · Import Cost Calculator
+            </div>
+            <h2 className="mt-5">Estimate the landed price.</h2>
           </div>
-          <h2 className="text-3xl text-foreground sm:text-4xl">
-            Import Landing Price
-          </h2>
-          <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+          <p className="max-w-2xl text-base leading-8 text-muted-foreground lg:justify-self-end lg:text-right">
             Quick estimate for imported vehicle landed costs, including common shipping, compliance and service fees.
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {/* Calculator Input Section */}
           <div className="relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary via-yellow-300 to-primary rounded-3xl blur-xl opacity-20"></div>
-            <div className="relative rounded-3xl border-2 border-primary/10 bg-white p-5 shadow-2xl sm:p-7 md:p-10">
+            <div className="section-card relative h-full p-5 sm:p-7 md:p-9">
               <div className="mb-6 flex items-center gap-3 sm:mb-8">
                 <div className="rounded-xl bg-primary/10 p-2.5 sm:p-3">
                   <Calculator className="w-6 h-6 text-primary" />
@@ -154,7 +153,7 @@ export function PriceCalculator() {
                       value={vehiclePrice}
                       onChange={(e) => setVehiclePrice(e.target.value)}
                       placeholder="3000000"
-                      className="w-full rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 py-3.5 pl-11 pr-4 text-base font-medium shadow-sm transition-all hover:shadow-md focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/30 sm:py-4 sm:pl-12 sm:pr-6 sm:text-lg"
+                      className="w-full rounded-xl border border-black/12 bg-[#fbf8f2] py-3.5 pl-11 pr-4 text-base font-medium transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:py-4 sm:pl-12 sm:pr-6 sm:text-lg"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -177,7 +176,7 @@ export function PriceCalculator() {
                       value={exchangeRate}
                       placeholder="91.50"
                       readOnly
-                      className="w-full rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 py-3.5 pl-11 pr-4 text-base font-medium shadow-sm transition-all hover:shadow-md focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/30 sm:py-4 sm:pl-12 sm:pr-6 sm:text-lg"
+                      className="w-full rounded-xl border border-black/12 bg-[#fbf8f2] py-3.5 pl-11 pr-4 text-base font-medium transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:py-4 sm:pl-12 sm:pr-6 sm:text-lg"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -194,7 +193,7 @@ export function PriceCalculator() {
                 <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:pt-4">
                   <button
                     onClick={calculatePrice}
-                    className="group relative flex-1 overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-yellow-400 to-primary py-4 text-base font-bold text-white shadow-xl transition-all hover:scale-[1.02] hover:shadow-primary/50 sm:text-lg"
+                    className="button-primary group relative flex-1 overflow-hidden text-base sm:text-lg"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                     <span className="relative flex items-center justify-center gap-2">
@@ -206,7 +205,7 @@ export function PriceCalculator() {
                   {landedPrice !== null && (
                     <button
                       onClick={resetCalculator}
-                      className="rounded-2xl border-2 border-gray-200 px-6 py-4 font-bold text-base transition-all hover:border-primary/50 sm:text-lg"
+                      className="button-secondary px-6 text-base sm:text-lg"
                     >
                       Reset
                     </button>
@@ -219,7 +218,7 @@ export function PriceCalculator() {
           {/* Results Section */}
           <div className="relative">
             {!showBreakdown ? (
-              <div className="flex h-full items-center justify-center rounded-3xl border-2 border-gray-100 bg-gradient-to-br from-gray-50 to-white p-6 shadow-xl sm:p-8 md:p-10">
+              <div className="section-card flex h-full min-h-[440px] items-center justify-center p-6 sm:p-8 md:p-10">
                 <div className="text-center space-y-4">
                   <div className="inline-flex rounded-full bg-primary/10 p-5 sm:p-6">
                     <DollarSign className="w-12 h-12 text-primary" />
@@ -230,11 +229,11 @@ export function PriceCalculator() {
                 </div>
               </div>
             ) : (
-              <div className="animate-fadeIn rounded-3xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-white to-primary/5 p-5 shadow-2xl sm:p-7 md:p-10">
+                <div className="section-card animate-fadeIn p-5 sm:p-7 md:p-9">
                 <div className="space-y-5 sm:space-y-6">
                   {/* Main Result */}
-                  <div className="bg-gradient-to-r from-primary via-yellow-400 to-primary p-1 rounded-2xl">
-                    <div className="rounded-2xl bg-white p-5 text-center sm:p-6">
+                  <div className="rounded-xl border border-primary/40 bg-primary/10 p-1">
+                    <div className="rounded-lg bg-white/80 p-5 text-center sm:p-6">
                       <p className="text-muted-foreground mb-2 font-semibold">Estimated Landed Price</p>
                       <p className="mb-2 text-4xl font-bold text-primary sm:text-5xl">
                         {formatCurrency(breakdown.total, 'NZD').split(' ')[0]}
@@ -250,7 +249,7 @@ export function PriceCalculator() {
                       Cost Breakdown
                     </h4>
                     
-                    <div className="space-y-3 rounded-2xl border border-primary/10 bg-white/50 p-4 backdrop-blur-sm sm:p-5">
+                    <div className="space-y-3 rounded-xl border border-black/10 bg-white/60 p-4 backdrop-blur-sm sm:p-5">
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
                         <span className="text-sm text-muted-foreground sm:text-base">Vehicle Price (JPY)</span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(parseFloat(vehiclePrice), 'JPY')}</span>
@@ -284,7 +283,7 @@ export function PriceCalculator() {
                         <span className="text-right font-semibold text-foreground">{formatCurrency(breakdown.final5Percent, 'NZD')}</span>
                       </div>
 
-                      <div className="-mx-4 -mb-4 flex items-start justify-between gap-4 rounded-b-2xl bg-primary/5 px-4 pb-4 pt-3 sm:-mx-5 sm:-mb-5 sm:px-5 sm:pb-5">
+                      <div className="-mx-4 -mb-4 flex items-start justify-between gap-4 rounded-b-xl bg-primary/8 px-4 pb-4 pt-3 sm:-mx-5 sm:-mb-5 sm:px-5 sm:pb-5">
                         <span className="text-base font-bold text-foreground sm:text-lg">Total Landed Price</span>
                         <span className="text-right text-xl font-bold text-primary sm:text-2xl">{formatCurrency(breakdown.total, 'NZD').split(' ')[0]}</span>
                       </div>
