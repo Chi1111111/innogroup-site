@@ -66,6 +66,7 @@ export const DEFAULT_JAPAN_WEEKLY_REPORT_META: JapanWeeklyReportMeta = {
 };
 
 const JAPAN_SPECIAL_ORDERS_STORAGE_KEY = 'inno:japan-special-orders:v1';
+const JAPAN_WEEKLY_REPORT_STORAGE_KEY = 'inno:japan-weekly-report-meta:v1';
 
 function isValidVehicle(item: Partial<JapanSpecialOrderVehicle>): item is JapanSpecialOrderVehicle {
   return Boolean(
@@ -87,46 +88,72 @@ export function getJapanSpecialOrderImages(vehicle: JapanSpecialOrderVehicle) {
   return Array.from(new Set([vehicle.image, ...(vehicle.images ?? [])].filter(Boolean)));
 }
 
-function normalizeReportState(value: unknown): JapanWeeklyReportState {
-  if (Array.isArray(value)) {
-    return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: value.filter(isValidVehicle) };
-  }
-
-  if (value && typeof value === 'object' && 'vehicles' in value) {
-    const report = value as Partial<JapanWeeklyReportState>;
-    return {
-      ...DEFAULT_JAPAN_WEEKLY_REPORT_META,
-      ...report,
-      marketNotes: Array.isArray(report.marketNotes) ? report.marketNotes : DEFAULT_JAPAN_WEEKLY_REPORT_META.marketNotes,
-      zhMarketNotes: Array.isArray(report.zhMarketNotes) ? report.zhMarketNotes : DEFAULT_JAPAN_WEEKLY_REPORT_META.zhMarketNotes,
-      vehicles: Array.isArray(report.vehicles) ? report.vehicles.filter(isValidVehicle) : japanSpecialOrderVehicles,
-    };
-  }
-
-  return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
-}
-
-function readJapanSpecialOrders(): JapanWeeklyReportState {
+function readJapanSpecialOrders(): JapanSpecialOrderVehicle[] {
   if (typeof window === 'undefined') {
-    return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
+    return japanSpecialOrderVehicles;
   }
 
   try {
     const raw = window.localStorage.getItem(JAPAN_SPECIAL_ORDERS_STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
-    return normalizeReportState(JSON.parse(raw));
+    if (!raw) return japanSpecialOrderVehicles;
+
+    const parsed = JSON.parse(raw) as unknown;
+    const possibleVehicles = Array.isArray(parsed)
+      ? parsed
+      : parsed && typeof parsed === 'object' && 'vehicles' in parsed
+        ? (parsed as { vehicles?: unknown }).vehicles
+        : null;
+
+    if (!Array.isArray(possibleVehicles) || possibleVehicles.length === 0) {
+      return japanSpecialOrderVehicles;
+    }
+
+    const nextVehicles = possibleVehicles.filter(isValidVehicle);
+    return nextVehicles.length > 0 ? nextVehicles : japanSpecialOrderVehicles;
   } catch {
-    return { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
+    return japanSpecialOrderVehicles;
   }
 }
 
-function writeLocalJapanSpecialOrders(report: JapanWeeklyReportState) {
+function readWeeklyReportMeta(): JapanWeeklyReportMeta {
+  if (typeof window === 'undefined') return DEFAULT_JAPAN_WEEKLY_REPORT_META;
+
+  try {
+    const raw = window.localStorage.getItem(JAPAN_WEEKLY_REPORT_STORAGE_KEY);
+    if (!raw) return DEFAULT_JAPAN_WEEKLY_REPORT_META;
+    const stored = JSON.parse(raw) as Partial<JapanWeeklyReportMeta>;
+
+    return {
+      ...DEFAULT_JAPAN_WEEKLY_REPORT_META,
+      ...stored,
+      marketNotes: Array.isArray(stored.marketNotes)
+        ? stored.marketNotes
+        : DEFAULT_JAPAN_WEEKLY_REPORT_META.marketNotes,
+      zhMarketNotes: Array.isArray(stored.zhMarketNotes)
+        ? stored.zhMarketNotes
+        : DEFAULT_JAPAN_WEEKLY_REPORT_META.zhMarketNotes,
+    };
+  } catch {
+    return DEFAULT_JAPAN_WEEKLY_REPORT_META;
+  }
+}
+
+function writeLocalJapanSpecialOrders(vehicles: JapanSpecialOrderVehicle[]) {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(JAPAN_SPECIAL_ORDERS_STORAGE_KEY, JSON.stringify(report));
+  window.localStorage.setItem(JAPAN_SPECIAL_ORDERS_STORAGE_KEY, JSON.stringify(vehicles));
+}
+
+function writeWeeklyReportMeta(report: JapanWeeklyReportState) {
+  if (typeof window === 'undefined') return;
+  const { vehicles: _vehicles, ...meta } = report;
+  window.localStorage.setItem(JAPAN_WEEKLY_REPORT_STORAGE_KEY, JSON.stringify(meta));
 }
 
 export function useJapanSpecialOrders() {
-  const [report, setReportState] = useState<JapanWeeklyReportState>(() => readJapanSpecialOrders());
+  const [report, setReportState] = useState<JapanWeeklyReportState>(() => ({
+    ...readWeeklyReportMeta(),
+    vehicles: readJapanSpecialOrders(),
+  }));
   const [isLoadingCloudVehicles, setIsLoadingCloudVehicles] = useState(false);
 
   useEffect(() => {
@@ -134,11 +161,12 @@ export function useJapanSpecialOrders() {
 
     setIsLoadingCloudVehicles(true);
     loadJapanSpecialOrdersState()
-      .then((cloudReport) => {
-        if (!isMounted || !cloudReport) return;
-        const nextReport = normalizeReportState(cloudReport);
-        setReportState(nextReport);
-        writeLocalJapanSpecialOrders(nextReport);
+      .then((cloudVehicles) => {
+        if (!isMounted || !cloudVehicles || cloudVehicles.length === 0) return;
+        const validVehicles = cloudVehicles.filter(isValidVehicle);
+        if (validVehicles.length === 0) return;
+        setReportState((current) => ({ ...current, vehicles: validVehicles }));
+        writeLocalJapanSpecialOrders(validVehicles);
       })
       .catch((error) => {
         console.warn('Could not load Japan special orders from Supabase.', error);
@@ -155,20 +183,22 @@ export function useJapanSpecialOrders() {
   const setVehicles = async (nextVehicles: JapanSpecialOrderVehicle[]) => {
     const nextReport = { ...report, vehicles: nextVehicles };
     setReportState(nextReport);
-    writeLocalJapanSpecialOrders(nextReport);
-    await saveJapanSpecialOrdersState(nextReport);
+    writeLocalJapanSpecialOrders(nextVehicles);
+    await saveJapanSpecialOrdersState(nextVehicles);
   };
 
   const setReport = async (nextReport: JapanWeeklyReportState) => {
     setReportState(nextReport);
-    writeLocalJapanSpecialOrders(nextReport);
-    await saveJapanSpecialOrdersState(nextReport);
+    writeLocalJapanSpecialOrders(nextReport.vehicles);
+    writeWeeklyReportMeta(nextReport);
+    await saveJapanSpecialOrdersState(nextReport.vehicles);
   };
 
   const resetVehicles = () => {
     const nextReport = { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
     setReportState(nextReport);
-    writeLocalJapanSpecialOrders(nextReport);
+    writeLocalJapanSpecialOrders(nextReport.vehicles);
+    writeWeeklyReportMeta(nextReport);
   };
 
   return {

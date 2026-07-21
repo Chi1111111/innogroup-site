@@ -11,6 +11,11 @@ const vehicleLinks = [
     note: { en: 'Search auctions and fixed-price vehicles', zh: '搜索拍卖和固定价库存' },
   },
   {
+    to: '/vehicles/japan-special-order',
+    label: { en: 'Japan Finds', zh: '日本精选车源' },
+    note: { en: 'Fresh finds saved by the Inno team', zh: 'Inno 团队持续更新的日本精选车源' },
+  },
+  {
     to: '/vehicles/find-my-car',
     label: { en: 'Find My Car', zh: '告诉 Inno 帮我找车' },
     note: { en: 'Tell us the exact vehicle you want', zh: '告诉我们车型、预算和配置' },
