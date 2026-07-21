@@ -65,7 +65,8 @@ export const DEFAULT_JAPAN_WEEKLY_REPORT_META: JapanWeeklyReportMeta = {
   ],
 };
 
-const JAPAN_SPECIAL_ORDERS_STORAGE_KEY = 'inno:japan-special-orders:v1';
+// v2 drops the old generic-category cache so it cannot mask the real vehicle board.
+const JAPAN_SPECIAL_ORDERS_STORAGE_KEY = 'inno:japan-special-orders:v2';
 const JAPAN_WEEKLY_REPORT_STORAGE_KEY = 'inno:japan-weekly-report-meta:v1';
 
 function isValidVehicle(item: Partial<JapanSpecialOrderVehicle>): item is JapanSpecialOrderVehicle {
