@@ -101,7 +101,7 @@ export function Hero() {
                 <ArrowRight className="h-5 w-5" />
               </a>
               <Link to="/weekly-report" className="button-secondary-dark w-full sm:w-auto">
-                {text({ en: 'View Weekly Picks', zh: '查看本周精选' })}
+                {text({ en: 'View Weekly Finds', zh: '查看每周精选' })}
               </Link>
             </div>
           </div>

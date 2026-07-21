@@ -21,7 +21,7 @@ export function WeeklyReport() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(199,162,74,0.18),transparent_34%)]" />
         <div className="section-shell relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
           <div className="max-w-4xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-primary"><BarChart3 className="h-4 w-4" />Weekly Japan Picks · Japan Market Weekly</div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-primary"><BarChart3 className="h-4 w-4" />Weekly Japan Finds · Japan Market Weekly</div>
             <h1 className="mt-7 max-w-4xl text-white">{text({ en: 'The Japan opportunities worth a closer look this week.', zh: '本周值得进一步了解的日本车源机会。' })}</h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/68">{text({ en: report.marketSummary, zh: report.zhMarketSummary })}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#weekly-vehicles" className="button-primary">{text({ en: 'View Vehicles', zh: '查看本周车辆' })}<ArrowRight className="h-5 w-5" /></a><Link to="/contact?source=weekly-report#quote" className="button-secondary-dark">{text({ en: 'Get Weekly Updates', zh: '订阅每周更新' })}</Link></div>

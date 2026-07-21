@@ -3,7 +3,6 @@ import { Root } from './Root';
 import { Home } from './pages/Home';
 import { BawM8Page } from './pages/BawM8Page';
 import { ChinaVehicles } from './pages/ChinaVehicles';
-import { JapanSpecialOrder } from './pages/JapanSpecialOrder';
 import { WoxAirPage, WoxNebulaPage, WoxSheraPage, WoxZenyPage } from './pages/WoxVehiclePage';
 import { Services } from './pages/Services';
 import { About } from './pages/About';
@@ -25,7 +24,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: Home },
       { path: 'vehicles/china', Component: ChinaVehicles },
-      { path: 'vehicles/japan-special-order', Component: JapanSpecialOrder },
+      { path: 'vehicles/japan-special-order', Component: () => <Navigate to="/weekly-report" replace /> },
       { path: 'vehicles/japan-live-stock', Component: JpaucFeed },
       { path: 'vehicles/find-my-car', Component: FindMyCar },
       { path: 'weekly-report', Component: WeeklyReport },
