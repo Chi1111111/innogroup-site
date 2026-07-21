@@ -3,6 +3,7 @@ import { japanSpecialOrderVehicles } from '../../data/japanSpecialOrders';
 import {
   loadJapanSpecialOrdersState,
   saveJapanSpecialOrdersState,
+  type JapanWeeklyReportsPayload,
 } from '../lib/japanSpecialOrders';
 
 export interface JapanSpecialOrderVehicle {
@@ -68,6 +69,7 @@ export const DEFAULT_JAPAN_WEEKLY_REPORT_META: JapanWeeklyReportMeta = {
 // v2 drops the old generic-category cache so it cannot mask the real vehicle board.
 const JAPAN_SPECIAL_ORDERS_STORAGE_KEY = 'inno:japan-special-orders:v2';
 const JAPAN_WEEKLY_REPORT_STORAGE_KEY = 'inno:japan-weekly-report-meta:v1';
+const JAPAN_WEEKLY_REPORTS_STORAGE_KEY = 'inno:japan-weekly-reports:v2';
 
 function isValidVehicle(item: Partial<JapanSpecialOrderVehicle>): item is JapanSpecialOrderVehicle {
   return Boolean(
@@ -150,11 +152,60 @@ function writeWeeklyReportMeta(report: JapanWeeklyReportState) {
   window.localStorage.setItem(JAPAN_WEEKLY_REPORT_STORAGE_KEY, JSON.stringify(meta));
 }
 
-export function useJapanSpecialOrders() {
-  const [report, setReportState] = useState<JapanWeeklyReportState>(() => ({
+function isValidReport(item: Partial<JapanWeeklyReportState>): item is JapanWeeklyReportState {
+  return Boolean(
+    item.issueNumber &&
+      item.publishedAt &&
+      Array.isArray(item.marketNotes) &&
+      Array.isArray(item.zhMarketNotes) &&
+      Array.isArray(item.vehicles)
+  );
+}
+
+function readWeeklyReports(): JapanWeeklyReportState[] {
+  const fallback = {
     ...readWeeklyReportMeta(),
     vehicles: readJapanSpecialOrders(),
-  }));
+  };
+
+  if (typeof window === 'undefined') return [fallback];
+
+  try {
+    const raw = window.localStorage.getItem(JAPAN_WEEKLY_REPORTS_STORAGE_KEY);
+    if (!raw) return [fallback];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [fallback];
+    const reports = parsed.filter(isValidReport);
+    return reports.length > 0 ? reports : [fallback];
+  } catch {
+    return [fallback];
+  }
+}
+
+function writeWeeklyReports(reports: JapanWeeklyReportState[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(JAPAN_WEEKLY_REPORTS_STORAGE_KEY, JSON.stringify(reports));
+  if (reports[0]) {
+    writeLocalJapanSpecialOrders(reports[0].vehicles);
+    writeWeeklyReportMeta(reports[0]);
+  }
+}
+
+function isReportsPayload(payload: unknown): payload is JapanWeeklyReportsPayload {
+  return Boolean(
+    payload &&
+      typeof payload === 'object' &&
+      'reports' in payload &&
+      Array.isArray((payload as JapanWeeklyReportsPayload).reports)
+  );
+}
+
+export function useJapanSpecialOrders() {
+  const [reports, setReportsState] = useState<JapanWeeklyReportState[]>(readWeeklyReports);
+  const report = reports[0] ?? {
+    ...DEFAULT_JAPAN_WEEKLY_REPORT_META,
+    vehicles: japanSpecialOrderVehicles,
+  };
   const [isLoadingCloudVehicles, setIsLoadingCloudVehicles] = useState(false);
 
   useEffect(() => {
@@ -162,12 +213,28 @@ export function useJapanSpecialOrders() {
 
     setIsLoadingCloudVehicles(true);
     loadJapanSpecialOrdersState()
-      .then((cloudVehicles) => {
-        if (!isMounted || !cloudVehicles || cloudVehicles.length === 0) return;
-        const validVehicles = cloudVehicles.filter(isValidVehicle);
+      .then((cloudPayload) => {
+        if (!isMounted || !cloudPayload) return;
+
+        if (isReportsPayload(cloudPayload)) {
+          const validReports = cloudPayload.reports.filter(isValidReport);
+          if (validReports.length === 0) return;
+          setReportsState(validReports);
+          writeWeeklyReports(validReports);
+          return;
+        }
+
+        if (!Array.isArray(cloudPayload) || cloudPayload.length === 0) return;
+        const validVehicles = cloudPayload.filter(isValidVehicle);
         if (validVehicles.length === 0) return;
-        setReportState((current) => ({ ...current, vehicles: validVehicles }));
-        writeLocalJapanSpecialOrders(validVehicles);
+        setReportsState((current) => {
+          const nextReports = [
+            { ...(current[0] ?? DEFAULT_JAPAN_WEEKLY_REPORT_META), vehicles: validVehicles },
+            ...current.slice(1),
+          ];
+          writeWeeklyReports(nextReports);
+          return nextReports;
+        });
       })
       .catch((error) => {
         console.warn('Could not load Japan special orders from Supabase.', error);
@@ -182,32 +249,46 @@ export function useJapanSpecialOrders() {
   }, []);
 
   const setVehicles = async (nextVehicles: JapanSpecialOrderVehicle[]) => {
-    const nextReport = { ...report, vehicles: nextVehicles };
-    setReportState(nextReport);
-    writeLocalJapanSpecialOrders(nextVehicles);
-    await saveJapanSpecialOrdersState(nextVehicles);
+    const nextReports = [{ ...report, vehicles: nextVehicles }, ...reports.slice(1)];
+    setReportsState(nextReports);
+    writeWeeklyReports(nextReports);
+    await saveJapanSpecialOrdersState({ version: 2, reports: nextReports });
   };
 
   const setReport = async (nextReport: JapanWeeklyReportState) => {
-    setReportState(nextReport);
-    writeLocalJapanSpecialOrders(nextReport.vehicles);
-    writeWeeklyReportMeta(nextReport);
-    await saveJapanSpecialOrdersState(nextReport.vehicles);
+    const existingIndex = reports.findIndex(
+      (item) => item.issueNumber === nextReport.issueNumber
+    );
+    const nextReports =
+      existingIndex < 0
+        ? [nextReport, ...reports]
+        : reports.map((item, index) => (index === existingIndex ? nextReport : item));
+    setReportsState(nextReports);
+    writeWeeklyReports(nextReports);
+    await saveJapanSpecialOrdersState({ version: 2, reports: nextReports });
+  };
+
+  const setReports = async (nextReports: JapanWeeklyReportState[]) => {
+    if (nextReports.length === 0) return;
+    setReportsState(nextReports);
+    writeWeeklyReports(nextReports);
+    await saveJapanSpecialOrdersState({ version: 2, reports: nextReports });
   };
 
   const resetVehicles = () => {
     const nextReport = { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
-    setReportState(nextReport);
-    writeLocalJapanSpecialOrders(nextReport.vehicles);
-    writeWeeklyReportMeta(nextReport);
+    setReportsState([nextReport]);
+    writeWeeklyReports([nextReport]);
   };
 
   return {
     report,
+    reports,
     vehicles: report.vehicles,
     isLoadingCloudVehicles,
     setVehicles,
     setReport,
+    setReports,
     resetVehicles,
   };
 }

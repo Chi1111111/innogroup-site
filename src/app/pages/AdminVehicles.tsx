@@ -5,6 +5,7 @@ import type { PartnerPlaceholder } from '../../data/services';
 import {
   type JapanSpecialOrderVehicle,
   type JapanWeeklyReportMeta,
+  DEFAULT_JAPAN_WEEKLY_REPORT_META,
   useJapanSpecialOrders,
 } from '../hooks/useJapanSpecialOrders';
 import { usePartnersCatalog } from '../hooks/usePartnersCatalog';
@@ -338,13 +339,20 @@ function getNoticeClass(type: AdminNotice['type']) {
   return 'border-blue-200 bg-blue-50 text-blue-700';
 }
 
-export function AdminVehicles() {
+export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   const { partners, setPartners, resetPartners } = usePartnersCatalog();
   const {
     report: japanWeeklyReport,
-    vehicles: japanSpecialOrderVehicles,
-    setReport: setJapanWeeklyReport,
+    reports: japanWeeklyReports,
+    setReports: setJapanWeeklyReports,
   } = useJapanSpecialOrders();
+  const [selectedIssueNumber, setSelectedIssueNumber] = useState(
+    japanWeeklyReport.issueNumber
+  );
+  const selectedWeeklyReport =
+    japanWeeklyReports.find((report) => report.issueNumber === selectedIssueNumber) ??
+    japanWeeklyReports[0] ??
+    japanWeeklyReport;
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'authenticated';
@@ -357,14 +365,14 @@ export function AdminVehicles() {
     JapanSpecialOrderDraft[]
   >([]);
   const [weeklyReportDraft, setWeeklyReportDraft] = useState<JapanWeeklyReportMeta>(() => ({
-    issueNumber: japanWeeklyReport.issueNumber,
-    publishedAt: japanWeeklyReport.publishedAt,
-    exchangeRate: japanWeeklyReport.exchangeRate,
-    dataUpdatedAt: japanWeeklyReport.dataUpdatedAt,
-    marketSummary: japanWeeklyReport.marketSummary,
-    zhMarketSummary: japanWeeklyReport.zhMarketSummary,
-    marketNotes: japanWeeklyReport.marketNotes,
-    zhMarketNotes: japanWeeklyReport.zhMarketNotes,
+    issueNumber: selectedWeeklyReport.issueNumber,
+    publishedAt: selectedWeeklyReport.publishedAt,
+    exchangeRate: selectedWeeklyReport.exchangeRate,
+    dataUpdatedAt: selectedWeeklyReport.dataUpdatedAt,
+    marketSummary: selectedWeeklyReport.marketSummary,
+    zhMarketSummary: selectedWeeklyReport.zhMarketSummary,
+    marketNotes: selectedWeeklyReport.marketNotes,
+    zhMarketNotes: selectedWeeklyReport.zhMarketNotes,
   }));
   const [expandedPartnerId, setExpandedPartnerId] = useState<string | null>(null);
   const [expandedJapanSpecialOrderSlug, setExpandedJapanSpecialOrderSlug] = useState<
@@ -405,17 +413,17 @@ export function AdminVehicles() {
   }, [partners]);
 
   useEffect(() => {
-    const nextDrafts = japanSpecialOrderVehicles.map((vehicle) =>
+    const nextDrafts = selectedWeeklyReport.vehicles.map((vehicle) =>
       toJapanSpecialOrderDraft(vehicle)
     );
     setJapanSpecialOrderDrafts(nextDrafts);
-    setExpandedJapanSpecialOrderSlug((current) => current ?? nextDrafts[0]?.slug ?? null);
-  }, [japanSpecialOrderVehicles]);
+    setExpandedJapanSpecialOrderSlug(null);
+  }, [selectedWeeklyReport]);
 
   useEffect(() => {
-    const { vehicles: _vehicles, ...meta } = japanWeeklyReport;
+    const { vehicles: _vehicles, ...meta } = selectedWeeklyReport;
     setWeeklyReportDraft(meta);
-  }, [japanWeeklyReport]);
+  }, [selectedWeeklyReport]);
 
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -464,6 +472,10 @@ export function AdminVehicles() {
   };
 
   const addJapanSpecialOrderDraft = () => {
+    if (japanSpecialOrderDrafts.length >= 2) {
+      setNotice({ type: 'info', text: '每一期周报最多放 2 辆车，先删除或调整现有车辆。' });
+      return;
+    }
     const nextSlug = createId('special-order');
     setJapanSpecialOrderDrafts((current) => [
       ...current,
@@ -550,13 +562,74 @@ export function AdminVehicles() {
       return;
     }
 
+    if (nextVehicles.length === 0 || nextVehicles.length > 2) {
+      setNotice({ type: 'error', text: '每一期周报需要放 1–2 辆车。' });
+      return;
+    }
+
     try {
-      await setJapanWeeklyReport({ ...weeklyReportDraft, vehicles: nextVehicles });
-      setNotice({ type: 'success', text: '日本市场周报已保存到云端，并同步到前台。' });
+      const nextReport = { ...weeklyReportDraft, vehicles: nextVehicles };
+      const nextReports = japanWeeklyReports.map((report) =>
+        report.issueNumber === selectedIssueNumber ? nextReport : report
+      );
+      await setJapanWeeklyReports(nextReports);
+      setSelectedIssueNumber(nextReport.issueNumber);
+      setNotice({ type: 'success', text: `第 ${nextReport.issueNumber} 期周报已保存到云端。` });
     } catch (error) {
       setNotice({
         type: 'error',
         text: `保存失败：日本精选车源没有写入云端。请确认 Supabase 表已创建。${error instanceof Error ? ` ${error.message}` : ''}`,
+      });
+    }
+  };
+
+  const addWeeklyReport = async () => {
+    const largestIssue = japanWeeklyReports.reduce(
+      (largest, report) => Math.max(largest, Number.parseInt(report.issueNumber, 10) || 0),
+      0
+    );
+    const issueNumber = String(largestIssue + 1).padStart(3, '0');
+    const nextReport = {
+      ...DEFAULT_JAPAN_WEEKLY_REPORT_META,
+      issueNumber,
+      publishedAt: new Date().toLocaleDateString('en-NZ', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }),
+      vehicles: [],
+    };
+
+    try {
+      await setJapanWeeklyReports([nextReport, ...japanWeeklyReports]);
+      setSelectedIssueNumber(issueNumber);
+      setNotice({ type: 'info', text: `已新建第 ${issueNumber} 期，请添加 1–2 辆车后保存。` });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: `新建失败。${error instanceof Error ? ` ${error.message}` : ''}`,
+      });
+    }
+  };
+
+  const removeWeeklyReport = async (issueNumber: string) => {
+    if (japanWeeklyReports.length <= 1) {
+      setNotice({ type: 'info', text: '至少保留一期周报。' });
+      return;
+    }
+    if (!window.confirm(`确定删除第 ${issueNumber} 期周报吗？`)) return;
+
+    const nextReports = japanWeeklyReports.filter(
+      (report) => report.issueNumber !== issueNumber
+    );
+    try {
+      await setJapanWeeklyReports(nextReports);
+      setSelectedIssueNumber(nextReports[0].issueNumber);
+      setNotice({ type: 'success', text: `第 ${issueNumber} 期已删除。` });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: `删除失败。${error instanceof Error ? ` ${error.message}` : ''}`,
       });
     }
   };
@@ -765,13 +838,21 @@ export function AdminVehicles() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                内容管理后台
+                {mode === 'weekly' ? '周报管理' : '内容管理后台'}
               </h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                管理前台展示内容，包括日本精选车源更新和供应商/合作方信息。
+                {mode === 'weekly'
+                  ? '按期管理 Japan Market Weekly，每期放 1–2 辆精选车辆。'
+                  : '管理供应商/合作方信息，并从独立入口进入周报管理。'}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Link
+                to={mode === 'weekly' ? '/admin' : '/admin/weekly-reports'}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                {mode === 'weekly' ? '返回内容后台' : '周报管理'}
+              </Link>
               <Link
                 to="/admin/crm"
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
@@ -801,13 +882,13 @@ export function AdminVehicles() {
           </div>
         ) : null}
 
-        <section className="space-y-4">
+        {mode === 'weekly' ? <section className="space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">Japan Market Weekly 管理</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  编辑周报期数、市场观察和本周车辆。现有 Supabase 数据会继续使用。
+                  先选择一期周报，再编辑该期基础信息和 1–2 辆车辆。
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -819,20 +900,85 @@ export function AdminVehicles() {
                 </Link>
                 <button
                   type="button"
+                  onClick={() => void addWeeklyReport()}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  + 新建一期
+                </button>
+                <button
+                  type="button"
                   onClick={addJapanSpecialOrderDraft}
                   className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
                 >
-                  + 添加卡片
+                  + 添加车辆
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleSaveJapanSpecialOrders()}
                   className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
                 >
-                  保存完整周报
+                  保存本期周报
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {japanWeeklyReports.map((report, index) => {
+              const isSelected = report.issueNumber === selectedWeeklyReport.issueNumber;
+              return (
+                <article
+                  key={`${report.issueNumber}-${index}`}
+                  className={`rounded-2xl border bg-white p-5 shadow-sm transition-colors ${
+                    isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-slate-200'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIssueNumber(report.issueNumber)}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-lg font-semibold text-slate-900">
+                        第 {report.issueNumber} 期
+                      </h3>
+                      {index === 0 ? (
+                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                          最新
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">{report.publishedAt}</p>
+                    <div className="mt-4 space-y-2">
+                      {report.vehicles.length === 0 ? (
+                        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                          暂未添加车辆
+                        </p>
+                      ) : (
+                        report.vehicles.slice(0, 2).map((vehicle, vehicleIndex) => (
+                          <p
+                            key={vehicle.slug}
+                            className="truncate rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"
+                          >
+                            #{vehicleIndex + 1} {vehicle.title}
+                          </p>
+                        ))
+                      )}
+                    </div>
+                  </button>
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                    <span className="text-xs text-slate-500">{report.vehicles.length} 辆车</span>
+                    <button
+                      type="button"
+                      onClick={() => void removeWeeklyReport(report.issueNumber)}
+                      className="text-xs font-semibold text-red-600 hover:text-red-700"
+                    >
+                      删除本期
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -1182,9 +1328,9 @@ export function AdminVehicles() {
               </div>
             ))}
           </div>
-        </section>
+        </section> : null}
 
-        <section className="space-y-4">
+        {mode === 'main' ? <section className="space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 className="text-xl font-semibold text-slate-900">供应商/合作方卡片</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -1374,7 +1520,7 @@ export function AdminVehicles() {
               </div>
             ))}
           </div>
-        </section>
+        </section> : null}
       </div>
     </div>
   );

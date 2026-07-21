@@ -1,9 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
-import type { JapanSpecialOrderVehicle } from '../hooks/useJapanSpecialOrders';
+import type {
+  JapanSpecialOrderVehicle,
+  JapanWeeklyReportState,
+} from '../hooks/useJapanSpecialOrders';
 
 type JapanSpecialOrdersStateRow = {
   id: string;
-  payload: JapanSpecialOrderVehicle[] | null;
+  payload: JapanSpecialOrderVehicle[] | JapanWeeklyReportsPayload | null;
+};
+
+export type JapanWeeklyReportsPayload = {
+  version: 2;
+  reports: JapanWeeklyReportState[];
 };
 
 const JAPAN_SPECIAL_ORDERS_STATE_ID = 'main';
@@ -33,12 +41,14 @@ export async function loadJapanSpecialOrdersState() {
   return (data as JapanSpecialOrdersStateRow | null)?.payload ?? null;
 }
 
-export async function saveJapanSpecialOrdersState(vehicles: JapanSpecialOrderVehicle[]) {
+export async function saveJapanSpecialOrdersState(
+  payload: JapanSpecialOrderVehicle[] | JapanWeeklyReportsPayload
+) {
   const client = assertSupabase();
   const { error } = await client.from('japan_special_orders_state').upsert(
     {
       id: JAPAN_SPECIAL_ORDERS_STATE_ID,
-      payload: vehicles,
+      payload,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'id' }

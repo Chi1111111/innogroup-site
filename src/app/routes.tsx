@@ -41,6 +41,10 @@ export const router = createBrowserRouter([
       { path: 'finance', Component: Finance },
       { path: 'jpauc-feed', Component: JpaucFeed },
       { path: 'admin', Component: AdminVehicles },
+      {
+        path: 'admin/weekly-reports',
+        Component: () => <AdminVehicles mode="weekly" />,
+      },
       { path: 'admin/crm', Component: AdminCrm },
       { path: 'admin/contracts', Component: AdminContracts },
       { path: 'contract/:contractId', Component: SignContract },
