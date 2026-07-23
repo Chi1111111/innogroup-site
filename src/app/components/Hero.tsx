@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, MapPin, MessageSquareText, Search, Sparkles } from 'lucide-react';
+import { ArrowRight, MapPin, MessageSquareText, Sparkles } from 'lucide-react';
 import { Link } from 'react-router';
 import {
   heroGalleryImages,
-  partnerAsnetImage,
   partnerNichiboImage,
   partnerPekemaImage,
   partnerUssImage,
@@ -14,28 +13,20 @@ const supplierBadges = [
   { name: 'PEKEMA', image: partnerPekemaImage },
   { name: 'USS Japan', image: partnerUssImage },
   { name: 'Nichibo', image: partnerNichiboImage },
-  { name: 'ASNET', image: partnerAsnetImage },
 ];
 
 const startingPoints = [
   {
-    to: '/vehicles/japan-live-stock',
-    icon: Search,
-    number: '01',
-    title: { en: 'I know what I want', zh: '我知道想要什么车' },
-    note: { en: 'Search Japan live stock', zh: '搜索日本实时车源' },
-  },
-  {
     to: '/weekly-report',
     icon: Sparkles,
-    number: '02',
+    number: '01',
     title: { en: 'Show me good options', zh: '先看看本周好车' },
     note: { en: 'View this week’s selected vehicles', zh: '查看本周人工精选车辆' },
   },
   {
     to: '/vehicles/find-my-car',
     icon: MessageSquareText,
-    number: '03',
+    number: '02',
     title: { en: 'Help me find a car', zh: '请 Inno 帮我找车' },
     note: { en: 'Tell us your model and budget', zh: '告诉我们车型和预算' },
   },

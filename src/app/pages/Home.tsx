@@ -8,7 +8,6 @@ import {
   Globe2,
   MapPin,
   MessageSquareText,
-  Search,
   Ship,
   Sparkles,
   Users,
@@ -45,14 +44,6 @@ const sourceMarkets = [
 const startPaths = [
   {
     number: '01',
-    to: '/vehicles/japan-live-stock',
-    icon: Search,
-    title: { en: 'Search Japan Stock', zh: '搜索日本车源' },
-    text: { en: 'Best when you already know the make, model or specification you want.', zh: '适合已经知道品牌、车型或配置的客户。' },
-    action: { en: 'Search live vehicles', zh: '搜索实时车源' },
-  },
-  {
-    number: '02',
     to: '/weekly-report',
     icon: Sparkles,
     title: { en: 'See This Week’s Picks', zh: '查看本周精选' },
@@ -60,7 +51,7 @@ const startPaths = [
     action: { en: 'Open weekly report', zh: '打开本周周报' },
   },
   {
-    number: '03',
+    number: '02',
     to: '/vehicles/find-my-car',
     icon: MessageSquareText,
     title: { en: 'Ask Inno to Find It', zh: '请 Inno 帮我找车' },
@@ -209,8 +200,8 @@ export function Home() {
               </div>
             </div>
             <div className="mt-8">
-              <Link to="/jpauc-feed" className="button-secondary">
-                {text({ en: 'Browse Available Stock', zh: '查看可选车源' })}
+              <Link to="/vehicles/find-my-car" className="button-secondary">
+                {text({ en: 'Request a Vehicle Search', zh: '提交找车需求' })}
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </div>

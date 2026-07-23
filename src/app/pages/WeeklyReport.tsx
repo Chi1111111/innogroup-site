@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, BarChart3, CalendarDays, Clock3, Database, Gauge, MapPin, RefreshCw, ShieldAlert, X } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, Clock3, Gauge, MapPin, RefreshCw, ShieldAlert, X } from 'lucide-react';
 import { Link } from 'react-router';
 import { getJapanSpecialOrderImages, type JapanSpecialOrderVehicle, useJapanSpecialOrders } from '../hooks/useJapanSpecialOrders';
 import { useLanguage } from '../components/SiteTranslator';
@@ -80,8 +80,6 @@ export function WeeklyReport() {
           <div className="mt-8 flex gap-3 rounded-xl border border-orange-200 bg-orange-50 p-5"><ShieldAlert className="h-5 w-5 flex-none text-orange-700"/><p className="text-sm text-orange-950">{text({ en: 'Availability, condition, exchange rate and landed cost must be reconfirmed before any deposit.', zh: '支付任何订金前，必须重新确认库存状态、车况、汇率和最终落地成本。' })}</p></div>
         </div>
       </section>
-
-      <section className="px-4 py-16 sm:py-20"><div className="section-shell grid gap-6 lg:grid-cols-2"><div className="section-card p-7"><Database className="h-6 w-6 text-primary"/><h3 className="mt-7">{text({ en: 'Weekly Report', zh: '每周周报' })}</h3><p className="mt-3">{text({ en: 'Inno’s short, manually reviewed list of opportunities and market observations.', zh: '由 Inno 人工筛选的机会清单和市场观察。' })}</p></div><Link to="/vehicles/japan-live-stock" className="group section-card p-7"><RefreshCw className="h-6 w-6 text-primary"/><h3 className="mt-7">{text({ en: 'Japan Live Stock', zh: '日本实时车源' })}</h3><p className="mt-3">{text({ en: 'The wider search database for buyers who already know what they want.', zh: '面向已有明确车型需求用户的完整搜索数据库。' })}</p><span className="mt-6 inline-flex items-center gap-2 text-sm font-bold">{text({ en: 'Search Live Stock', zh: '搜索实时车源' })}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1"/></span></Link></div></section>
 
       <section className="px-4 pb-20"><div className="section-shell"><div className="border-t border-black/8 pt-10"><p className="section-kicker">{text({ en: 'Report archive', zh: '历史周报' })}</p><div className="mt-6 max-w-sm rounded-xl border border-primary/25 bg-primary/8 p-5"><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Current issue</p><p className="mt-2 text-xl font-bold text-foreground">Issue {report.issueNumber}</p><p className="mt-1 text-sm">{report.publishedAt}</p></div></div></div></section>
 

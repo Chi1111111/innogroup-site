@@ -1,6 +1,6 @@
 import { ArrowRight, BadgeCheck, CheckCircle2, MapPin, Search, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router';
-import { aboutAuctionYardImage, partnerAsnetImage, partnerNichiboImage, partnerPekemaImage, partnerUssImage } from '../../data/pic';
+import { aboutAuctionYardImage, partnerNichiboImage, partnerPekemaImage, partnerUssImage } from '../../data/pic';
 import { useLanguage } from '../components/SiteTranslator';
 
 export function About() {
@@ -16,7 +16,6 @@ export function About() {
     { name: 'PEKEMA', image: partnerPekemaImage },
     { name: 'USS Japan', image: partnerUssImage },
     { name: 'Nichibo', image: partnerNichiboImage },
-    { name: 'ASNET', image: partnerAsnetImage },
   ];
 
   return (

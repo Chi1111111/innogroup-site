@@ -1,5 +1,5 @@
 import { BadgeCheck, Building2, Globe2, ShieldCheck } from 'lucide-react';
-import { partnerAsnetImage, partnerNichiboImage, partnerUssImage } from '../../data/pic';
+import { partnerNichiboImage, partnerUssImage } from '../../data/pic';
 
 const supplierLogos = [
   {
@@ -12,15 +12,9 @@ const supplierLogos = [
     image: partnerNichiboImage,
     description: 'A trusted Japanese dealer auction platform with strong access to quality stock.',
   },
-  {
-    name: 'ASNET',
-    image: partnerAsnetImage,
-    description: 'A well-known dealer network that expands access to specific models and grades.',
-  },
 ];
 
 const importChannels = [
-  'ASNET (Aucnet) dealer network',
   'Nichibo dealer auction platform',
   'USS Japan - one of the largest vehicle auction networks',
   'Additional trusted Japanese auction houses and supplier networks',

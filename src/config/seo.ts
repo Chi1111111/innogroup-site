@@ -51,13 +51,6 @@ export const SEO_ROUTES = {
     keywords:
       'Japan vehicle market weekly, Japan import opportunities NZ, Japanese car market report, Inno Group weekly report',
   },
-  '/vehicles/japan-live-stock': {
-    title: 'Japan Live Stock NZ | Search Auctions & Fixed-Price Vehicles',
-    description:
-      'Search Japanese auction and fixed-price stock, review key vehicle details and request a confirmed landed estimate from Inno Group.',
-    keywords:
-      'Japan live stock NZ, Japan car auction search, Japanese fixed price vehicles, import car Japan NZ',
-  },
   '/vehicles/find-my-car': {
     title: 'Find My Car NZ | Custom Vehicle Sourcing from Japan',
     description:

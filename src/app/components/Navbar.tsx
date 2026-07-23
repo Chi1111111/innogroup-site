@@ -6,11 +6,6 @@ import { LanguageSwitcher, useLanguage } from './SiteTranslator';
 
 const vehicleLinks = [
   {
-    to: '/vehicles/japan-live-stock',
-    label: { en: 'Japan Live Stock', zh: '日本实时车源' },
-    note: { en: 'Search auctions and fixed-price vehicles', zh: '搜索拍卖和固定价库存' },
-  },
-  {
     to: '/vehicles/find-my-car',
     label: { en: 'Find My Car', zh: '告诉 Inno 帮我找车' },
     note: { en: 'Tell us the exact vehicle you want', zh: '告诉我们车型、预算和配置' },
@@ -37,7 +32,7 @@ export function Navbar() {
   const { pathname } = useLocation();
   const { text } = useLanguage();
   const isActive = (to: string) => (to === '/' ? pathname === '/' : pathname.startsWith(to));
-  const vehiclesActive = pathname.startsWith('/vehicles') || pathname === '/jpauc-feed';
+  const vehiclesActive = pathname.startsWith('/vehicles');
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-black/10 bg-[#f6f1e8]/94 backdrop-blur-xl">

@@ -81,7 +81,6 @@ function getBreadcrumbItems(pathname: string) {
   const names: Record<string, string> = {
     vehicles: 'Vehicles',
     'weekly-report': 'Japan Market Weekly',
-    'japan-live-stock': 'Japan Live Stock',
     'find-my-car': 'Find My Car',
     china: 'Cars from China',
     services: 'Services',

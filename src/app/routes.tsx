@@ -12,7 +12,6 @@ import { AdminVehicles } from './pages/AdminVehicles';
 import { AdminContracts } from './pages/AdminContracts';
 import { AdminCrm } from './pages/AdminCrm';
 import { SignContract } from './pages/SignContract';
-import { JpaucFeed } from './pages/JpaucFeed';
 import { WeeklyReport } from './pages/WeeklyReport';
 import { WeeklyVehicleDetail } from './pages/WeeklyVehicleDetail';
 import { FindMyCar } from './pages/FindMyCar';
@@ -25,7 +24,6 @@ export const router = createBrowserRouter([
       { index: true, Component: Home },
       { path: 'vehicles/china', Component: ChinaVehicles },
       { path: 'vehicles/japan-special-order', Component: () => <Navigate to="/weekly-report" replace /> },
-      { path: 'vehicles/japan-live-stock', Component: JpaucFeed },
       { path: 'vehicles/find-my-car', Component: FindMyCar },
       { path: 'weekly-report', Component: WeeklyReport },
       { path: 'weekly-report/:issue/:slug', Component: WeeklyVehicleDetail },
@@ -39,7 +37,6 @@ export const router = createBrowserRouter([
       { path: 'contact', Component: Contact },
       { path: 'ownership', Component: Services },
       { path: 'finance', Component: Finance },
-      { path: 'jpauc-feed', Component: JpaucFeed },
       { path: 'admin', Component: AdminVehicles },
       {
         path: 'admin/weekly-reports',

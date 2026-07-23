@@ -32,7 +32,6 @@ export function Footer() {
             <ul className="space-y-3 text-white/62">
               <li><Link to="/" className="inline-block transition-colors hover:text-primary">{text({ en: 'Home', zh: '首页' })}</Link></li>
               <li><Link to="/weekly-report" className="inline-block transition-colors hover:text-primary">{text({ en: 'Weekly Japan Finds', zh: '每周日本精选' })}</Link></li>
-              <li><Link to="/vehicles/japan-live-stock" className="inline-block transition-colors hover:text-primary">{text({ en: 'Search Japan Cars', zh: '搜索日本车源' })}</Link></li>
               <li><Link to="/vehicles/find-my-car" className="inline-block transition-colors hover:text-primary">{text({ en: 'Find My Car', zh: '帮我找车' })}</Link></li>
               <li><Link to="/vehicles/china" className="inline-block transition-colors hover:text-primary">{text({ en: 'Cars from China', zh: '中国车源' })}</Link></li>
               <li><Link to="/about" className="inline-block transition-colors hover:text-primary">{text({ en: 'About', zh: '关于我们' })}</Link></li>
