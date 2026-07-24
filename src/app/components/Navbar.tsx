@@ -50,7 +50,7 @@ export function Navbar() {
             <div className="invisible absolute left-1/2 top-full w-[360px] -translate-x-1/2 translate-y-2 pt-4 opacity-0 transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
               <div className="rounded-2xl border border-black/10 bg-[#fbf8f2] p-2 shadow-[0_24px_70px_rgba(16,17,19,0.14)]">
                 {vehicleLinks.map((item) => (
-                  <Link key={item.to} to={item.to} className="block rounded-xl border border-transparent p-4 hover:border-black/8 hover:bg-white">
+                  <Link key={item.to} to={item.to} className="block rounded-xl border border-transparent p-4 capitalize hover:border-black/8 hover:bg-white">
                     <span className="block text-sm font-bold text-foreground">{text(item.label)}</span>
                     <span className="mt-1 block text-xs text-foreground/52">{text(item.note)}</span>
                   </Link>
@@ -76,7 +76,7 @@ export function Navbar() {
           <div className="mx-auto max-w-7xl space-y-1">
             <Link to="/" onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold">{text({ en: 'Home', zh: '首页' })}</Link>
             <button type="button" onClick={() => setVehiclesOpen((value) => !value)} className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-semibold" aria-expanded={vehiclesOpen}>{text({ en: 'Find a Car', zh: '找车' })}<ChevronDown className={`h-4 w-4 ${vehiclesOpen ? 'rotate-180' : ''}`} /></button>
-            {vehiclesOpen ? <div className="ml-3 border-l border-primary/25 pl-3">{vehicleLinks.map((item) => <Link key={item.to} to={item.to} onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3"><span className="block text-sm font-bold">{text(item.label)}</span><span className="mt-1 block text-xs text-foreground/50">{text(item.note)}</span></Link>)}</div> : null}
+            {vehiclesOpen ? <div className="ml-3 border-l border-primary/25 pl-3">{vehicleLinks.map((item) => <Link key={item.to} to={item.to} onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 capitalize"><span className="block text-sm font-bold">{text(item.label)}</span><span className="mt-1 block text-xs text-foreground/50">{text(item.note)}</span></Link>)}</div> : null}
             {navigationLinks.slice(1).map((item) => <Link key={item.to} to={item.to} onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold">{text(item.label)}</Link>)}
             <div className="grid gap-3 border-t border-black/7 pt-4 sm:grid-cols-2"><LanguageSwitcher /><Link to="/contact#quote" onClick={() => setIsOpen(false)} className="button-primary">{text({ en: 'Get a Quote', zh: '获取报价' })}</Link></div>
           </div>
