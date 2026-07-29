@@ -25,6 +25,7 @@ export interface CrmOrder {
   vehicleModel: string;
   year: string;
   plateOrVin: string;
+  vehicleImages: string[];
   paymentStage: string;
   balanceRemaining: string;
   salePrice: string;

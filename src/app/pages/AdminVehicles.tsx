@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { type ClipboardEvent, FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 import type { PartnerPlaceholder } from '../../data/services';
@@ -364,6 +364,7 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   const [japanSpecialOrderDrafts, setJapanSpecialOrderDrafts] = useState<
     JapanSpecialOrderDraft[]
   >([]);
+  const [arrivalVehicleDrafts, setArrivalVehicleDrafts] = useState<JapanSpecialOrderDraft[]>([]);
   const [weeklyReportDraft, setWeeklyReportDraft] = useState<JapanWeeklyReportMeta>(() => ({
     issueNumber: selectedWeeklyReport.issueNumber,
     publishedAt: selectedWeeklyReport.publishedAt,
@@ -373,6 +374,13 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     zhMarketSummary: selectedWeeklyReport.zhMarketSummary,
     marketNotes: selectedWeeklyReport.marketNotes,
     zhMarketNotes: selectedWeeklyReport.zhMarketNotes,
+    weeklyUpdates: selectedWeeklyReport.weeklyUpdates ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.weeklyUpdates,
+    zhWeeklyUpdates: selectedWeeklyReport.zhWeeklyUpdates ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.zhWeeklyUpdates,
+    arrivals: selectedWeeklyReport.arrivals ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.arrivals,
+    zhArrivals: selectedWeeklyReport.zhArrivals ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.zhArrivals,
+    arrivalImages: selectedWeeklyReport.arrivalImages ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.arrivalImages,
+    nextWeekTeaser: selectedWeeklyReport.nextWeekTeaser ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.nextWeekTeaser,
+    zhNextWeekTeaser: selectedWeeklyReport.zhNextWeekTeaser ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.zhNextWeekTeaser,
   }));
   const [expandedPartnerId, setExpandedPartnerId] = useState<string | null>(null);
   const [expandedJapanSpecialOrderSlug, setExpandedJapanSpecialOrderSlug] = useState<
@@ -387,6 +395,16 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   const [smartSourceTextMap, setSmartSourceTextMap] = useState<Record<string, string>>({});
   const [smartOcrPreviewMap, setSmartOcrPreviewMap] = useState<Record<string, string>>({});
   const [smartOcrProcessingMap, setSmartOcrProcessingMap] = useState<Record<string, boolean>>({});
+  const [aiWeeklySource, setAiWeeklySource] = useState('');
+  const [aiWeeklyFiles, setAiWeeklyFiles] = useState<File[]>([]);
+  const [aiWeeklyPreviews, setAiWeeklyPreviews] = useState<string[]>([]);
+  const [isGeneratingWeeklyDraft, setIsGeneratingWeeklyDraft] = useState(false);
+  const [isWeeklyAiOpen, setIsWeeklyAiOpen] = useState(false);
+  const [isArrivalAiOpen, setIsArrivalAiOpen] = useState(false);
+  const [arrivalAiSource, setArrivalAiSource] = useState('');
+  const [arrivalAiFiles, setArrivalAiFiles] = useState<File[]>([]);
+  const [arrivalAiPreviews, setArrivalAiPreviews] = useState<string[]>([]);
+  const [isGeneratingArrivalDraft, setIsGeneratingArrivalDraft] = useState(false);
 
   useEffect(() => {
     let robotsMeta = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
@@ -417,12 +435,26 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
       toJapanSpecialOrderDraft(vehicle)
     );
     setJapanSpecialOrderDrafts(nextDrafts);
+    setArrivalVehicleDrafts(
+      (selectedWeeklyReport.arrivedVehicles ?? []).map((vehicle) =>
+        toJapanSpecialOrderDraft(vehicle)
+      )
+    );
     setExpandedJapanSpecialOrderSlug(null);
   }, [selectedWeeklyReport]);
 
   useEffect(() => {
-    const { vehicles: _vehicles, ...meta } = selectedWeeklyReport;
-    setWeeklyReportDraft(meta);
+    const { vehicles: _vehicles, arrivedVehicles: _arrivedVehicles, ...meta } = selectedWeeklyReport;
+    setWeeklyReportDraft({
+      ...meta,
+      weeklyUpdates: meta.weeklyUpdates ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.weeklyUpdates,
+      zhWeeklyUpdates: meta.zhWeeklyUpdates ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.zhWeeklyUpdates,
+      arrivals: meta.arrivals ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.arrivals,
+      zhArrivals: meta.zhArrivals ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.zhArrivals,
+      arrivalImages: meta.arrivalImages ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.arrivalImages,
+      nextWeekTeaser: meta.nextWeekTeaser ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.nextWeekTeaser,
+      zhNextWeekTeaser: meta.zhNextWeekTeaser ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.zhNextWeekTeaser,
+    });
   }, [selectedWeeklyReport]);
 
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
@@ -465,17 +497,13 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   const updateWeeklyReportField = (key: keyof JapanWeeklyReportMeta, value: string) => {
     setWeeklyReportDraft((current) => ({
       ...current,
-      [key]: key === 'marketNotes' || key === 'zhMarketNotes'
+      [key]: key === 'marketNotes' || key === 'zhMarketNotes' || key === 'weeklyUpdates' || key === 'zhWeeklyUpdates' || key === 'arrivals' || key === 'zhArrivals'
         ? value.split('\n').map((item) => item.trim()).filter(Boolean)
         : value,
     }));
   };
 
   const addJapanSpecialOrderDraft = () => {
-    if (japanSpecialOrderDrafts.length >= 2) {
-      setNotice({ type: 'info', text: '每一期周报最多放 2 辆车，先删除或调整现有车辆。' });
-      return;
-    }
     const nextSlug = createId('special-order');
     setJapanSpecialOrderDrafts((current) => [
       ...current,
@@ -562,13 +590,18 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
       return;
     }
 
-    if (nextVehicles.length === 0 || nextVehicles.length > 2) {
-      setNotice({ type: 'error', text: '每一期周报需要放 1–2 辆车。' });
+    const normalizedArrivalDrafts = uniquifyJapanFindSlugs(arrivalVehicleDrafts);
+    const nextArrivedVehicles = normalizedArrivalDrafts
+      .map((draft) => toJapanSpecialOrderVehicle(draft))
+      .filter((vehicle): vehicle is JapanSpecialOrderVehicle => vehicle !== null);
+
+    if (nextArrivedVehicles.length !== normalizedArrivalDrafts.length) {
+      setNotice({ type: 'error', text: '保存失败：到港车辆需要完整的车型、图片、年份、里程、所在地、状态和简介。' });
       return;
     }
 
     try {
-      const nextReport = { ...weeklyReportDraft, vehicles: nextVehicles };
+      const nextReport = { ...weeklyReportDraft, vehicles: nextVehicles, arrivedVehicles: nextArrivedVehicles };
       const nextReports = japanWeeklyReports.map((report) =>
         report.issueNumber === selectedIssueNumber ? nextReport : report
       );
@@ -598,12 +631,13 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
         year: 'numeric',
       }),
       vehicles: [],
+      arrivedVehicles: [],
     };
 
     try {
       await setJapanWeeklyReports([nextReport, ...japanWeeklyReports]);
       setSelectedIssueNumber(issueNumber);
-      setNotice({ type: 'info', text: `已新建第 ${issueNumber} 期，请添加 1–2 辆车后保存。` });
+      setNotice({ type: 'info', text: `已新建第 ${issueNumber} 期，请分别添加周报推荐车辆和实际到港车辆。` });
     } catch (error) {
       setNotice({
         type: 'error',
@@ -797,6 +831,218 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     setNotice({ type: 'success', text: '供应商/合作方已恢复默认。' });
   };
 
+  const removeArrivalVehicleDraft = (slug: string) => {
+    setArrivalVehicleDrafts((current) => current.filter((draft) => draft.slug !== slug));
+  };
+
+  const handleAiWeeklyFiles = (files: FileList | null) => {
+    const nextFiles = Array.from(files ?? []).slice(0, 6);
+    aiWeeklyPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setAiWeeklyFiles(nextFiles);
+    setAiWeeklyPreviews(nextFiles.map((file) => URL.createObjectURL(file)));
+  };
+
+  const handleAiWeeklyPaste = (event: ClipboardEvent<HTMLElement>) => {
+    const pastedImages = Array.from(event.clipboardData.files).filter((file) =>
+      file.type.startsWith('image/')
+    );
+    if (pastedImages.length === 0) return;
+
+    event.preventDefault();
+    const nextFiles = [...aiWeeklyFiles, ...pastedImages].slice(0, 6);
+    aiWeeklyPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setAiWeeklyFiles(nextFiles);
+    setAiWeeklyPreviews(nextFiles.map((file) => URL.createObjectURL(file)));
+    setNotice({
+      type: 'success',
+      text: `已从剪贴板粘贴 ${pastedImages.length} 张截图，共 ${nextFiles.length} 张待处理图片。`,
+    });
+  };
+
+  const removeAiWeeklyFile = (indexToRemove: number) => {
+    const previewToRemove = aiWeeklyPreviews[indexToRemove];
+    if (previewToRemove) URL.revokeObjectURL(previewToRemove);
+    setAiWeeklyFiles((current) => current.filter((_, index) => index !== indexToRemove));
+    setAiWeeklyPreviews((current) => current.filter((_, index) => index !== indexToRemove));
+  };
+
+  const clearAiWeeklyFiles = () => {
+    aiWeeklyPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setAiWeeklyFiles([]);
+    setAiWeeklyPreviews([]);
+    setNotice({ type: 'info', text: '已清空 AI 周报助手中的所有待处理图片。' });
+  };
+
+  const setArrivalAiImages = (files: File[]) => {
+    const nextFiles = files;
+    arrivalAiPreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    setArrivalAiFiles(nextFiles);
+    setArrivalAiPreviews(nextFiles.map((file) => URL.createObjectURL(file)));
+  };
+
+  const handleArrivalAiPaste = (event: ClipboardEvent<HTMLElement>) => {
+    const pastedImages = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith('image/'));
+    if (pastedImages.length === 0) return;
+    event.preventDefault();
+    setArrivalAiImages([...arrivalAiFiles, ...pastedImages]);
+    setNotice({ type: 'success', text: `已粘贴 ${pastedImages.length} 张到港图片。` });
+  };
+
+  const removeArrivalAiFile = (indexToRemove: number) => {
+    const nextFiles = arrivalAiFiles.filter((_, index) => index !== indexToRemove);
+    setArrivalAiImages(nextFiles);
+  };
+
+  const removeSavedArrivalImage = (imageToRemove: string) => {
+    setWeeklyReportDraft((current) => ({
+      ...current,
+      arrivalImages: (current.arrivalImages ?? []).filter((image) => image !== imageToRemove),
+    }));
+  };
+
+  const generateArrivalDraft = async () => {
+    if (!arrivalAiSource.trim() && arrivalAiFiles.length === 0) {
+      setNotice({ type: 'error', text: '请先粘贴到港信息，或上传到港车辆照片/截图。' });
+      return;
+    }
+    setIsGeneratingArrivalDraft(true);
+    setNotice({ type: 'info', text: '正在识别到港资料并生成详细进度。' });
+    try {
+      const recognizedTexts: string[] = [];
+      if (arrivalAiFiles.length > 0) {
+        const { createWorker } = await import('tesseract.js');
+        const worker = await createWorker('eng+jpn+chi_sim');
+        for (const file of arrivalAiFiles) {
+          const result = await worker.recognize(file);
+          if (result.data.text.trim()) recognizedTexts.push(result.data.text);
+        }
+        await worker.terminate();
+      }
+      const combinedSource = normalizeSmartSourceText([arrivalAiSource, ...recognizedTexts].filter(Boolean).join('\n\n'));
+      const parsed = parseJapanFindSource(combinedSource || arrivalAiSource);
+      const uploadedImages = arrivalAiFiles.length
+        ? await Promise.all(arrivalAiFiles.map((file) => uploadImageToCloudinary(file)))
+        : [];
+      const port = findFirstMatch(combinedSource, [
+        /\b(Auckland|Tauranga|Wellington|Lyttelton|Christchurch|Napier)\s*(?:Port)?\b/i,
+      ]) || 'New Zealand';
+      const englishArrival = `${parsed.title} · Arrived in New Zealand · ${parsed.year} · ${parsed.mileage} · Port release and compliance inspection being arranged`;
+      const chineseArrival = `${parsed.zhTitle} · 已抵达新西兰 · ${parsed.year}年 · ${parsed.mileage} · 正在安排提车及合规检查`;
+      setWeeklyReportDraft((current) => ({
+        ...current,
+        arrivals: [...(current.arrivals ?? []), englishArrival],
+        zhArrivals: [...(current.zhArrivals ?? []), chineseArrival],
+        arrivalImages: Array.from(new Set([...(current.arrivalImages ?? []), ...uploadedImages])),
+      }));
+      const arrivalVehicleSlug = createId('arrived');
+      const arrivalVehicle: JapanSpecialOrderDraft = {
+        ...EMPTY_JAPAN_SPECIAL_ORDER_DRAFT,
+        ...parsed,
+        slug: arrivalVehicleSlug,
+        image: uploadedImages[0] ?? '',
+        images: uploadedImages,
+        imagesText: uploadedImages.join('\n'),
+        location: port,
+        status: 'Arrived in New Zealand',
+        japanPrice: parsed.price,
+        summary: `${parsed.title} has arrived in New Zealand. Port release and compliance inspection are being arranged before the vehicle is ready for viewing or delivery.`,
+        zhSummary: `${parsed.zhTitle} 已抵达新西兰，目前正在安排港口放行和合规检查，完成后可进一步预约看车或交付。`,
+        recommendation: 'Now physically in New Zealand, allowing local inspection and a clearer path to compliance and delivery.',
+        zhRecommendation: '车辆已实际抵达新西兰，可进行本地检查，后续合规和交付进度也更加清晰。',
+        risk: 'Port release, compliance outcome, registration timing and final on-road cost still require confirmation.',
+        zhRisk: '仍需确认港口放行、合规结果、注册时间以及最终上路成本。',
+        recommendedFor: 'Buyers who prefer a vehicle already in New Zealand and available for local follow-up.',
+        zhRecommendedFor: '希望购买已抵达新西兰、可以本地继续跟进车辆的客户。',
+        updatedAt: new Date().toLocaleDateString('en-NZ'),
+      };
+      setArrivalVehicleDrafts((current) => [...current, arrivalVehicle]);
+      setArrivalAiSource('');
+      setArrivalAiImages([]);
+      setIsArrivalAiOpen(false);
+      setNotice({ type: 'success', text: '到港资料已识别并加入草稿，请核对港口状态和下一步安排。' });
+    } catch {
+      setNotice({ type: 'error', text: '到港资料识别失败，请换清晰图片或直接粘贴文字后重试。' });
+    } finally {
+      setIsGeneratingArrivalDraft(false);
+    }
+  };
+
+  const generateWeeklyDraftFromAi = async () => {
+    if (!aiWeeklySource.trim() && aiWeeklyFiles.length === 0) {
+      setNotice({ type: 'error', text: '请先粘贴本周信息，或上传车辆图片/资料截图。' });
+      return;
+    }
+
+    setIsGeneratingWeeklyDraft(true);
+    setNotice({ type: 'info', text: '正在识别图片并整理周报草稿，请稍候。' });
+
+    try {
+      const recognizedTexts: string[] = [];
+      if (aiWeeklyFiles.length > 0) {
+        const { createWorker } = await import('tesseract.js');
+        const worker = await createWorker('eng+jpn+chi_sim');
+        for (const file of aiWeeklyFiles) {
+          const result = await worker.recognize(file);
+          if (result.data.text.trim()) recognizedTexts.push(result.data.text);
+        }
+        await worker.terminate();
+      }
+
+      const combinedSource = normalizeSmartSourceText(
+        [aiWeeklySource, ...recognizedTexts].filter(Boolean).join('\n\n')
+      );
+      const parsed = parseJapanFindSource(combinedSource || aiWeeklySource);
+      setWeeklyReportDraft((current) => ({
+        ...current,
+        marketSummary: `This week, Inno Group is highlighting ${parsed.title} from our Japan network, with pricing, condition and landed-cost checks in progress.`,
+        zhMarketSummary: `本周 Inno Group 重点关注日本渠道的 ${parsed.zhTitle}，正在核对价格、车况及预计落地成本。`,
+        weeklyUpdates: [
+          `Reviewed the latest information for ${parsed.title}.`,
+          'Checked availability, vehicle details and export-document requirements.',
+          'Prepared the next landed-cost and compliance review for New Zealand.',
+        ],
+        zhWeeklyUpdates: [
+          `整理并核对 ${parsed.zhTitle} 的最新车源信息。`,
+          '跟进库存状态、车辆资料和出口文件要求。',
+          '准备新西兰落地成本与合规评估。',
+        ],
+        marketNotes: [
+          'Vehicle availability and final price should be reconfirmed before deposit.',
+          'Shipping, exchange rate and compliance can materially change landed cost.',
+        ],
+        zhMarketNotes: [
+          '支付订金前需要重新确认库存状态和最终价格。',
+          '海运、汇率与合规费用会影响最终落地成本。',
+        ],
+        nextWeekTeaser: `Next week: further updates on ${parsed.title} and new Japan-channel opportunities.`,
+        zhNextWeekTeaser: `下周将继续更新 ${parsed.zhTitle}，并带来新的日本渠道车源。`,
+      }));
+      clearAiWeeklyFiles();
+      setAiWeeklySource('');
+      setIsWeeklyAiOpen(false);
+      setNotice({ type: 'success', text: '周报概要草稿已生成。到港和车辆资料请分别使用各自的小助手。' });
+    } catch {
+      setNotice({ type: 'error', text: '自动生成失败。可以减少图片数量、换更清晰的图片，或先只粘贴文字重试。' });
+    } finally {
+      setIsGeneratingWeeklyDraft(false);
+    }
+  };
+
+  const weeklyStepStatus = [
+    Boolean(
+      weeklyReportDraft.issueNumber.trim() &&
+      weeklyReportDraft.publishedAt.trim() &&
+      weeklyReportDraft.marketSummary.trim() &&
+      weeklyReportDraft.zhMarketSummary.trim()
+    ),
+    japanSpecialOrderDrafts.length > 0,
+    Boolean(weeklyReportDraft.weeklyUpdates?.length && weeklyReportDraft.zhWeeklyUpdates?.length),
+    Boolean(weeklyReportDraft.marketNotes.length && weeklyReportDraft.zhMarketNotes.length),
+    Boolean(weeklyReportDraft.nextWeekTeaser?.trim() && weeklyReportDraft.zhNextWeekTeaser?.trim()),
+  ];
+  const completedWeeklySteps = weeklyStepStatus.filter(Boolean).length;
+  const weeklyCompletion = Math.round((completedWeeklySteps / weeklyStepStatus.length) * 100);
+
   if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
@@ -842,7 +1088,7 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
               </h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">
                 {mode === 'weekly'
-                  ? '按期管理 Japan Market Weekly，每期放 1–2 辆精选车辆。'
+                  ? '按客户阅读顺序完成每期 Inno Auto Weekly；周报推荐车辆和实际到港车辆分开管理，数量不限。'
                   : '管理供应商/合作方信息，并从独立入口进入周报管理。'}
               </p>
             </div>
@@ -882,48 +1128,69 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
           </div>
         ) : null}
 
-        {mode === 'weekly' ? <section className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+        {mode === 'weekly' ? <section className="flex flex-col gap-5">
+          <div className="order-0 overflow-hidden rounded-3xl bg-slate-950 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
+            <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_360px] lg:items-end">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">Japan Market Weekly 管理</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  先选择一期周报，再编辑该期基础信息和 1–2 辆车辆。
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-black">正在编辑</span>
+                  <span className="text-sm text-white/50">第 {weeklyReportDraft.issueNumber || '—'} 期 · {weeklyReportDraft.publishedAt || '尚未设置日期'}</span>
+                </div>
+                <h2 className="mt-5 text-2xl font-semibold text-white sm:text-3xl">把这一周的机会讲清楚</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/58">
+                  按客户阅读顺序填写。先给结论，再讲车辆和价格，最后补充团队进展与市场判断。
                 </p>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => void addWeeklyReport()} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10">＋ 新建一期</button>
+                  <button type="button" onClick={addJapanSpecialOrderDraft} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10">＋ 添加车辆</button>
+                  <Link to="/weekly-report" className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10">预览客户页面</Link>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  to="/weekly-report"
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                >
-                  预览页面
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => void addWeeklyReport()}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                >
-                  + 新建一期
-                </button>
-                <button
-                  type="button"
-                  onClick={addJapanSpecialOrderDraft}
-                  className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-                >
-                  + 添加车辆
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleSaveJapanSpecialOrders()}
-                  className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
-                >
-                  保存本期周报
-                </button>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5">
+                <div className="flex items-end justify-between gap-4">
+                  <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">本期完成度</p><p className="mt-1 text-sm text-white/48">{completedWeeklySteps}/5 个步骤已完成</p></div>
+                  <strong className="text-3xl text-white">{weeklyCompletion}%</strong>
+                </div>
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${weeklyCompletion}%` }} /></div>
+                <div className="mt-4 grid grid-cols-5 gap-1">
+                  {weeklyStepStatus.map((complete, index) => <div key={index} className={`h-1.5 rounded-full ${complete ? 'bg-emerald-400' : 'bg-white/12'}`} title={`步骤 ${index + 1}`} />)}
+                </div>
               </div>
+            </div>
+            <div className="sticky top-0 z-20 flex flex-col gap-3 border-t border-white/10 bg-slate-900/95 px-5 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <p className="text-sm text-white/55">保存后会同步到周报封面和弹窗内容。</p>
+              <button type="button" onClick={() => void handleSaveJapanSpecialOrders()} className="min-h-11 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-black shadow-lg hover:bg-[#d2af59]">保存并同步本期周报</button>
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="order-1 rounded-2xl border border-violet-200 bg-white shadow-sm" onPaste={handleAiWeeklyPaste}>
+            <button type="button" onClick={() => setIsWeeklyAiOpen((current) => !current)} className="flex w-full items-center justify-between gap-4 p-4 text-left sm:px-5">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-violet-100 text-lg">✨</span>
+                <div className="min-w-0"><p className="text-sm font-bold text-slate-900">周报概要 AI 助手</p><p className="truncate text-xs text-slate-500">只生成本周结论、业务动态和市场观察，不处理到港或单车资料</p></div>
+              </div>
+              <span className="flex-none rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-bold text-violet-700">{isWeeklyAiOpen ? '收起' : '展开使用'}</span>
+            </button>
+            {isWeeklyAiOpen ? (
+              <div className="border-t border-violet-100 p-4 sm:p-5">
+                <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                  <label className="block"><span className="text-sm font-semibold text-slate-800">粘贴本周工作和市场信息</span><textarea value={aiWeeklySource} onChange={(event) => setAiWeeklySource(event.target.value)} rows={5} className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" placeholder={'例如：本周完成两台车验车；日元汇率变化；新的运输安排……'} /></label>
+                  <div>
+                    <div className="flex items-center justify-between"><span className="text-sm font-semibold text-slate-800">补充资料截图</span>{aiWeeklyFiles.length ? <button type="button" onClick={clearAiWeeklyFiles} className="text-xs font-semibold text-red-600">清空</button> : null}</div>
+                    <label className="mt-2 flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-violet-200 bg-violet-50 text-center"><span className="text-xs font-bold text-violet-700">Ctrl + V 粘贴，或点击选择</span><span className="mt-1 text-xs text-slate-400">{aiWeeklyFiles.length ? `已添加 ${aiWeeklyFiles.length} 张` : '最多 6 张'}</span><input type="file" accept="image/*,.webp,.avif,.heic,.heif" multiple className="hidden" onChange={(event) => { handleAiWeeklyFiles(event.target.files); event.target.value = ''; }} /></label>
+                    {aiWeeklyPreviews.length ? <div className="mt-2 grid grid-cols-6 gap-2">{aiWeeklyPreviews.map((preview, index) => <div key={preview} className="relative"><img src={preview} alt={`概要资料 ${index + 1}`} className="aspect-square w-full rounded-md object-cover" /><button type="button" onClick={() => removeAiWeeklyFile(index)} className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">×</button></div>)}</div> : null}
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end"><button type="button" disabled={isGeneratingWeeklyDraft} onClick={() => void generateWeeklyDraftFromAi()} className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-60">{isGeneratingWeeklyDraft ? '生成中…' : '生成概要草稿'}</button></div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="order-2">
+            <div className="mb-3 flex items-center justify-between">
+              <div><h3 className="text-base font-semibold text-slate-900">选择要编辑的周报</h3><p className="mt-1 text-sm text-slate-500">点击一期即可切换，当前选择会以金色边框标记。</p></div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {japanWeeklyReports.map((report, index) => {
               const isSelected = report.issueNumber === selectedWeeklyReport.issueNumber;
               return (
@@ -979,11 +1246,28 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
                 </article>
               );
             })}
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <h3 className="text-base font-semibold text-slate-900">周报基础信息</h3>
-            <p className="mt-1 text-sm text-slate-500">这些信息会显示在周报顶部和市场观察区域。</p>
+          <div className="order-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">步骤 3 · This Week at Inno</p>
+                <h3 className="mt-2 text-lg font-semibold text-slate-900">本周业务动态</h3>
+                <p className="mt-1 text-sm text-slate-500">填写本周完成了什么、到港情况和业务进展；每行显示为一条动态。</p>
+              </div>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">建议 3–5 条</span>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <TextareaInput label="英文业务动态（每行一条）" value={(weeklyReportDraft.weeklyUpdates ?? []).join('\n')} onChange={(value) => updateWeeklyReportField('weeklyUpdates', value)} />
+              <TextareaInput label="中文业务动态（每行一条）" value={(weeklyReportDraft.zhWeeklyUpdates ?? []).join('\n')} onChange={(value) => updateWeeklyReportField('zhWeeklyUpdates', value)} />
+            </div>
+          </div>
+
+          <div className="order-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">步骤 1 · 本周结论</p>
+            <h3 className="mt-2 text-lg font-semibold text-slate-900">先让客户一眼看懂本周重点</h3>
+            <p className="mt-1 text-sm text-slate-500">摘要会显示在周报封面和弹窗顶部；请尽量用一句话给出明确判断。</p>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               <TextInput label="期数" value={weeklyReportDraft.issueNumber} onChange={(value) => updateWeeklyReportField('issueNumber', value)} placeholder="029" />
               <TextInput label="发布时间" value={weeklyReportDraft.publishedAt} onChange={(value) => updateWeeklyReportField('publishedAt', value)} placeholder="20 July 2026" />
@@ -991,12 +1275,100 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
               <TextInput label="数据更新时间" value={weeklyReportDraft.dataUpdatedAt} onChange={(value) => updateWeeklyReportField('dataUpdatedAt', value)} placeholder="20 July 2026, 4:30 PM" />
               <TextareaInput label="英文市场摘要" value={weeklyReportDraft.marketSummary} onChange={(value) => updateWeeklyReportField('marketSummary', value)} />
               <TextareaInput label="中文市场摘要" value={weeklyReportDraft.zhMarketSummary} onChange={(value) => updateWeeklyReportField('zhMarketSummary', value)} />
-              <TextareaInput label="英文市场观察（每行一条）" value={weeklyReportDraft.marketNotes.join('\n')} onChange={(value) => updateWeeklyReportField('marketNotes', value)} />
-              <TextareaInput label="中文市场观察（每行一条）" value={weeklyReportDraft.zhMarketNotes.join('\n')} onChange={(value) => updateWeeklyReportField('zhMarketNotes', value)} />
+            </div>
+            <div className="mt-6 border-t border-slate-100 pt-6">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">步骤 4 · Market Watch</p>
+              <h4 className="mt-2 text-base font-semibold text-slate-900">市场观察</h4>
+              <p className="mt-1 text-sm text-slate-500">只写会影响客户购买决定的变化，每行一条，建议 1–3 条。</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <TextareaInput label="英文市场观察（每行一条）" value={weeklyReportDraft.marketNotes.join('\n')} onChange={(value) => updateWeeklyReportField('marketNotes', value)} />
+                <TextareaInput label="中文市场观察（每行一条）" value={weeklyReportDraft.zhMarketNotes.join('\n')} onChange={(value) => updateWeeklyReportField('zhMarketNotes', value)} />
+              </div>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="order-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">步骤 5 · What’s Next</p>
+              <h3 className="mt-2 text-lg font-semibold text-slate-900">下周预告</h3>
+              <p className="mt-1 text-sm text-slate-500">用一句话告诉客户下周可以期待什么。</p>
+              <div className="mt-5 grid gap-3">
+                <TextareaInput label="英文下周预告" value={weeklyReportDraft.nextWeekTeaser ?? ''} onChange={(value) => updateWeeklyReportField('nextWeekTeaser', value)} />
+                <TextareaInput label="中文下周预告" value={weeklyReportDraft.zhNextWeekTeaser ?? ''} onChange={(value) => updateWeeklyReportField('zhNextWeekTeaser', value)} />
+              </div>
+          </div>
+
+          <div className="order-4 rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-700">步骤 2A · Arrived This Week</p>
+                <h3 className="mt-2 text-lg font-semibold text-slate-900">本周实际到港</h3>
+                <p className="mt-1 text-sm leading-6 text-slate-500">填写车型、抵达港口、当前状态和下一步安排；只发布已确认抵达新西兰的车辆。</p>
+              </div>
+              <button type="button" onClick={() => setIsArrivalAiOpen((current) => !current)} className="rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-sky-800">
+                {isArrivalAiOpen ? '收起智能识别' : '✨ AI 识别到港资料'}
+              </button>
+            </div>
+
+            {arrivalVehicleDrafts.length > 0 ? (
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {arrivalVehicleDrafts.map((vehicle, index) => (
+                  <div key={vehicle.slug} className="flex items-center gap-3 rounded-xl border border-sky-200 bg-white p-3">
+                    {vehicle.image ? <img src={vehicle.image} alt={vehicle.title} className="h-16 w-20 flex-none rounded-lg bg-slate-100 object-cover" /> : <div className="flex h-16 w-20 flex-none items-center justify-center rounded-lg bg-sky-100 text-xs font-bold text-sky-700">待加照片</div>}
+                    <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-900">到港车辆 #{index + 1} · {vehicle.title}</p><p className="mt-1 text-xs text-slate-500">{vehicle.year} · {vehicle.mileage}</p><p className="mt-1 text-xs font-semibold text-sky-700">{vehicle.location} · 已到港／合规处理中</p></div>
+                    <button type="button" onClick={() => removeArrivalVehicleDraft(vehicle.slug)} className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100">删除</button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-xl border border-dashed border-sky-200 bg-white/60 px-4 py-3 text-sm text-sky-800">暂无到港车辆。可使用右上角 AI 识别，或从 CRM 将“已到港／合规处理中”的车辆同步进来。</div>
+            )}
+
+            {isArrivalAiOpen ? (
+              <div className="mt-5 rounded-2xl border border-sky-200 bg-white p-4" onPaste={handleArrivalAiPaste}>
+                <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-800">粘贴到港文字</span>
+                    <textarea value={arrivalAiSource} onChange={(event) => setArrivalAiSource(event.target.value)} rows={5} className="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100" placeholder={'例如：2021 Toyota Alphard\n今天抵达 Auckland Port\n正在等待港口放行，之后安排合规检查'} />
+                  </label>
+                  <div>
+                    <div className="flex items-center justify-between"><span className="text-sm font-semibold text-slate-800">车辆照片 / 到港截图</span><span className="text-xs text-slate-400">数量不限</span></div>
+                    <label className="mt-2 flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-sky-200 bg-sky-50 px-3 text-center hover:border-sky-400">
+                      <span className="rounded-md bg-sky-700 px-2.5 py-1 text-xs font-bold text-white">Ctrl + V 粘贴</span>
+                      <span className="mt-2 text-xs font-semibold text-sky-800">或点击选择图片</span>
+                      <input type="file" accept="image/*,.webp,.avif,.heic,.heif" multiple className="hidden" onChange={(event) => { setArrivalAiImages([...arrivalAiFiles, ...Array.from(event.target.files ?? [])]); event.target.value = ''; }} />
+                    </label>
+                    {arrivalAiPreviews.length ? <div className="mt-2 grid grid-cols-4 gap-2">{arrivalAiPreviews.map((preview, index) => <div key={preview} className="relative"><img src={preview} alt={`到港资料 ${index + 1}`} className="aspect-square w-full rounded-lg border border-sky-100 object-cover" /><button type="button" onClick={() => removeArrivalAiFile(index)} className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-red-600 font-bold text-white shadow">×</button></div>)}</div> : null}
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs leading-5 text-slate-400">识别后会自动生成车型、年份、里程、到港状态和下一步安排；保存前请核实。</p>
+                  <button type="button" disabled={isGeneratingArrivalDraft} onClick={() => void generateArrivalDraft()} className="rounded-xl bg-sky-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-sky-800 disabled:cursor-wait disabled:opacity-60">{isGeneratingArrivalDraft ? '识别生成中…' : '生成到港草稿'}</button>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <TextareaInput label="英文详细到港信息（每行一台）" value={(weeklyReportDraft.arrivals ?? []).join('\n')} onChange={(value) => updateWeeklyReportField('arrivals', value)} />
+              <TextareaInput label="中文详细到港信息（每行一台）" value={(weeklyReportDraft.zhArrivals ?? []).join('\n')} onChange={(value) => updateWeeklyReportField('zhArrivals', value)} />
+            </div>
+            {(weeklyReportDraft.arrivalImages ?? []).length ? (
+              <div className="mt-4">
+                <div className="mb-2 flex items-center justify-between"><span className="text-sm font-semibold text-slate-800">已加入本期的到港照片</span><span className="text-xs text-slate-400">{weeklyReportDraft.arrivalImages?.length} 张</span></div>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  {weeklyReportDraft.arrivalImages?.map((image, index) => <div key={image} className="relative"><img src={image} alt={`到港照片 ${index + 1}`} className="aspect-[4/3] w-full rounded-lg border border-sky-100 object-cover" /><button type="button" onClick={() => removeSavedArrivalImage(image)} className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-red-600 font-bold text-white shadow">×</button></div>)}
+                </div>
+              </div>
+            ) : null}
+            <div className="mt-4 rounded-xl border border-sky-100 bg-white/70 px-4 py-3 text-xs leading-6 text-sky-900">建议格式：车型 · 年份/里程 · 抵达港口 · 当前状态 · 下一步安排</div>
+          </div>
+
+          <div className="order-4 space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">步骤 2 · Weekly Picks</p><h3 className="mt-2 text-lg font-semibold text-slate-900">本周推荐车辆与购买建议</h3><p className="mt-1 text-sm text-slate-500">这里只管理周报推荐车辆，不包含到港车辆；车辆数量不限。</p></div>
+                <button type="button" onClick={addJapanSpecialOrderDraft} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">＋ 添加一台车</button>
+              </div>
+            </div>
             {japanSpecialOrderDrafts.map((draft, index) => (
               <div
                 key={draft.slug}

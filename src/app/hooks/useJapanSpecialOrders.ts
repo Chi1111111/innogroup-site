@@ -41,10 +41,18 @@ export interface JapanWeeklyReportMeta {
   zhMarketSummary: string;
   marketNotes: string[];
   zhMarketNotes: string[];
+  weeklyUpdates?: string[];
+  zhWeeklyUpdates?: string[];
+  arrivals?: string[];
+  zhArrivals?: string[];
+  arrivalImages?: string[];
+  nextWeekTeaser?: string;
+  zhNextWeekTeaser?: string;
 }
 
 export interface JapanWeeklyReportState extends JapanWeeklyReportMeta {
   vehicles: JapanSpecialOrderVehicle[];
+  arrivedVehicles?: JapanSpecialOrderVehicle[];
 }
 
 export const DEFAULT_JAPAN_WEEKLY_REPORT_META: JapanWeeklyReportMeta = {
@@ -64,6 +72,21 @@ export const DEFAULT_JAPAN_WEEKLY_REPORT_META: JapanWeeklyReportMeta = {
     '更重视配置而非拍卖时间的买家，可以关注车商和私人渠道。',
     '所有落地价都需要根据汇率、海运和合规要求重新确认。',
   ],
+  weeklyUpdates: [
+    'Followed up with our Japan network on availability, condition and export documents.',
+    'Shortlisted the vehicles worth a closer look this week.',
+    'Updated shipping, compliance and landed-cost guidance for New Zealand buyers.',
+  ],
+  zhWeeklyUpdates: [
+    '持续跟进日本本地车源，核对车辆状态、车况和出口文件。',
+    '筛选本周值得进一步了解的车辆。',
+    '更新面向新西兰买家的运输、合规和落地成本信息。',
+  ],
+  arrivals: [],
+  zhArrivals: [],
+  arrivalImages: [],
+  nextWeekTeaser: 'New Japan finds, arrival updates and one clear recommendation—every week.',
+  zhNextWeekTeaser: '每周更新日本车源、到港动态和一项明确的选车建议。',
 };
 
 // v2 drops the old generic-category cache so it cannot mask the real vehicle board.
@@ -162,10 +185,24 @@ function isValidReport(item: Partial<JapanWeeklyReportState>): item is JapanWeek
   );
 }
 
+function normalizeReport(report: JapanWeeklyReportState): JapanWeeklyReportState {
+  const legacyArrivals = report.vehicles.filter((vehicle) =>
+    vehicle.status.toLowerCase().includes('arrived')
+  );
+  const weeklyVehicles = report.vehicles.filter(
+    (vehicle) => !vehicle.status.toLowerCase().includes('arrived')
+  );
+  const arrivedVehicles = [...(report.arrivedVehicles ?? []), ...legacyArrivals].filter(
+    (vehicle, index, all) => all.findIndex((item) => item.slug === vehicle.slug) === index
+  );
+  return { ...report, vehicles: weeklyVehicles, arrivedVehicles };
+}
+
 function readWeeklyReports(): JapanWeeklyReportState[] {
   const fallback = {
     ...readWeeklyReportMeta(),
     vehicles: readJapanSpecialOrders(),
+    arrivedVehicles: [],
   };
 
   if (typeof window === 'undefined') return [fallback];
@@ -175,7 +212,7 @@ function readWeeklyReports(): JapanWeeklyReportState[] {
     if (!raw) return [fallback];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [fallback];
-    const reports = parsed.filter(isValidReport);
+    const reports = parsed.filter(isValidReport).map(normalizeReport);
     return reports.length > 0 ? reports : [fallback];
   } catch {
     return [fallback];
@@ -217,7 +254,7 @@ export function useJapanSpecialOrders() {
         if (!isMounted || !cloudPayload) return;
 
         if (isReportsPayload(cloudPayload)) {
-          const validReports = cloudPayload.reports.filter(isValidReport);
+          const validReports = cloudPayload.reports.filter(isValidReport).map(normalizeReport);
           if (validReports.length === 0) return;
           setReportsState(validReports);
           writeWeeklyReports(validReports);
@@ -229,7 +266,7 @@ export function useJapanSpecialOrders() {
         if (validVehicles.length === 0) return;
         setReportsState((current) => {
           const nextReports = [
-            { ...(current[0] ?? DEFAULT_JAPAN_WEEKLY_REPORT_META), vehicles: validVehicles },
+            { ...(current[0] ?? DEFAULT_JAPAN_WEEKLY_REPORT_META), vehicles: validVehicles, arrivedVehicles: current[0]?.arrivedVehicles ?? [] },
             ...current.slice(1),
           ];
           writeWeeklyReports(nextReports);
@@ -276,7 +313,7 @@ export function useJapanSpecialOrders() {
   };
 
   const resetVehicles = () => {
-    const nextReport = { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles };
+    const nextReport = { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: japanSpecialOrderVehicles, arrivedVehicles: [] };
     setReportsState([nextReport]);
     writeWeeklyReports([nextReport]);
   };

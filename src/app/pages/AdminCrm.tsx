@@ -1,5 +1,6 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { type ClipboardEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
+import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 import {
   CarFront,
   CheckCircle2,
@@ -19,6 +20,16 @@ import {
   type LoanCar,
 } from '../lib/crm';
 import { getErrorMessage, loadContracts, type VehicleContract } from '../lib/contracts';
+import {
+  loadJapanSpecialOrdersState,
+  saveJapanSpecialOrdersState,
+  type JapanWeeklyReportsPayload,
+} from '../lib/japanSpecialOrders';
+import {
+  DEFAULT_JAPAN_WEEKLY_REPORT_META,
+  type JapanSpecialOrderVehicle,
+  type JapanWeeklyReportState,
+} from '../hooks/useJapanSpecialOrders';
 
 const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'innogroup2026';
@@ -41,7 +52,8 @@ const CONTACT_METHOD_OPTIONS = [
 ];
 const SALES_STAGE_OPTIONS = ['了解', '感兴趣', '选车', '定金', '完结'];
 const PAYMENT_STAGE_OPTIONS = ['已付半款', '已付全款'];
-const COMPLIANCE_STAGE_OPTIONS = ['未到港', '处理中', 'MR2A已出', '罚款已交', '已上牌'];
+const ARRIVED_COMPLIANCE_STAGE = '已到港／合规处理中';
+const COMPLIANCE_STAGE_OPTIONS = ['未到港', '运输中', ARRIVED_COMPLIANCE_STAGE, 'MR2A已出', '罚款已交', '已上牌'];
 const LOAN_CAR_STATUS_OPTIONS = ['借出', '在店'];
 
 const CRM_ORDER_CONTRACT_TYPE = 'vehicle-purchase';
@@ -74,10 +86,11 @@ const EMPTY_ORDER: Omit<CrmOrder, 'id'> = {
   vehicleModel: '',
   year: '',
   plateOrVin: '',
+  vehicleImages: [],
   paymentStage: '',
   balanceRemaining: '',
   salePrice: '',
-  complianceStage: '',
+  complianceStage: '未到港',
   note: '',
 };
 
@@ -107,6 +120,7 @@ const EXCEL_SEED_CRM: CrmState = {
       vehicleModel: 'Toyota Noah',
       year: '',
       plateOrVin: '',
+      vehicleImages: [],
       paymentStage: '已付全款',
       balanceRemaining: '0',
       salePrice: '19800',
@@ -134,6 +148,13 @@ function normalizeLeadStatus(status: string): LeadStatus {
   return '了解';
 }
 
+function normalizeComplianceStage(status?: string) {
+  if (status === '已到港' || status === '合规处理中' || status === '处理中') {
+    return ARRIVED_COMPLIANCE_STAGE;
+  }
+  return status || '未到港';
+}
+
 function loadCrm(): CrmState {
   if (typeof window === 'undefined') return EXCEL_SEED_CRM;
   const raw = window.localStorage.getItem(CRM_STORAGE_KEY);
@@ -156,6 +177,8 @@ function loadCrm(): CrmState {
             customerPhone: order.customerPhone ?? '',
             year: order.year ?? '',
             plateOrVin: order.plateOrVin ?? '',
+            vehicleImages: order.vehicleImages ?? [],
+            complianceStage: normalizeComplianceStage(order.complianceStage),
             balanceRemaining: order.balanceRemaining ?? '',
             note: order.note ?? '',
           }))
@@ -186,6 +209,8 @@ function normalizeCrmState(crm: CrmState | null | undefined): CrmState {
           customerPhone: order.customerPhone ?? '',
           year: order.year ?? '',
           plateOrVin: order.plateOrVin ?? '',
+          vehicleImages: order.vehicleImages ?? [],
+          complianceStage: normalizeComplianceStage(order.complianceStage),
           balanceRemaining: order.balanceRemaining ?? '',
           note: order.note ?? '',
         }))
@@ -267,12 +292,82 @@ function orderFromSignedContract(contract: VehicleContract): CrmOrder {
     vehicleModel: vehicleNameFromContract(contract),
     year: contract.purchasedVehicle.year,
     plateOrVin: contract.purchasedVehicle.vinOrRegistration,
+    vehicleImages: [],
     paymentStage: paymentStageFromContract(contract),
     balanceRemaining: contract.payment.balanceOutstanding,
     salePrice: salePriceFromContract(contract),
-    complianceStage: '',
+    complianceStage: '未到港',
     note: noteFromContract(contract),
   };
+}
+
+function isWeeklyReportsPayload(payload: unknown): payload is JapanWeeklyReportsPayload {
+  return Boolean(
+    payload &&
+      typeof payload === 'object' &&
+      'reports' in payload &&
+      Array.isArray((payload as JapanWeeklyReportsPayload).reports)
+  );
+}
+
+async function syncArrivedOrderToWeeklyReport(order: CrmOrder) {
+  const images = order.vehicleImages ?? [];
+  if (!images.length) {
+    throw new Error('请先上传至少一张车辆照片，再同步到本周到港。');
+  }
+
+  const cloudPayload = await loadJapanSpecialOrdersState();
+  const reports: JapanWeeklyReportState[] = isWeeklyReportsPayload(cloudPayload)
+    ? cloudPayload.reports
+    : [{
+        ...DEFAULT_JAPAN_WEEKLY_REPORT_META,
+        vehicles: Array.isArray(cloudPayload) ? cloudPayload : [],
+      }];
+  const currentReport = reports[0] ?? { ...DEFAULT_JAPAN_WEEKLY_REPORT_META, vehicles: [] };
+  const slug = `crm-arrival-${order.id}`;
+  const currentArrivedVehicles = currentReport.arrivedVehicles ?? [];
+  const existingIndex = currentArrivedVehicles.findIndex((vehicle) => vehicle.slug === slug);
+
+  const vehicle: JapanSpecialOrderVehicle = {
+    slug,
+    title: order.vehicleModel || `${order.year} arrived vehicle`,
+    zhTitle: order.vehicleModel || `${order.year} 到港车辆`,
+    image: images[0],
+    images,
+    price: order.salePrice || 'Contact Inno',
+    year: order.year || 'Confirm',
+    mileage: 'Confirm with Inno',
+    location: 'New Zealand',
+    status: 'Arrived in New Zealand',
+    summary: order.note || `This customer-ordered ${order.vehicleModel} has arrived in New Zealand and is moving through local compliance and handover preparation.`,
+    zhSummary: order.note || `这台客户订购的 ${order.vehicleModel} 已抵达新西兰，目前正在进行本地合规及交付准备。`,
+    japanPrice: '',
+    landedEstimate: order.salePrice || 'Contact Inno',
+    recommendation: 'A real customer order progressing from overseas sourcing and shipping into New Zealand compliance and handover.',
+    zhRecommendation: '真实客户订单，已完成海外找车及运输，现进入新西兰本地合规和交付流程。',
+    risk: 'This vehicle has already been ordered by a customer and is not available for sale.',
+    zhRisk: '该车辆已有客户订购，并非在售现车。',
+    recommendedFor: '',
+    zhRecommendedFor: '',
+    updatedAt: new Date().toISOString(),
+  };
+
+  const nextVehicles =
+    existingIndex >= 0
+      ? currentArrivedVehicles.map((item, index) => (index === existingIndex ? vehicle : item))
+      : [...currentArrivedVehicles, vehicle];
+  const arrivalLabel = `${vehicle.year} ${vehicle.title} · Arrived in New Zealand · ${order.complianceStage}`;
+  const zhArrivalLabel = `${vehicle.year} ${vehicle.zhTitle} · 已抵达新西兰 · ${order.complianceStage}`;
+  const nextReport: JapanWeeklyReportState = {
+    ...currentReport,
+    arrivedVehicles: nextVehicles,
+    arrivals: Array.from(new Set([...(currentReport.arrivals ?? []), arrivalLabel])),
+    zhArrivals: Array.from(new Set([...(currentReport.zhArrivals ?? []), zhArrivalLabel])),
+    arrivalImages: Array.from(new Set([...(currentReport.arrivalImages ?? []), ...images])),
+  };
+  const nextReports = [nextReport, ...reports.slice(1)];
+  await saveJapanSpecialOrdersState({ version: 2, reports: nextReports });
+  return nextReport.issueNumber;
 }
 
 function contractTitleFromContract(contract: VehicleContract) {
@@ -307,6 +402,7 @@ function mergeContractOrders(current: CrmState, contractOrders: CrmOrder[]) {
       ...fromContract,
       id: order.id,
       sourceLeadId: order.sourceLeadId,
+      vehicleImages: order.vehicleImages ?? fromContract.vehicleImages,
       paymentStage: order.paymentStage || fromContract.paymentStage,
       complianceStage: order.complianceStage || fromContract.complianceStage,
       note: order.note || fromContract.note,
@@ -478,6 +574,162 @@ function StatButton({
   );
 }
 
+async function automaticallyOrderVehicleImages(urls: string[]) {
+  const scored = await Promise.all(
+    urls.map(
+      (url, index) =>
+        new Promise<{ url: string; index: number; score: number }>((resolve) => {
+          const image = new Image();
+          const finish = (score: number) => resolve({ url, index, score });
+          image.onload = () => {
+            const ratio = image.naturalWidth / Math.max(image.naturalHeight, 1);
+            const landscapePriority = ratio >= 1.2 ? 2_000_000_000 : ratio >= 0.9 ? 1_000_000_000 : 0;
+            finish(landscapePriority + image.naturalWidth * image.naturalHeight);
+          };
+          image.onerror = () => finish(-index);
+          image.src = url;
+        })
+    )
+  );
+
+  return scored
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .map((item) => item.url);
+}
+
+function OrderVehiclePhotos({
+  order,
+  onChange,
+}: {
+  order: CrmOrder;
+  onChange: (images: string[]) => void;
+}) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+  const images = order.vehicleImages ?? [];
+
+  const moveImage = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || toIndex < 0 || toIndex >= images.length) return;
+    const nextImages = [...images];
+    const [movedImage] = nextImages.splice(fromIndex, 1);
+    nextImages.splice(toIndex, 0, movedImage);
+    onChange(nextImages);
+  };
+
+  const addImages = async (files: FileList | File[] | null) => {
+    const selected = Array.from(files ?? []).filter((file) => file.type.startsWith('image/'));
+    if (!selected.length) return;
+    setIsUploading(true);
+    setError('');
+    try {
+      const uploaded = await Promise.all(selected.map((file) => uploadImageToCloudinary(file)));
+      const ordered = await automaticallyOrderVehicleImages(
+        Array.from(new Set([...images, ...uploaded]))
+      );
+      onChange(ordered);
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePaste = (event: ClipboardEvent<HTMLDivElement>) => {
+    const pastedImages = Array.from(event.clipboardData.items)
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => Boolean(file));
+    if (!pastedImages.length) return;
+    event.preventDefault();
+    void addImages(pastedImages);
+  };
+
+  return (
+    <div
+      className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 outline-none transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100"
+      onPaste={handlePaste}
+      tabIndex={0}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">车辆照片</p>
+          <p className="mt-1 text-xs text-slate-500">Ctrl + V 粘贴或选择图片，数量不限；可拖动照片调整顺序，第一张为客户页主图。</p>
+        </div>
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black">
+          {isUploading ? '上传中…' : '选择图片'}
+          <input
+            type="file"
+            accept="image/*,.webp,.avif,.heic,.heif"
+            multiple
+            disabled={isUploading}
+            className="hidden"
+            onChange={(event) => {
+              void addImages(event.target.files);
+              event.target.value = '';
+            }}
+          />
+        </label>
+      </div>
+      {error ? <p className="mt-2 text-xs font-medium text-red-600">上传失败：{error}</p> : null}
+      {images.length ? (
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+          {images.map((image, index) => (
+            <div
+              key={image}
+              draggable
+              onDragStart={() => setDraggedImageIndex(index)}
+              onDragEnd={() => setDraggedImageIndex(null)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (draggedImageIndex !== null) moveImage(draggedImageIndex, index);
+                setDraggedImageIndex(null);
+              }}
+              className={`relative overflow-hidden rounded-xl border bg-slate-100 transition ${draggedImageIndex === index ? 'border-blue-500 opacity-50' : index === 0 ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-200'}`}
+            >
+              <img src={image} alt={`${order.vehicleModel || '车辆'} ${index + 1}`} className="aspect-[4/3] w-full object-cover" />
+              {index === 0 ? <span className="absolute left-1.5 top-1.5 rounded-full bg-blue-700 px-2 py-1 text-[10px] font-bold text-white shadow">主图</span> : null}
+              <button
+                type="button"
+                onClick={() => onChange(images.filter((item) => item !== image))}
+                className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-red-600 text-sm font-bold text-white shadow"
+                aria-label={`删除第 ${index + 1} 张车辆照片`}
+              >
+                ×
+              </button>
+              <div className="absolute bottom-1.5 left-1.5 right-1.5 flex justify-between gap-1">
+                <button
+                  type="button"
+                  disabled={index === 0}
+                  onClick={() => moveImage(index, index - 1)}
+                  className="flex h-7 flex-1 items-center justify-center rounded-md bg-black/70 text-xs font-bold text-white backdrop-blur disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label={`将第 ${index + 1} 张照片前移`}
+                >
+                  ← 前移
+                </button>
+                <button
+                  type="button"
+                  disabled={index === images.length - 1}
+                  onClick={() => moveImage(index, index + 1)}
+                  className="flex h-7 flex-1 items-center justify-center rounded-md bg-black/70 text-xs font-bold text-white backdrop-blur disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label={`将第 ${index + 1} 张照片后移`}
+                >
+                  后移 →
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/60 px-4 py-7 text-center">
+          <p className="text-sm font-bold text-blue-700">Ctrl + V 直接粘贴车辆截图</p>
+          <p className="mt-1 text-xs text-slate-500">先点击这个区域，再粘贴；支持 JPG、PNG、WEBP</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AdminCrm() {
   const initialCrm = useMemo(() => loadCrm(), []);
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -502,6 +754,8 @@ export function AdminCrm() {
   const [selectedContractId, setSelectedContractId] = useState('');
   const [isLoadingContracts, setIsLoadingContracts] = useState(false);
   const [contractImportNotice, setContractImportNotice] = useState('');
+  const [arrivalSyncNotice, setArrivalSyncNotice] = useState<Record<string, string>>({});
+  const [syncingArrivalOrderId, setSyncingArrivalOrderId] = useState('');
 
   useEffect(() => {
     document.title = 'Inno Group CRM Admin';
@@ -764,10 +1018,11 @@ export function AdminCrm() {
             vehicleModel: lead.interest,
             year: '',
             plateOrVin: '',
+            vehicleImages: [],
             paymentStage: '',
             balanceRemaining: '',
             salePrice: lead.budget,
-            complianceStage: '',
+            complianceStage: '未到港',
             note: lead.notes,
           },
           ...current.orders,
@@ -791,6 +1046,46 @@ export function AdminCrm() {
       ...current,
       orders: current.orders.map((order) => (order.id === id ? { ...order, ...patch } : order)),
     }));
+  };
+
+  const syncOrderArrival = async (order: CrmOrder) => {
+    setSyncingArrivalOrderId(order.id);
+    setArrivalSyncNotice((current) => ({ ...current, [order.id]: '正在同步到本期周报…' }));
+    try {
+      const issueNumber = await syncArrivedOrderToWeeklyReport(order);
+      setArrivalSyncNotice((current) => ({
+        ...current,
+        [order.id]: `已同步到 Inno Auto Weekly 第 ${issueNumber} 期的“本周实际到港”。`,
+      }));
+    } catch (error) {
+      setArrivalSyncNotice((current) => ({
+        ...current,
+        [order.id]: getErrorMessage(error),
+      }));
+    } finally {
+      setSyncingArrivalOrderId('');
+    }
+  };
+
+  const updateOrderCompliance = (order: CrmOrder, complianceStage: string) => {
+    const nextOrder = { ...order, complianceStage };
+    updateOrder(order.id, { complianceStage });
+    if (complianceStage === ARRIVED_COMPLIANCE_STAGE && (order.vehicleImages?.length ?? 0) > 0) {
+      void syncOrderArrival(nextOrder);
+    } else if (complianceStage === ARRIVED_COMPLIANCE_STAGE) {
+      setArrivalSyncNotice((current) => ({
+        ...current,
+        [order.id]: '已标记为到港。请先上传至少一张车辆照片，然后点击“同步到本周到港”。',
+      }));
+    }
+  };
+
+  const updateOrderImages = (order: CrmOrder, vehicleImages: string[]) => {
+    const nextOrder = { ...order, vehicleImages };
+    updateOrder(order.id, { vehicleImages });
+    if (order.complianceStage === ARRIVED_COMPLIANCE_STAGE && vehicleImages.length > 0) {
+      void syncOrderArrival(nextOrder);
+    }
   };
 
   const updateLoanCar = (id: string, patch: Partial<LoanCar>) => {
@@ -1321,7 +1616,7 @@ export function AdminCrm() {
                       <ComboField
                         label="Compliance"
                         value={order.complianceStage}
-                        onChange={(value) => updateOrder(order.id, { complianceStage: value })}
+                        onChange={(value) => updateOrderCompliance(order, value)}
                         options={COMPLIANCE_STAGE_OPTIONS}
                       />
                       <label className="block">
@@ -1336,6 +1631,23 @@ export function AdminCrm() {
                         />
                       </label>
                     </div>
+                    <OrderVehiclePhotos
+                      order={order}
+                      onChange={(vehicleImages) => updateOrderImages(order, vehicleImages)}
+                    />
+                    {order.complianceStage === ARRIVED_COMPLIANCE_STAGE ? (
+                      <div className="mt-3 flex flex-col gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm font-medium text-sky-900">{arrivalSyncNotice[order.id] || '这台车已标记到港，可以同步到本期客户周报。'}</p>
+                        <button
+                          type="button"
+                          disabled={syncingArrivalOrderId === order.id || !(order.vehicleImages?.length ?? 0)}
+                          onClick={() => void syncOrderArrival(order)}
+                          className="shrink-0 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          {syncingArrivalOrderId === order.id ? '同步中…' : '同步到本周到港'}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
                 {completedOrders.length > 0 ? (
@@ -1420,7 +1732,7 @@ export function AdminCrm() {
                             <ComboField
                               label="Compliance"
                               value={order.complianceStage}
-                              onChange={(value) => updateOrder(order.id, { complianceStage: value })}
+                              onChange={(value) => updateOrderCompliance(order, value)}
                               options={COMPLIANCE_STAGE_OPTIONS}
                             />
                             <label className="block">
@@ -1435,6 +1747,23 @@ export function AdminCrm() {
                               />
                             </label>
                           </div>
+                          <OrderVehiclePhotos
+                            order={order}
+                            onChange={(vehicleImages) => updateOrderImages(order, vehicleImages)}
+                          />
+                          {order.complianceStage === ARRIVED_COMPLIANCE_STAGE ? (
+                            <div className="mt-3 flex flex-col gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                              <p className="text-sm font-medium text-sky-900">{arrivalSyncNotice[order.id] || '这台车已标记到港，可以同步到本期客户周报。'}</p>
+                              <button
+                                type="button"
+                                disabled={syncingArrivalOrderId === order.id || !(order.vehicleImages?.length ?? 0)}
+                                onClick={() => void syncOrderArrival(order)}
+                                className="shrink-0 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-45"
+                              >
+                                {syncingArrivalOrderId === order.id ? '同步中…' : '同步到本周到港'}
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       ))}
                     </div>

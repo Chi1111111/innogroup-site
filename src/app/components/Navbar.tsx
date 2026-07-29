@@ -19,7 +19,7 @@ const vehicleLinks = [
 
 const navigationLinks = [
   { to: '/', label: { en: 'Home', zh: '首页' } },
-  { to: '/weekly-report', label: { en: 'Weekly Japan Finds', zh: '每周日本精选' } },
+  { to: '/weekly-report', label: { en: 'Inno Auto Weekly', zh: 'Inno 汽车周报' } },
   { to: '/services', label: { en: 'Services', zh: '服务支持' } },
   { to: '/finance', label: { en: 'Finance', zh: '车辆贷款' } },
   { to: '/about', label: { en: 'About', zh: '关于我们' } },
