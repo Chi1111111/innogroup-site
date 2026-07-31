@@ -1,8 +1,33 @@
-import { useEffect, useState } from 'react';
-import { ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, MapPin, Newspaper, Ship, Sparkles, TrendingUp, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, MapPin, Newspaper, Search, Ship, Sparkles, TrendingUp, X } from 'lucide-react';
 import { Link } from 'react-router';
 import { getJapanSpecialOrderImages, type JapanSpecialOrderVehicle, type JapanWeeklyReportState, useJapanSpecialOrders } from '../hooks/useJapanSpecialOrders';
 import { useLanguage } from '../components/SiteTranslator';
+
+type VehicleCategory = NonNullable<JapanSpecialOrderVehicle['category']>;
+type VehicleCategoryFilter = 'all' | VehicleCategory;
+
+const VEHICLE_CATEGORIES: Array<{
+  value: VehicleCategoryFilter;
+  en: string;
+  zh: string;
+}> = [
+  { value: 'all', en: 'All recommendations', zh: '全部推荐' },
+  { value: 'price-opportunity', en: 'Price opportunities', zh: '价格机会' },
+  { value: 'japan-rare', en: 'Rare in Japan', zh: '日本稀有' },
+  { value: 'special-model', en: 'Special models', zh: '特别车型' },
+];
+
+function getVehicleCategory(vehicle: JapanSpecialOrderVehicle): VehicleCategory {
+  if (vehicle.category) return vehicle.category;
+  const numericYear = Number.parseInt(vehicle.year, 10);
+  return Number.isFinite(numericYear) && numericYear < 2000 ? 'japan-rare' : 'price-opportunity';
+}
+
+function getCategoryLabel(category: VehicleCategory, zh: boolean) {
+  const match = VEHICLE_CATEGORIES.find((item) => item.value === category);
+  return zh ? match?.zh : match?.en;
+}
 
 function vehicleStatus(vehicle: JapanSpecialOrderVehicle, index: number, zh: boolean) {
   const status = vehicle.status.toLowerCase();
@@ -41,6 +66,68 @@ function WeeklyVehicleCard({
   );
 }
 
+function LibraryVehicleCard({
+  vehicle,
+  issueNumber,
+  publishedAt,
+  onOpen,
+}: {
+  vehicle: JapanSpecialOrderVehicle;
+  issueNumber: string;
+  publishedAt: string;
+  onOpen: () => void;
+}) {
+  const { text, language } = useLanguage();
+  const isSold = vehicle.availability === 'sold';
+  const isPaused = vehicle.availability === 'paused';
+  const category = getVehicleCategory(vehicle);
+
+  return (
+    <article className="group overflow-hidden rounded-[24px] border border-black/8 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.06)]">
+      <button type="button" onClick={onOpen} className="relative block aspect-[16/10] w-full overflow-hidden bg-[#111214] text-left">
+        <img
+          src={getJapanSpecialOrderImages(vehicle)[0]}
+          alt={text({ en: vehicle.title, zh: vehicle.zhTitle })}
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
+        <span className="absolute left-4 top-4 rounded-full bg-primary px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-black">
+          {getCategoryLabel(category, language === 'zh')}
+        </span>
+        {isSold || isPaused ? (
+          <span className="absolute right-4 top-4 rounded-full bg-black/80 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white">
+            {text({
+              en: isSold ? 'Sold' : 'Recommendation paused',
+              zh: isSold ? '已售出' : '暂停推荐',
+            })}
+          </span>
+        ) : null}
+      </button>
+      <div className="p-5">
+        <p className="text-xs text-foreground/45">
+          {text({ en: `Featured in Issue ${issueNumber}`, zh: `收录于第 ${issueNumber} 期` })} · {publishedAt}
+        </p>
+        <h3 className="mt-2 text-xl">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</h3>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/55">
+          <span>{vehicle.year}</span>
+          <span>{vehicle.mileage}</span>
+          <span>{vehicle.landedEstimate || vehicle.price}</span>
+        </div>
+        <p className="mt-4 line-clamp-2 text-sm leading-7 text-foreground/68">
+          {text({
+            en: vehicle.recommendation || vehicle.summary,
+            zh: vehicle.zhRecommendation || vehicle.zhSummary,
+          })}
+        </p>
+        <button type="button" onClick={onOpen} className="mt-5 inline-flex items-center gap-2 text-sm font-bold">
+          {text({ en: 'View vehicle analysis', zh: '查看车辆分析' })}
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </button>
+      </div>
+    </article>
+  );
+}
+
 function VehicleDetailModal({
   vehicle,
   arrived,
@@ -54,6 +141,7 @@ function VehicleDetailModal({
   const images = getJapanSpecialOrderImages(vehicle);
   const [activeImage, setActiveImage] = useState(images[0]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const isUnavailable = vehicle.availability === 'sold' || vehicle.availability === 'paused';
   const previewIndex = previewImage ? Math.max(0, images.indexOf(previewImage)) : 0;
 
   const changePreviewImage = (direction: -1 | 1) => {
@@ -128,7 +216,17 @@ function VehicleDetailModal({
                 <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50 p-4"><p className="!text-[10px] font-bold uppercase tracking-[0.14em] !text-orange-700">{text({ en: 'Confirm before buying', zh: '购买前确认' })}</p><p className="mt-1 !text-sm !leading-7 !text-orange-950">{text({ en: vehicle.risk || 'Availability, condition and documents require confirmation.', zh: vehicle.zhRisk || '需要确认库存、车况和相关文件。' })}</p></div>
               </>
             )}
-            <Link to={`/contact?source=${arrived ? 'customer-arrival-similar-vehicle' : 'inno-auto-weekly'}&vehicle=${encodeURIComponent(vehicle.title)}#quote`} className={arrived ? 'mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-700 px-5 py-3 font-bold text-white hover:bg-sky-800' : 'button-primary mt-5 w-full'}>{text({ en: arrived ? 'Find a Similar Vehicle' : 'Ask About This Vehicle', zh: arrived ? '寻找类似车型' : '咨询这台车' })}<ArrowRight className="h-5 w-5" /></Link>
+            {isUnavailable && !arrived ? (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-100 p-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  {text({
+                    en: vehicle.availability === 'sold' ? 'This vehicle has been sold, but we can find another.' : 'This recommendation is currently paused.',
+                    zh: vehicle.availability === 'sold' ? '这台车已售出，但我们可以继续寻找同款。' : '这台车目前暂停推荐，但仍保留历史分析。',
+                  })}
+                </p>
+              </div>
+            ) : null}
+            <Link to={`/contact?source=${arrived || isUnavailable ? 'find-similar-weekly-vehicle' : 'inno-auto-weekly'}&vehicle=${encodeURIComponent(vehicle.title)}#quote`} className={arrived ? 'mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-700 px-5 py-3 font-bold text-white hover:bg-sky-800' : 'button-primary mt-5 w-full'}>{text({ en: arrived || isUnavailable ? 'Find a Similar Vehicle' : 'Ask About This Vehicle', zh: arrived || isUnavailable ? '帮我寻找同款' : '咨询这台车' })}<ArrowRight className="h-5 w-5" /></Link>
             </div>
           </div>
         </div>
@@ -155,10 +253,50 @@ export function WeeklyReport() {
   const { reports, isLoadingCloudVehicles } = useJapanSpecialOrders();
   const [selectedReport, setSelectedReport] = useState<JapanWeeklyReportState | null>(null);
   const [selectedVehicleDetail, setSelectedVehicleDetail] = useState<{ vehicle: JapanSpecialOrderVehicle; arrived: boolean } | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<VehicleCategoryFilter>('all');
+  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available'>('all');
+  const [vehicleSearch, setVehicleSearch] = useState('');
   const arrivedVehicles = selectedReport?.arrivedVehicles ?? [];
+  const vehicleLibrary = useMemo(() => {
+    const uniqueVehicles = new Map<string, {
+      vehicle: JapanSpecialOrderVehicle;
+      issueNumber: string;
+      publishedAt: string;
+    }>();
+
+    reports.forEach((report) => {
+      report.vehicles.forEach((vehicle) => {
+        if (!uniqueVehicles.has(vehicle.slug)) {
+          uniqueVehicles.set(vehicle.slug, {
+            vehicle,
+            issueNumber: report.issueNumber,
+            publishedAt: report.publishedAt,
+          });
+        }
+      });
+    });
+
+    return Array.from(uniqueVehicles.values());
+  }, [reports]);
+  const filteredVehicleLibrary = useMemo(() => {
+    const normalizedSearch = vehicleSearch.trim().toLowerCase();
+    return vehicleLibrary.filter(({ vehicle }) => {
+      const matchesCategory =
+        categoryFilter === 'all' || getVehicleCategory(vehicle) === categoryFilter;
+      const matchesAvailability =
+        availabilityFilter === 'all' || (vehicle.availability ?? 'available') === 'available';
+      const matchesSearch =
+        !normalizedSearch ||
+        [vehicle.title, vehicle.zhTitle, vehicle.year, vehicle.summary, vehicle.zhSummary]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedSearch);
+      return matchesCategory && matchesAvailability && matchesSearch;
+    });
+  }, [availabilityFilter, categoryFilter, vehicleLibrary, vehicleSearch]);
 
   useEffect(() => {
-    if (!selectedReport) return;
+    if (!selectedReport && !selectedVehicleDetail) return;
     const previousOverflow = document.body.style.overflow;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
@@ -241,6 +379,99 @@ export function WeeklyReport() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      <section className="border-y border-black/7 bg-[#efe8dc] px-4 py-16 sm:py-24">
+        <div className="section-shell">
+          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+              <p className="section-kicker"><Search className="h-4 w-4" />Vehicle library</p>
+              <h2 className="mt-5">{text({ en: 'Explore every vehicle we have featured.', zh: '浏览往期周报收录的推荐车辆。' })}</h2>
+              <p className="mt-4 max-w-3xl leading-7 text-foreground/60">
+                {text({
+                  en: 'Each vehicle stays in the library after its weekly issue. Sold vehicles remain as useful sourcing examples, with an option to ask us to find another.',
+                  zh: '每周发布过的车辆都会保留在车库中。即使车辆已经售出，历史分析仍会保留，你也可以让我们继续寻找同款。',
+                })}
+              </p>
+            </div>
+            <p className="text-sm text-foreground/50">
+              {filteredVehicleLibrary.length} / {vehicleLibrary.length} {text({ en: 'vehicles', zh: '台车辆' })}
+            </p>
+          </div>
+
+          <div className="mt-8 rounded-[24px] border border-black/8 bg-white/70 p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-4">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-foreground/35" />
+                <input
+                  type="search"
+                  value={vehicleSearch}
+                  onChange={(event) => setVehicleSearch(event.target.value)}
+                  placeholder={text({ en: 'Search model, year or keyword', zh: '搜索车型、年份或关键词' })}
+                  className="w-full rounded-xl border border-black/10 bg-white py-3 pl-12 pr-4 text-sm outline-none focus:border-primary"
+                />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {VEHICLE_CATEGORIES.map((category) => (
+                  <button
+                    key={category.value}
+                    type="button"
+                    onClick={() => setCategoryFilter(category.value)}
+                    className={`rounded-full border px-4 py-2 text-xs font-bold transition ${
+                      categoryFilter === category.value
+                        ? 'border-primary bg-primary text-black'
+                        : 'border-black/10 bg-white text-foreground/60 hover:border-primary/60'
+                    }`}
+                  >
+                    {text({ en: category.en, zh: category.zh })}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAvailabilityFilter((current) => current === 'all' ? 'available' : 'all')
+                  }
+                  className={`rounded-full border px-4 py-2 text-xs font-bold transition ${
+                    availabilityFilter === 'available'
+                      ? 'border-emerald-600 bg-emerald-600 text-white'
+                      : 'border-black/10 bg-white text-foreground/60 hover:border-emerald-500'
+                  }`}
+                >
+                  {text({ en: 'Currently available', zh: '当前可售' })}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {filteredVehicleLibrary.length > 0 ? (
+            <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {filteredVehicleLibrary.map(({ vehicle, issueNumber, publishedAt }) => (
+                <LibraryVehicleCard
+                  key={vehicle.slug}
+                  vehicle={vehicle}
+                  issueNumber={issueNumber}
+                  publishedAt={publishedAt}
+                  onOpen={() => setSelectedVehicleDetail({ vehicle, arrived: false })}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-8 rounded-[24px] border border-dashed border-black/15 bg-white/55 p-10 text-center">
+              <p className="font-semibold">{text({ en: 'No vehicles match these filters.', zh: '没有符合当前筛选条件的车辆。' })}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryFilter('all');
+                  setAvailabilityFilter('all');
+                  setVehicleSearch('');
+                }}
+                className="mt-4 text-sm font-bold text-primary"
+              >
+                {text({ en: 'Clear filters', zh: '清除筛选' })}
+              </button>
+            </div>
+          )}
         </div>
       </section>
 

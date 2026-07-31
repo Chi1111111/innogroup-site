@@ -30,6 +30,8 @@ export interface JapanSpecialOrderVehicle {
   recommendedFor?: string;
   zhRecommendedFor?: string;
   updatedAt?: string;
+  category?: 'price-opportunity' | 'japan-rare' | 'special-model';
+  availability?: 'available' | 'sold' | 'paused';
 }
 
 export interface JapanWeeklyReportMeta {

@@ -45,6 +45,8 @@ export const japanSpecialOrderVehicles = [
     mileage: '97760km',
     location: 'Japan',
     status: 'Japan channel update',
+    category: 'japan-rare',
+    availability: 'available',
     summary:
       'Jaguar E-type Series 2 2+2 Coupe sourced from our Japan channel. Listed details indicate 1969, 97760km and POA; availability, condition, documents and landed cost must be confirmed before deposit.',
     zhSummary:
@@ -61,6 +63,8 @@ export const japanSpecialOrderVehicles = [
     mileage: 'To be confirmed',
     location: 'Japan',
     status: 'Japan channel update',
+    category: 'special-model',
+    availability: 'available',
     summary:
       'Land Rover Series IIA sourced from our Japan channel. Listed details indicate 1965, To be confirmed and POA; availability, condition, documents and landed cost must be confirmed before deposit.',
     zhSummary:

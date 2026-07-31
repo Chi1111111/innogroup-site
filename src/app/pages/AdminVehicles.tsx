@@ -68,6 +68,8 @@ const EMPTY_JAPAN_SPECIAL_ORDER_DRAFT: JapanSpecialOrderDraft = {
   recommendedFor: '',
   zhRecommendedFor: '',
   updatedAt: '',
+  category: 'price-opportunity',
+  availability: 'available',
 };
 
 const VEHICLE_TERM_TRANSLATIONS: Array<[RegExp, string]> = [
@@ -200,6 +202,8 @@ function toJapanSpecialOrderVehicle(draft: JapanSpecialOrderDraft): JapanSpecial
     recommendedFor: draft.recommendedFor?.trim() || undefined,
     zhRecommendedFor: draft.zhRecommendedFor?.trim() || undefined,
     updatedAt: draft.updatedAt?.trim() || undefined,
+    category: draft.category,
+    availability: draft.availability,
   };
 }
 
@@ -519,6 +523,8 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
         status: 'Japan channel update',
         opportunityScore: 75,
         updatedAt: new Date().toLocaleDateString('en-NZ'),
+        category: 'price-opportunity',
+        availability: 'available',
       },
     ]);
     setExpandedJapanSpecialOrderSlug(nextSlug);
@@ -1554,6 +1560,34 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
                         placeholder="Japan channel update"
                         className="md:col-span-2"
                       />
+                      <label className="space-y-1.5">
+                        <span className="text-sm font-medium text-slate-700">推荐分类</span>
+                        <select
+                          value={draft.category ?? 'price-opportunity'}
+                          onChange={(event) =>
+                            updateJapanSpecialOrderDraftField(draft.slug, 'category', event.target.value)
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
+                        >
+                          <option value="price-opportunity">价格机会</option>
+                          <option value="japan-rare">日本稀有</option>
+                          <option value="special-model">特别车型</option>
+                        </select>
+                      </label>
+                      <label className="space-y-1.5">
+                        <span className="text-sm font-medium text-slate-700">当前可售情况</span>
+                        <select
+                          value={draft.availability ?? 'available'}
+                          onChange={(event) =>
+                            updateJapanSpecialOrderDraftField(draft.slug, 'availability', event.target.value)
+                          }
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
+                        >
+                          <option value="available">当前可售</option>
+                          <option value="sold">已售出（保留展示）</option>
+                          <option value="paused">暂停推荐（保留展示）</option>
+                        </select>
+                      </label>
                       <TextInput
                         label="日本价格"
                         value={draft.japanPrice ?? ''}
