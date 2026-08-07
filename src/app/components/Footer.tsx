@@ -31,7 +31,7 @@ export function Footer() {
             </h4>
             <ul className="space-y-3 text-white/62">
               <li><Link to="/" className="inline-block transition-colors hover:text-primary">{text({ en: 'Home', zh: '首页' })}</Link></li>
-              <li><Link to="/weekly-report" className="inline-block transition-colors hover:text-primary">{text({ en: 'Weekly Japan Finds', zh: '每周日本精选' })}</Link></li>
+              <li><Link to="/weekly-report" className="inline-block transition-colors hover:text-primary">{text({ en: 'INNO SELECT', zh: 'INNO 甄选' })}</Link></li>
               <li><Link to="/vehicles/find-my-car" className="inline-block transition-colors hover:text-primary">{text({ en: 'Find My Car', zh: '帮我找车' })}</Link></li>
               <li><Link to="/vehicles/china" className="inline-block transition-colors hover:text-primary">{text({ en: 'Cars from China', zh: '中国车源' })}</Link></li>
               <li><Link to="/about" className="inline-block transition-colors hover:text-primary">{text({ en: 'About', zh: '关于我们' })}</Link></li>
@@ -91,10 +91,10 @@ export function Footer() {
                 <strong className="text-white">{text({ en: 'Address', zh: '地址' })}</strong><br />
                 Unit 1A, 331 Rosedale Road, Albany, Auckland, New Zealand
               </li>
-              <li>
-                <strong className="text-white">{text({ en: 'Hours', zh: '营业时间' })}</strong><br />
+              <li className="text-sm leading-6">
+                <strong className="text-sm font-semibold text-white">{text({ en: 'Hours', zh: '营业时间' })}</strong><br />
                 {text({ en: 'Mon-Fri: 10AM-5PM', zh: '周一至周五：10AM-5PM' })}<br />
-                {text({ en: 'Other times by appointment', zh: '其他时间可预约' })}
+                {text({ en: 'Other Times by Appointment', zh: '其他时间可预约' })}
               </li>
             </ul>
           </div>

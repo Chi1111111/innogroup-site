@@ -5,17 +5,16 @@ import { getJapanSpecialOrderImages, type JapanSpecialOrderVehicle, type JapanWe
 import { useLanguage } from '../components/SiteTranslator';
 
 type VehicleCategory = NonNullable<JapanSpecialOrderVehicle['category']>;
-type VehicleCategoryFilter = 'all' | VehicleCategory;
+type VehicleCategoryFilter = 'all' | 'price-opportunity' | 'collector-special';
 
 const VEHICLE_CATEGORIES: Array<{
   value: VehicleCategoryFilter;
   en: string;
   zh: string;
 }> = [
-  { value: 'all', en: 'All recommendations', zh: '全部推荐' },
-  { value: 'price-opportunity', en: 'Price opportunities', zh: '价格机会' },
-  { value: 'japan-rare', en: 'Rare in Japan', zh: '日本稀有' },
-  { value: 'special-model', en: 'Special models', zh: '特别车型' },
+  { value: 'all', en: 'All selected vehicles', zh: '全部甄选' },
+  { value: 'price-opportunity', en: 'Value opportunities', zh: '价值机会' },
+  { value: 'collector-special', en: 'Collector & special', zh: '玩家珍藏' },
 ];
 
 function getVehicleCategory(vehicle: JapanSpecialOrderVehicle): VehicleCategory {
@@ -24,7 +23,13 @@ function getVehicleCategory(vehicle: JapanSpecialOrderVehicle): VehicleCategory 
   return Number.isFinite(numericYear) && numericYear < 2000 ? 'japan-rare' : 'price-opportunity';
 }
 
-function getCategoryLabel(category: VehicleCategory, zh: boolean) {
+function getVehicleCategoryFilter(vehicle: JapanSpecialOrderVehicle): Exclude<VehicleCategoryFilter, 'all'> {
+  return getVehicleCategory(vehicle) === 'price-opportunity'
+    ? 'price-opportunity'
+    : 'collector-special';
+}
+
+function getCategoryLabel(category: Exclude<VehicleCategoryFilter, 'all'>, zh: boolean) {
   const match = VEHICLE_CATEGORIES.find((item) => item.value === category);
   return zh ? match?.zh : match?.en;
 }
@@ -53,15 +58,16 @@ function WeeklyVehicleCard({
   const { text } = useLanguage();
 
   return (
-    <button type="button" onClick={onOpen} className="group relative aspect-[16/10] overflow-hidden rounded-[24px] border border-black/8 bg-black text-left shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+    <button type="button" onClick={onOpen} className="group relative aspect-[16/10] overflow-hidden rounded-[24px] border border-black/8 bg-black text-left shadow-[0_18px_55px_rgba(0,0,0,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(0,0,0,0.14)]">
         <img src={getJapanSpecialOrderImages(vehicle)[0]} alt={text({ en: vehicle.title, zh: vehicle.zhTitle })} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] group-hover:opacity-85" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10 opacity-70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/5 to-black/20" />
         <span className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] ${arrived ? 'bg-sky-700 text-white' : 'bg-[#101113]/90 text-primary'}`}>
           {arrived ? text({ en: 'CUSTOMER ORDER · ARRIVED', zh: '客户已订 · 已到港' }) : vehicleStatus(vehicle, index, zh)}
         </span>
-        <span className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-bold text-black shadow-lg">
-          {text({ en: 'View details', zh: '查看详情' })}<ArrowRight className="h-4 w-4" />
-        </span>
+        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4">
+          <div><p className="!text-lg !font-bold !leading-6 !text-white">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</p><p className="mt-1 !text-xs !text-white/60">{vehicle.year} · {vehicle.mileage}</p></div>
+          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-white text-black shadow-lg transition group-hover:bg-primary"><ArrowRight className="h-4 w-4" /></span>
+        </div>
     </button>
   );
 }
@@ -80,7 +86,7 @@ function LibraryVehicleCard({
   const { text, language } = useLanguage();
   const isSold = vehicle.availability === 'sold';
   const isPaused = vehicle.availability === 'paused';
-  const category = getVehicleCategory(vehicle);
+  const category = getVehicleCategoryFilter(vehicle);
 
   return (
     <article className="group overflow-hidden rounded-[24px] border border-black/8 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.06)]">
@@ -257,6 +263,8 @@ export function WeeklyReport() {
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available'>('all');
   const [vehicleSearch, setVehicleSearch] = useState('');
   const arrivedVehicles = selectedReport?.arrivedVehicles ?? [];
+  const latestReport = reports[0];
+  const previousReports = reports.slice(1);
   const vehicleLibrary = useMemo(() => {
     const uniqueVehicles = new Map<string, {
       vehicle: JapanSpecialOrderVehicle;
@@ -282,7 +290,7 @@ export function WeeklyReport() {
     const normalizedSearch = vehicleSearch.trim().toLowerCase();
     return vehicleLibrary.filter(({ vehicle }) => {
       const matchesCategory =
-        categoryFilter === 'all' || getVehicleCategory(vehicle) === categoryFilter;
+        categoryFilter === 'all' || getVehicleCategoryFilter(vehicle) === categoryFilter;
       const matchesAvailability =
         availabilityFilter === 'all' || (vehicle.availability ?? 'available') === 'available';
       const matchesSearch =
@@ -313,40 +321,105 @@ export function WeeklyReport() {
 
   return (
     <div className="min-h-screen bg-[#f6f1e8] pt-20">
-      <section className="relative overflow-hidden bg-[#0d0e10] px-4 py-16 text-white sm:py-24">
+      <section className="relative overflow-hidden bg-[#0d0e10] px-4 py-14 text-white sm:py-20">
         <div className="absolute -right-32 -top-36 h-[520px] w-[520px] rounded-full bg-primary/15 blur-[110px]" />
         <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:48px_48px]" />
-        <div className="section-shell relative grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+        <div className="section-shell relative grid gap-10 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-primary">New Arrivals · Weekly Picks · Market Updates</p>
-            <h1 className="mt-5 max-w-5xl !text-white">INNO AUTO <span className="text-primary">WEEKLY</span></h1>
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-primary">INNO SELECT · WEEKLY</p>
+            <h1 className="mt-5 max-w-5xl !text-white">Market intelligence.<br /><span className="text-primary">Real vehicle progress.</span></h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/65">
               {text({
-                en: 'Open an issue for this week’s vehicles, landed-cost guidance, buying notes and real progress from the Inno team.',
-                zh: '打开任意一期，查看本周车辆、落地成本、购买建议以及 Inno 团队的真实进展。',
+                en: 'The latest vehicles, landed-cost guidance, customer arrivals and practical buying notes from our Japan sourcing team.',
+                zh: '来自日本采购团队的最新车型、落地成本参考、客户车辆到港动态与实用购买建议。',
               })}
             </p>
           </div>
-          <div className="rounded-[24px] border border-primary/25 bg-primary/[0.08] p-6">
-            <p className="!text-xs font-bold uppercase tracking-[0.18em] !text-primary">{text({ en: 'Built for buyers', zh: '为买家而设计' })}</p>
-            <p className="mt-4 !text-lg !font-semibold !leading-8 !text-white">
-              {text({ en: 'What is available, what it may cost, who it suits and what to confirm before buying.', zh: '有什么车、预计多少钱、适合谁，以及购买前需要确认什么。' })}
-            </p>
+          <div>
+            <a href="#weekly" className="hidden">
+              <p className="!text-xs font-bold uppercase tracking-[0.18em] !text-primary">01 · Weekly</p>
+              <p className="mt-3 !text-lg !font-semibold !leading-7 !text-white">{text({ en: 'Weekly reports & arrivals', zh: '每周周报与到港动态' })}</p>
+              <p className="mt-2 !text-sm !leading-6 !text-white/55">{text({ en: 'Market notes, weekly picks and real customer progress.', zh: '市场观察、本周推荐和真实客户车辆进展。' })}</p>
+            </a>
+            <Link to="/selected-vehicles" className="group block rounded-[24px] border border-primary/20 bg-white/[0.045] p-6 transition hover:border-primary/50 hover:bg-white/[0.075]">
+              <p className="!text-xs font-bold uppercase tracking-[0.18em] !text-primary">Explore the archive</p>
+              <p className="mt-3 !text-xl !font-semibold !leading-7 !text-white">{text({ en: 'Selected Vehicle Collection', zh: '甄选车型库' })}</p>
+              <p className="mt-2 !text-sm !leading-6 !text-white/55">{text({ en: 'Browse every value opportunity and collector car we have featured.', zh: '浏览历期发布的价值机会车型与玩家珍藏车型。' })}</p>
+              <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary">{text({ en: 'Browse collection', zh: '进入车型库' })}<ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+            </Link>
           </div>
         </div>
       </section>
 
-      <section className="px-4 py-16 sm:py-24">
+      <section id="weekly" className="scroll-mt-24 px-4 py-12 sm:py-18">
         <div className="section-shell">
-          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="section-kicker"><Newspaper className="h-4 w-4" />Weekly issues</p>
-              <h2 className="mt-5">{text({ en: 'Choose a week to open.', zh: '选择一期周报打开查看。' })}</h2>
+              <p className="section-kicker"><Newspaper className="h-4 w-4" />Latest weekly</p>
+              <h2 className="mt-4">{text({ en: 'The latest from our Japan sourcing desk.', zh: '日本采购团队最新动态。' })}</h2>
             </div>
             <p className="text-sm text-foreground/50">{isLoadingCloudVehicles ? text({ en: 'Loading latest issues…', zh: '正在获取最新周报…' }) : `${reports.length} ${text({ en: 'issues', zh: '期周报' })}`}</p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {latestReport ? (
+            <article className="overflow-hidden rounded-[30px] border border-black/8 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.08)]">
+              <div className="bg-[#111214] p-6 text-white sm:p-8">
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">INNO SELECT · LATEST WEEKLY</p>
+                    <h3 className="mt-3 !text-4xl !text-white">Issue {latestReport.issueNumber}</h3>
+                    <p className="mt-2 text-sm text-white/50">{latestReport.publishedAt}</p>
+                  </div>
+                  <span className="w-fit rounded-full bg-primary px-4 py-2 text-xs font-bold text-black">{text({ en: 'Latest issue', zh: '最新一期' })}</span>
+                </div>
+                <p className="mt-6 max-w-4xl text-base font-medium leading-7 text-white/72">{text({ en: latestReport.marketSummary, zh: latestReport.zhMarketSummary })}</p>
+              </div>
+              <div className="p-6 sm:p-9">
+                {(latestReport.arrivedVehicles?.length ?? 0) > 0 ? (
+                  <div className="mb-10 rounded-[24px] border border-sky-100 bg-sky-50 p-5 sm:p-7">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-700">{text({ en: 'Customer arrivals', zh: '客户车辆到港' })}</p>
+                    <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                      {latestReport.arrivedVehicles?.map((vehicle, index) => (
+                        <WeeklyVehicleCard key={vehicle.slug} vehicle={vehicle} index={index} zh={language === 'zh'} arrived onOpen={() => setSelectedVehicleDetail({ vehicle, arrived: true })} />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <div className="mb-6 flex items-end justify-between gap-4">
+                  <div><p className="section-kicker"><Sparkles className="h-4 w-4" />Weekly picks</p><h3 className="mt-4">{text({ en: 'Vehicles selected this week.', zh: '本周甄选车型。' })}</h3></div>
+                  <span className="text-sm text-foreground/45">{latestReport.vehicles.length} {text({ en: 'vehicles', zh: '台车辆' })}</span>
+                </div>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {latestReport.vehicles.map((vehicle, index) => (
+                    <WeeklyVehicleCard key={vehicle.slug} vehicle={vehicle} index={index} zh={language === 'zh'} onOpen={() => setSelectedVehicleDetail({ vehicle, arrived: false })} />
+                  ))}
+                </div>
+                <button type="button" onClick={() => setSelectedReport(latestReport)} className="button-secondary mt-8">{text({ en: 'Open complete weekly report', zh: '打开完整周报' })}<ArrowRight className="h-4 w-4" /></button>
+              </div>
+            </article>
+          ) : null}
+
+          {previousReports.length > 0 ? (
+            <details className="mt-8 overflow-hidden rounded-[24px] border border-black/8 bg-white">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 font-bold sm:px-8">
+                <span>{text({ en: `Previous issues (${previousReports.length})`, zh: `往期周报（${previousReports.length}）` })}</span>
+                <ChevronRight className="h-5 w-5 text-primary" />
+              </summary>
+              <div className="grid gap-6 border-t border-black/7 p-6 md:grid-cols-2 xl:grid-cols-3 sm:p-8">
+                {previousReports.map((report) => {
+                  const cover = report.vehicles[0] ? getJapanSpecialOrderImages(report.vehicles[0])[0] : '';
+                  return (
+                    <button key={report.issueNumber} type="button" onClick={() => setSelectedReport(report)} className="group overflow-hidden rounded-[22px] border border-black/8 bg-[#f8f4ec] text-left hover:border-primary/45">
+                      <div className="relative aspect-[16/10] overflow-hidden bg-[#111214]">{cover ? <img src={cover} alt="" className="h-full w-full object-cover opacity-75 transition group-hover:scale-[1.03]" /> : null}<div className="absolute inset-0 bg-gradient-to-t from-black/85 to-transparent" /><div className="absolute bottom-4 left-4"><p className="text-xs font-bold text-primary">INNO SELECT · WEEKLY</p><h3 className="mt-1 !text-xl !text-white">Issue {report.issueNumber}</h3></div></div>
+                      <div className="p-5"><p className="text-xs text-foreground/45">{report.publishedAt}</p><p className="mt-3 line-clamp-2 text-sm leading-6">{text({ en: report.marketSummary, zh: report.zhMarketSummary })}</p></div>
+                    </button>
+                  );
+                })}
+              </div>
+            </details>
+          ) : null}
+
+          <div className="hidden grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {reports.map((report, index) => {
               const cover = report.vehicles[0] ? getJapanSpecialOrderImages(report.vehicles[0])[0] : '';
               return (
@@ -363,7 +436,7 @@ export function WeeklyReport() {
                       {index === 0 ? text({ en: 'Latest issue', zh: '最新一期' }) : `Issue ${report.issueNumber}`}
                     </div>
                     <div className="absolute bottom-5 left-5 right-5">
-                      <p className="!text-xs !font-bold !uppercase !tracking-[0.16em] !text-primary">Inno Auto Weekly</p>
+                      <p className="!text-xs !font-bold !uppercase !tracking-[0.16em] !text-primary">INNO SELECT · WEEKLY</p>
                       <h3 className="mt-2 !text-2xl !text-white">Issue {report.issueNumber}</h3>
                     </div>
                   </div>
@@ -382,16 +455,16 @@ export function WeeklyReport() {
         </div>
       </section>
 
-      <section className="border-y border-black/7 bg-[#efe8dc] px-4 py-16 sm:py-24">
+      <section id="selected-vehicles" className="hidden scroll-mt-24 border-y border-black/7 bg-[#efe8dc] px-4 py-16 sm:py-24">
         <div className="section-shell">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
-              <p className="section-kicker"><Search className="h-4 w-4" />Vehicle library</p>
-              <h2 className="mt-5">{text({ en: 'Explore every vehicle we have featured.', zh: '浏览往期周报收录的推荐车辆。' })}</h2>
+              <p className="section-kicker"><Search className="h-4 w-4" />Selected vehicle collection</p>
+              <h2 className="mt-5">{text({ en: 'Every selected vehicle, kept in one collection.', zh: '历期发布过的甄选车型，全部汇总在这里。' })}</h2>
               <p className="mt-4 max-w-3xl leading-7 text-foreground/60">
                 {text({
-                  en: 'Each vehicle stays in the library after its weekly issue. Sold vehicles remain as useful sourcing examples, with an option to ask us to find another.',
-                  zh: '每周发布过的车辆都会保留在车库中。即使车辆已经售出，历史分析仍会保留，你也可以让我们继续寻找同款。',
+                  en: 'Browse value opportunities with strong market positioning, or collector and special models chosen for rarity, character and enthusiast appeal.',
+                  zh: '你可以查看具备市场价差的价值机会车型，也可以浏览因稀有度、个性与玩家价值而入选的珍藏车型。',
                 })}
               </p>
             </div>

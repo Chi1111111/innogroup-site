@@ -19,7 +19,6 @@ const vehicleLinks = [
 
 const navigationLinks = [
   { to: '/', label: { en: 'Home', zh: '首页' } },
-  { to: '/weekly-report', label: { en: 'Inno Auto Weekly', zh: 'Inno 汽车周报' } },
   { to: '/services', label: { en: 'Services', zh: '服务支持' } },
   { to: '/finance', label: { en: 'Finance', zh: '车辆贷款' } },
   { to: '/about', label: { en: 'About', zh: '关于我们' } },
@@ -44,6 +43,24 @@ export function Navbar() {
         <div className="hidden items-center justify-center gap-6 xl:flex">
           <Link to="/" className={`border-b-2 px-1 py-2 text-[13px] font-bold ${isActive('/') ? 'border-primary text-foreground' : 'border-transparent text-foreground/60 hover:text-foreground'}`}>{text({ en: 'Home', zh: '首页' })}</Link>
           <div className="group relative">
+            <Link
+              to="/weekly-report"
+              className={`flex items-center gap-1 rounded-full border px-4 py-2 text-[13px] font-extrabold tracking-[0.08em] transition ${
+                isActive('/weekly-report') || isActive('/selected-vehicles')
+                  ? 'border-primary bg-primary text-black shadow-[0_8px_24px_rgba(199,162,74,0.24)]'
+                  : 'border-primary/45 bg-primary/10 text-[#8b6b1d] hover:border-primary hover:bg-primary hover:text-black'
+              }`}
+            >
+              {text({ en: 'INNO SELECT', zh: 'INNO 甄选' })}<ChevronDown className="h-3.5 w-3.5" />
+            </Link>
+            <div className="invisible absolute left-1/2 top-full w-[310px] -translate-x-1/2 translate-y-2 pt-4 opacity-0 transition-all group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+              <div className="rounded-2xl border border-black/10 bg-[#fbf8f2] p-2 shadow-[0_24px_70px_rgba(16,17,19,0.14)]">
+                <Link to="/weekly-report" className="block rounded-xl border border-transparent p-4 hover:border-black/8 hover:bg-white"><span className="block text-sm font-bold">{text({ en: 'Weekly Reports & Arrivals', zh: '每周周报与到港动态' })}</span><span className="mt-1 block text-xs text-foreground/52">{text({ en: 'Latest issue and previous reports', zh: '最新一期与往期周报' })}</span></Link>
+                <Link to="/selected-vehicles" className="block rounded-xl border border-transparent p-4 hover:border-black/8 hover:bg-white"><span className="block text-sm font-bold">{text({ en: 'Selected Vehicle Collection', zh: '甄选车型库' })}</span><span className="mt-1 block text-xs text-foreground/52">{text({ en: 'Value opportunities and collector cars', zh: '价值机会与玩家珍藏车型' })}</span></Link>
+              </div>
+            </div>
+          </div>
+          <div className="group relative">
             <button type="button" className={`flex items-center gap-1 border-b-2 px-1 py-2 text-[13px] font-bold ${vehiclesActive ? 'border-primary text-foreground' : 'border-transparent text-foreground/60 hover:text-foreground'}`} aria-haspopup="true">
               {text({ en: 'Find a Car', zh: '找车' })}<ChevronDown className="h-4 w-4" />
             </button>
@@ -59,7 +76,7 @@ export function Navbar() {
             </div>
           </div>
           {navigationLinks.slice(1).map((item) => (
-            <Link key={item.to} to={item.to} className={`border-b-2 px-1 py-2 text-[13px] font-bold ${isActive(item.to) ? 'border-primary text-foreground' : `border-transparent hover:text-foreground ${item.to === '/weekly-report' ? 'text-primary' : 'text-foreground/60'}`}`}>{text(item.label)}</Link>
+            <Link key={item.to} to={item.to} className={`border-b-2 px-1 py-2 text-[13px] font-bold ${isActive(item.to) ? 'border-primary text-foreground' : 'border-transparent text-foreground/60 hover:text-foreground'}`}>{text(item.label)}</Link>
           ))}
         </div>
 
@@ -75,6 +92,11 @@ export function Navbar() {
         <div className="max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-black/10 bg-[#f6f1e8] px-4 py-4 shadow-lg xl:hidden">
           <div className="mx-auto max-w-7xl space-y-1">
             <Link to="/" onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold">{text({ en: 'Home', zh: '首页' })}</Link>
+            <div className="mx-2 rounded-xl border border-primary/40 bg-primary/12 p-2">
+              <p className="px-2 py-1 text-xs font-extrabold tracking-[0.08em] text-[#8b6b1d]">{text({ en: 'INNO SELECT', zh: 'INNO 甄选' })}</p>
+              <Link to="/weekly-report" onClick={() => setIsOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-semibold">{text({ en: 'Weekly Reports & Arrivals', zh: '每周周报与到港动态' })}</Link>
+              <Link to="/selected-vehicles" onClick={() => setIsOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-semibold">{text({ en: 'Selected Vehicle Collection', zh: '甄选车型库' })}</Link>
+            </div>
             <button type="button" onClick={() => setVehiclesOpen((value) => !value)} className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-semibold" aria-expanded={vehiclesOpen}>{text({ en: 'Find a Car', zh: '找车' })}<ChevronDown className={`h-4 w-4 ${vehiclesOpen ? 'rotate-180' : ''}`} /></button>
             {vehiclesOpen ? <div className="ml-3 border-l border-primary/25 pl-3">{vehicleLinks.map((item) => <Link key={item.to} to={item.to} onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 capitalize"><span className="block text-sm font-bold">{text(item.label)}</span><span className="mt-1 block text-xs text-foreground/50">{text(item.note)}</span></Link>)}</div> : null}
             {navigationLinks.slice(1).map((item) => <Link key={item.to} to={item.to} onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold">{text(item.label)}</Link>)}

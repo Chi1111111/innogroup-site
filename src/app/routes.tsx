@@ -14,6 +14,7 @@ import { AdminCrm } from './pages/AdminCrm';
 import { SignContract } from './pages/SignContract';
 import { WeeklyReport } from './pages/WeeklyReport';
 import { WeeklyVehicleDetail } from './pages/WeeklyVehicleDetail';
+import { SelectedVehicles } from './pages/SelectedVehicles';
 import { FindMyCar } from './pages/FindMyCar';
 
 export const router = createBrowserRouter([
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
       { path: 'vehicles/japan-special-order', Component: () => <Navigate to="/weekly-report" replace /> },
       { path: 'vehicles/find-my-car', Component: FindMyCar },
       { path: 'weekly-report', Component: WeeklyReport },
+      { path: 'selected-vehicles', Component: SelectedVehicles },
       { path: 'weekly-report/:issue/:slug', Component: WeeklyVehicleDetail },
       { path: 'vehicles/china/baw-m8', Component: BawM8Page },
       { path: 'vehicles/china/wox-air', Component: WoxAirPage },
