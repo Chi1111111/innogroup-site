@@ -1,4 +1,4 @@
-import { type ClipboardEvent, FormEvent, useEffect, useState } from 'react';
+import { type ClipboardEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 import type { PartnerPlaceholder } from '../../data/services';
@@ -9,9 +9,7 @@ import {
   useJapanSpecialOrders,
 } from '../hooks/useJapanSpecialOrders';
 import { usePartnersCatalog } from '../hooks/usePartnersCatalog';
-
-const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'innogroup2026';
+import { signOutAdmin } from '../lib/adminAuth';
 
 interface PartnerDraft extends PartnerPlaceholder {
   logoWordmarkLine1: string;
@@ -357,12 +355,6 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     japanWeeklyReports.find((report) => report.issueNumber === selectedIssueNumber) ??
     japanWeeklyReports[0] ??
     japanWeeklyReport;
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'authenticated';
-  });
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
   const [notice, setNotice] = useState<AdminNotice | null>(null);
   const [partnerDrafts, setPartnerDrafts] = useState<PartnerDraft[]>([]);
   const [japanSpecialOrderDrafts, setJapanSpecialOrderDrafts] = useState<
@@ -461,25 +453,9 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     });
   }, [selectedWeeklyReport]);
 
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (password.trim() !== ADMIN_PASSWORD) {
-      setLoginError('密码不正确，请重试。');
-      return;
-    }
-
-    window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'authenticated');
-    setIsAuthenticated(true);
-    setPassword('');
-    setLoginError('');
-  };
-
-  const handleLogout = () => {
-    window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
-    setIsAuthenticated(false);
-    setLoginError('');
+  const handleLogout = async () => {
     setNotice(null);
+    await signOutAdmin();
   };
 
   const updatePartnerDraftField = (id: string, key: keyof PartnerDraft, value: string) => {
@@ -1049,40 +1025,6 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   const completedWeeklySteps = weeklyStepStatus.filter(Boolean).length;
   const weeklyCompletion = Math.round((completedWeeklySteps / weeklyStepStatus.length) * 100);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">后台登录</h1>
-          <p className="mt-2 text-sm text-slate-600">内容管理后台</p>
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-slate-700">密码</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                placeholder="请输入后台密码"
-                autoComplete="current-password"
-              />
-            </label>
-            {loginError ? <p className="text-sm text-red-600">{loginError}</p> : null}
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-            >
-              登录
-            </button>
-          </form>
-          <Link to="/" className="mt-4 inline-flex text-sm text-slate-700 hover:text-slate-900">
-            返回网站
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900 sm:py-8">
       <div className="mx-auto max-w-6xl space-y-5">
@@ -1119,7 +1061,7 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
               </Link>
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={() => void handleLogout()}
                 className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
               >
                 退出登录

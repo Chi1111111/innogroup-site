@@ -11,11 +11,13 @@ import { Finance } from './pages/Finance';
 import { AdminVehicles } from './pages/AdminVehicles';
 import { AdminContracts } from './pages/AdminContracts';
 import { AdminCrm } from './pages/AdminCrm';
+import { AdminInvoices } from './pages/AdminInvoices';
 import { SignContract } from './pages/SignContract';
 import { WeeklyReport } from './pages/WeeklyReport';
 import { WeeklyVehicleDetail } from './pages/WeeklyVehicleDetail';
 import { SelectedVehicles } from './pages/SelectedVehicles';
 import { FindMyCar } from './pages/FindMyCar';
+import { AdminAuthGate } from './components/AdminAuthGate';
 
 export const router = createBrowserRouter([
   {
@@ -39,13 +41,20 @@ export const router = createBrowserRouter([
       { path: 'contact', Component: Contact },
       { path: 'ownership', Component: Services },
       { path: 'finance', Component: Finance },
-      { path: 'admin', Component: AdminVehicles },
       {
-        path: 'admin/weekly-reports',
-        Component: () => <AdminVehicles mode="weekly" />,
+        path: 'admin',
+        Component: AdminAuthGate,
+        children: [
+          { index: true, Component: AdminVehicles },
+          {
+            path: 'weekly-reports',
+            Component: () => <AdminVehicles mode="weekly" />,
+          },
+          { path: 'crm', Component: AdminCrm },
+          { path: 'contracts', Component: AdminContracts },
+          { path: 'invoices', Component: AdminInvoices },
+        ],
       },
-      { path: 'admin/crm', Component: AdminCrm },
-      { path: 'admin/contracts', Component: AdminContracts },
       { path: 'contract/:contractId', Component: SignContract },
       { path: 'sign/:contractId', Component: SignContract },
       { path: 'zh', Component: () => <Navigate to="/" replace /> },

@@ -31,8 +31,6 @@ import {
   type JapanWeeklyReportState,
 } from '../hooks/useJapanSpecialOrders';
 
-const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'innogroup2026';
 const CRM_STORAGE_KEY = 'inno:crm:v2';
 
 type LeadStatus = string;
@@ -732,13 +730,6 @@ function OrderVehiclePhotos({
 
 export function AdminCrm() {
   const initialCrm = useMemo(() => loadCrm(), []);
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'authenticated'
-  );
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
   const [crm, setCrm] = useState<CrmState>(initialCrm);
   const [leadDraft, setLeadDraft] = useState(EMPTY_LEAD);
   const [activeView, setActiveView] = useState<CrmView>('leads');
@@ -777,7 +768,7 @@ export function AdminCrm() {
       window.localStorage.setItem(CRM_STORAGE_KEY, JSON.stringify(crm));
     }
 
-    if (!isAuthenticated || !hasLoadedCloudCrm) return;
+    if (!hasLoadedCloudCrm) return;
 
     let isMounted = true;
     setIsSavingCloudCrm(true);
@@ -803,11 +794,9 @@ export function AdminCrm() {
     return () => {
       isMounted = false;
     };
-  }, [crm, hasLoadedCloudCrm, isAuthenticated]);
+  }, [crm, hasLoadedCloudCrm]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-
     let isMounted = true;
 
     const loadCloudCrm = async () => {
@@ -835,10 +824,10 @@ export function AdminCrm() {
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated]);
+  }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || !hasLoadedCloudCrm) return;
+    if (!hasLoadedCloudCrm) return;
 
     let isMounted = true;
 
@@ -869,7 +858,7 @@ export function AdminCrm() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [hasLoadedCloudCrm, isAuthenticated]);
+  }, [hasLoadedCloudCrm]);
 
   const filteredLeads = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -1114,18 +1103,6 @@ export function AdminCrm() {
     }));
   };
 
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (password.trim() !== ADMIN_PASSWORD) {
-      setLoginError('Password not correct, please try again.');
-      return;
-    }
-    window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'authenticated');
-    setIsAuthenticated(true);
-    setPassword('');
-    setLoginError('');
-  };
-
   const exportCrm = () => {
     const blob = new Blob([JSON.stringify(crm, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1135,30 +1112,6 @@ export function AdminCrm() {
     anchor.click();
     URL.revokeObjectURL(url);
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">后台登录</h1>
-          <p className="mt-2 text-sm text-slate-600">CRM 客户管理</p>
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
-            <Field label="密码" type="password" value={password} onChange={setPassword} />
-            {loginError ? <p className="text-sm text-red-600">{loginError}</p> : null}
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-black"
-            >
-              登录
-            </button>
-          </form>
-          <Link to="/" className="mt-4 inline-flex text-sm text-slate-700 hover:text-slate-900">
-            返回网站
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900">
@@ -1187,6 +1140,12 @@ export function AdminCrm() {
                   className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
                 >
                   合同管理
+                </Link>
+                <Link
+                  to="/admin/invoices"
+                  className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  发票管理
                 </Link>
                 <button
                   type="button"

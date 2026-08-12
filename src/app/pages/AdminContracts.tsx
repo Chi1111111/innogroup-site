@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import emailjs from '@emailjs/browser';
 import { Link } from 'react-router';
 import { ContractDocument } from '../components/ContractDocument';
@@ -15,8 +15,6 @@ import {
 } from '../lib/contracts';
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
 
-const ADMIN_SESSION_KEY = 'inno:admin:session:v1';
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'innogroup2026';
 const CONTRACT_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_CONTRACT_TEMPLATE_ID ?? EMAILJS_CONFIG.templateId;
 
 type WorkspaceTab = 'status' | 'library' | 'editor';
@@ -314,9 +312,6 @@ function StatCard({ label, value }: { label: string; value: number }) {
 }
 
 export function AdminContracts() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => typeof window !== 'undefined' && window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'authenticated');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
   const [contracts, setContracts] = useState<VehicleContract[]>([]);
   const [active, setActive] = useState<VehicleContract>(() => createEmptyContract());
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('status');
@@ -345,18 +340,6 @@ export function AdminContracts() {
     }),
     [contracts]
   );
-
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (password.trim() !== ADMIN_PASSWORD) {
-      setLoginError('密码不正确，请重试。');
-      return;
-    }
-    window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'authenticated');
-    setIsAuthenticated(true);
-    setPassword('');
-    setLoginError('');
-  };
 
   const activateContract = (contract: VehicleContract, nextTab: WorkspaceTab = 'editor') => {
     setActive(contract);
@@ -502,25 +485,6 @@ export function AdminContracts() {
   const isDepositContract = active.contractType === 'deposit';
   const isConsignmentContract = active.contractType === 'consignment';
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#f8f4ec_0,#eef3f8_38%,#f8fafc_100%)] px-4 py-12">
-        <div className="w-full max-w-md animate-[fadeIn_0.45s_ease-out] rounded-[32px] border border-white/70 bg-white/85 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5 backdrop-blur-xl">
-          <h1 className="text-2xl font-semibold text-slate-900">后台登录</h1>
-          <p className="mt-2 text-sm text-slate-600">合同管理后台</p>
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
-            <TextInput label="Password" value={password} onChange={setPassword} />
-            {loginError ? <p className="text-sm text-red-600">{loginError}</p> : null}
-            <button type="submit" className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-950/10 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black active:translate-y-0">
-              登录
-            </button>
-          </form>
-          <Link to="/" className="mt-4 inline-flex text-sm text-slate-700 hover:text-slate-900">返回网站</Link>
-        </div>
-      </div>
-    );
-  }
-
   const navButton = (id: WorkspaceTab, label: string) => (
     <button
       type="button"
@@ -558,6 +522,7 @@ export function AdminContracts() {
             <div className="flex flex-wrap gap-2">
               <Link to="/admin" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">内容管理</Link>
               <Link to="/admin/crm" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">CRM 管理</Link>
+              <Link to="/admin/invoices" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">发票管理</Link>
               <button onClick={() => createNewContract()} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">新建合同</button>
             </div>
           </div>
