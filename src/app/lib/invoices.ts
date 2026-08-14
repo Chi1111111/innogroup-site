@@ -1,4 +1,5 @@
-import { getSupabaseClient, IS_SUPABASE_CONFIGURED } from './supabaseClient';
+import { IS_SUPABASE_CONFIGURED } from './supabaseClient';
+import { adminApiRequest } from './adminApi';
 
 export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'void';
 
@@ -79,10 +80,6 @@ const invoiceCloudEnabled = configuredStorageMode
 const LOCAL_INVOICES_KEY = 'inno:invoices:v1';
 
 export const INVOICE_STORAGE_MODE = invoiceCloudEnabled ? 'cloud' : 'local-preview';
-
-function assertSupabase() {
-  return getSupabaseClient();
-}
 
 function createId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -236,14 +233,8 @@ function saveLocalInvoices(invoices: CommercialInvoice[]) {
 export async function loadInvoices(): Promise<CommercialInvoice[]> {
   if (!invoiceCloudEnabled) return loadLocalInvoices();
 
-  const client = assertSupabase();
-  const { data, error } = await client
-    .from('invoices')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []).map((row) => rowToInvoice(row as InvoiceRow));
+  const rows = await adminApiRequest<InvoiceRow[]>('invoices.list');
+  return (rows ?? []).map((row) => rowToInvoice(row));
 }
 
 export async function upsertInvoice(invoice: CommercialInvoice): Promise<CommercialInvoice[]> {
@@ -254,12 +245,7 @@ export async function upsertInvoice(invoice: CommercialInvoice): Promise<Commerc
     return saveLocalInvoices(next);
   }
 
-  const client = assertSupabase();
-  const { error } = await client
-    .from('invoices')
-    .upsert(invoiceToRow(invoice), { onConflict: 'id' });
-
-  if (error) throw error;
+  await adminApiRequest('invoices.upsert', { row: invoiceToRow(invoice) });
   return loadInvoices();
 }
 
@@ -268,9 +254,6 @@ export async function deleteInvoice(invoiceId: string): Promise<CommercialInvoic
     return saveLocalInvoices(loadLocalInvoices().filter((invoice) => invoice.id !== invoiceId));
   }
 
-  const client = assertSupabase();
-  const { error } = await client.from('invoices').delete().eq('id', invoiceId);
-
-  if (error) throw error;
+  await adminApiRequest('invoices.delete', { id: invoiceId });
   return loadInvoices();
 }

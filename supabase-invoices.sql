@@ -1,5 +1,5 @@
 -- Cloud storage and email audit trail for /admin/invoices.
--- Access is limited to authenticated users with app_metadata.role = 'admin'.
+-- Browser access stays protected by RLS. The custom Admin API uses the service role server-side.
 create table if not exists public.invoices (
   id text primary key,
   invoice_no text not null unique,
@@ -34,7 +34,6 @@ drop policy if exists "invoices_select" on public.invoices;
 drop policy if exists "invoices_insert" on public.invoices;
 drop policy if exists "invoices_update" on public.invoices;
 drop policy if exists "invoices_delete" on public.invoices;
-
 create policy "invoices_select"
 on public.invoices for select to authenticated
 using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');
@@ -89,7 +88,6 @@ alter table public.invoice_email_events enable row level security;
 drop policy if exists "invoice_email_events_select" on public.invoice_email_events;
 drop policy if exists "invoice_email_events_insert" on public.invoice_email_events;
 drop policy if exists "invoice_email_events_update" on public.invoice_email_events;
-
 create policy "invoice_email_events_select"
 on public.invoice_email_events for select to authenticated
 using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');

@@ -1,5 +1,5 @@
 import type { InvoicePdfAttachment } from './invoicePdf';
-import { getSupabaseClient } from './supabaseClient';
+import { invokeAdminFunction } from './adminApi';
 
 export interface InvoiceEmailResult {
   emailId: string;
@@ -15,37 +15,18 @@ function attachmentBase64(attachment: InvoicePdfAttachment) {
   return attachment.dataUri.slice(separatorIndex + 1);
 }
 
-async function functionErrorMessage(error: unknown) {
-  if (typeof error === 'object' && error !== null && 'context' in error) {
-    const context = (error as { context?: Response }).context;
-    if (context) {
-      try {
-        const body = await context.clone().json() as { error?: string };
-        if (body.error) return body.error;
-      } catch {
-        // Fall through to the SDK message.
-      }
-    }
-  }
-
-  return error instanceof Error ? error.message : 'Unable to send the invoice email.';
-}
-
 export async function sendInvoiceEmail(
   invoiceId: string,
   attachment: InvoicePdfAttachment,
 ): Promise<InvoiceEmailResult> {
   const requestId = crypto.randomUUID();
-  const { data, error } = await getSupabaseClient().functions.invoke('send-invoice', {
-    body: {
-      invoiceId,
-      requestId,
-      pdfBase64: attachmentBase64(attachment),
-      filename: attachment.filename,
-    },
+  const data = await invokeAdminFunction<InvoiceEmailResult>('send-invoice', {
+    invoiceId,
+    requestId,
+    pdfBase64: attachmentBase64(attachment),
+    filename: attachment.filename,
   });
 
-  if (error) throw new Error(await functionErrorMessage(error));
   if (!data?.emailId || !data?.recipient || !data?.sentAt) {
     throw new Error('The email service returned an incomplete response.');
   }

@@ -15,9 +15,9 @@ export function getSupabaseClient() {
   if (!client) {
     client = createClient(supabaseUrl, supabasePublishableKey, {
       auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
     });
   }

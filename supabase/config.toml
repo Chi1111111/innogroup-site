@@ -1,0 +1,8 @@
+[functions.admin-api]
+verify_jwt = false
+
+[functions.send-invoice]
+verify_jwt = false
+
+[functions.send-admin-magic-link]
+verify_jwt = false

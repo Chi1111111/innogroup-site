@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { adminApiRequest } from './adminApi';
 import type {
   JapanSpecialOrderVehicle,
   JapanWeeklyReportState,
@@ -19,7 +20,9 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 const supabase =
-  supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+  supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  }) : null;
 
 function assertSupabase() {
   if (!supabase) {
@@ -44,15 +47,5 @@ export async function loadJapanSpecialOrdersState() {
 export async function saveJapanSpecialOrdersState(
   payload: JapanSpecialOrderVehicle[] | JapanWeeklyReportsPayload
 ) {
-  const client = assertSupabase();
-  const { error } = await client.from('japan_special_orders_state').upsert(
-    {
-      id: JAPAN_SPECIAL_ORDERS_STATE_ID,
-      payload,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'id' }
-  );
-
-  if (error) throw error;
+  await adminApiRequest('japan.upsert', { payload });
 }

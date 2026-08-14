@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.106.1';
+import { corsHeaders, jsonResponse, verifyAdminSession } from '../_shared/admin-session.ts';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -20,23 +21,10 @@ type SendRequest = {
   filename?: string;
 };
 
-const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_REQUEST_CHARACTERS = 11_000_000;
 const MAX_PDF_BASE64_CHARACTERS = 10_000_000;
-
-function response(body: JsonRecord, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...JSON_HEADERS, ...CORS_HEADERS },
-  });
-}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {};
@@ -73,20 +61,6 @@ function sanitizeFilename(value: unknown, invoiceNo: string) {
   const fallback = `INNO-Invoice-${invoiceNo}.pdf`;
   const safe = (proposed || fallback).replace(/[^a-z0-9._-]+/gi, '-').slice(0, 120);
   return safe.toLowerCase().endsWith('.pdf') ? safe : `${safe}.pdf`;
-}
-
-function getSupabasePublishableKey() {
-  const keyDictionary = Deno.env.get('SUPABASE_PUBLISHABLE_KEYS');
-  if (keyDictionary) {
-    try {
-      const keys = JSON.parse(keyDictionary) as Record<string, string>;
-      if (keys.default) return keys.default;
-    } catch {
-      // Fall back to the legacy key on older Supabase projects.
-    }
-  }
-
-  return Deno.env.get('SUPABASE_ANON_KEY');
 }
 
 function buildEmail(invoice: InvoiceRow) {
@@ -158,30 +132,31 @@ function buildEmail(invoice: InvoiceRow) {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
+  const response = (body: JsonRecord, status = 200) => jsonResponse(req, body, status);
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
   if (req.method !== 'POST') return response({ error: 'Method not allowed.' }, 405);
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) return response({ error: 'Authentication required.' }, 401);
-
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const supabasePublishableKey = getSupabasePublishableKey();
+  const secretDictionary = Deno.env.get('SUPABASE_SECRET_KEYS');
+  let serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (secretDictionary) {
+    try {
+      serviceRoleKey = (JSON.parse(secretDictionary) as Record<string, string>).default || serviceRoleKey;
+    } catch {
+      // Keep the legacy service-role fallback.
+    }
+  }
+  const sessionSecret = Deno.env.get('ADMIN_SESSION_SECRET');
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
   const fromEmail = Deno.env.get('INVOICE_FROM_EMAIL');
   const replyTo = Deno.env.get('INVOICE_REPLY_TO') || 'innogroup.shawn@gmail.com';
 
-  if (!supabaseUrl || !supabasePublishableKey) return response({ error: 'Supabase function configuration is incomplete.' }, 500);
+  if (!supabaseUrl || !serviceRoleKey || !sessionSecret) return response({ error: 'Supabase function configuration is incomplete.' }, 500);
+  if (!(await verifyAdminSession(req, sessionSecret))) return response({ error: 'Your admin session is invalid or expired.' }, 401);
 
-  const client = createClient(supabaseUrl, supabasePublishableKey, {
-    global: { headers: { Authorization: authHeader } },
+  const client = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const token = authHeader.slice('Bearer '.length);
-  const { data: userData, error: userError } = await client.auth.getUser(token);
-  const user = userData.user;
-
-  if (userError || !user) return response({ error: 'Your session is invalid or expired.' }, 401);
-  if (user.app_metadata?.role !== 'admin') return response({ error: 'Invoice administrator access is required.' }, 403);
   if (!resendApiKey || !fromEmail) return response({ error: 'Invoice email service is not configured.' }, 503);
 
   const rawBody = await req.text();
@@ -225,12 +200,13 @@ Deno.serve(async (req: Request) => {
     .maybeSingle();
 
   if (existingEvent?.status === 'sent' && existingEvent.provider_email_id) {
-    return response({
-      emailId: existingEvent.provider_email_id,
-      recipient: existingEvent.recipient,
-      sentAt: existingEvent.sent_at,
-      sendCount: existingEvent.send_count_after,
-      duplicate: true,
+    return response({ data: {
+        emailId: existingEvent.provider_email_id,
+        recipient: existingEvent.recipient,
+        sentAt: existingEvent.sent_at,
+        sendCount: existingEvent.send_count_after,
+        duplicate: true,
+      },
     });
   }
 
@@ -238,7 +214,7 @@ Deno.serve(async (req: Request) => {
   const { count: recentSendCount } = await client
     .from('invoice_email_events')
     .select('id', { count: 'exact', head: true })
-    .eq('sent_by', user.id)
+    .eq('actor', 'shared-admin')
     .in('status', ['sending', 'sent'])
     .gte('created_at', oneMinuteAgo);
 
@@ -250,7 +226,7 @@ Deno.serve(async (req: Request) => {
       request_id: requestId,
       recipient,
       status: 'sending',
-      sent_by: user.id,
+      actor: 'shared-admin',
     });
     if (eventError && eventError.code !== '23505') {
       return response({ error: 'Unable to create the email audit record.' }, 500);
@@ -310,12 +286,13 @@ Deno.serve(async (req: Request) => {
     send_count_after: nextSendCount,
   }).eq('request_id', requestId);
 
-  return response({
-    emailId,
-    recipient,
-    sentAt,
-    sendCount: nextSendCount,
-    duplicate: false,
-    trackingWarning: invoiceUpdateError || eventUpdateError ? 'Email sent, but the audit record needs review.' : undefined,
+  return response({ data: {
+      emailId,
+      recipient,
+      sentAt,
+      sendCount: nextSendCount,
+      duplicate: false,
+      trackingWarning: invoiceUpdateError || eventUpdateError ? 'Email sent, but the audit record needs review.' : undefined,
+    },
   });
 });

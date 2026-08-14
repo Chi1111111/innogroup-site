@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { adminApiRequest } from './adminApi';
 
 type ContractStatus = 'draft' | 'sent' | 'viewed' | 'signed' | 'cancelled';
 export type ContractType = 'vehicle-purchase' | 'deposit' | 'consignment';
@@ -131,7 +132,9 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 const supabase =
-  supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+  supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  }) : null;
 
 function assertSupabase() {
   if (!supabase) {
@@ -318,28 +321,18 @@ function contractToRow(contract: VehicleContract) {
 }
 
 export async function loadContracts(): Promise<VehicleContract[]> {
-  const client = assertSupabase();
-  const { data, error } = await client
-    .from('contracts')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []).map((row) => rowToContract(row as ContractRow));
+  const rows = await adminApiRequest<ContractRow[]>('contracts.list');
+  return (rows ?? []).map((row) => rowToContract(row));
 }
 
 export async function upsertContract(contract: VehicleContract): Promise<VehicleContract[]> {
-  const client = assertSupabase();
-  const { error } = await client.from('contracts').upsert(contractToRow(contract), { onConflict: 'id' });
-  if (error) throw error;
+  await adminApiRequest('contracts.upsert', { row: contractToRow(contract) });
 
   return loadContracts();
 }
 
 export async function deleteContract(contractId: string): Promise<VehicleContract[]> {
-  const client = assertSupabase();
-  const { error } = await client.from('contracts').delete().eq('id', contractId);
-  if (error) throw error;
+  await adminApiRequest('contracts.delete', { id: contractId });
 
   return loadContracts();
 }
