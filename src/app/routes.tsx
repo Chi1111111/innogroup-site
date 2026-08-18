@@ -4,6 +4,7 @@ import { Home } from './pages/Home';
 import { BawM8Page } from './pages/BawM8Page';
 import { ChinaVehicles } from './pages/ChinaVehicles';
 import { WoxAirPage, WoxNebulaPage, WoxSheraPage, WoxZenyPage } from './pages/WoxVehiclePage';
+import { WoxExpansionVehiclePage } from './pages/WoxExpansionVehiclePage';
 import { Services } from './pages/Services';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
       { path: 'vehicles/china/wox-nebula', Component: WoxNebulaPage },
       { path: 'vehicles/china/wox-shera', Component: WoxSheraPage },
       { path: 'vehicles/china/wox-zeny', Component: WoxZenyPage },
+      { path: 'vehicles/china/:slug', Component: WoxExpansionVehiclePage },
       { path: 'services', Component: Services },
       { path: 'about', Component: About },
       { path: 'contact', Component: Contact },

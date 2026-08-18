@@ -36,6 +36,76 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-pixel</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-neo</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-loop</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-nova-one</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-nova-pulse</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-rivo</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-magic</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-thamud</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-carry</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-move</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-relay</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-metro</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-elara</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/china/wox-horizon</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.innogroup.co.nz/services</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

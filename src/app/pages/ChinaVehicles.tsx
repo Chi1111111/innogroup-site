@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ArrowRight,
   BatteryCharging,
@@ -13,7 +14,18 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { chinaVehicles } from '../../data/chinaVehicles';
+import type { ChinaVehicleCategory } from '../../data/woxExpansionVehicles';
 import { useLanguage } from '../components/SiteTranslator';
+
+type VehicleFilter = 'All' | ChinaVehicleCategory;
+
+const vehicleFilters: Array<{ value: VehicleFilter; label: { en: string; zh: string } }> = [
+  { value: 'All', label: { en: 'All models', zh: '全部车型' } },
+  { value: 'Passenger', label: { en: 'Passenger', zh: '乘用车' } },
+  { value: 'Commercial', label: { en: 'Commercial', zh: '商用车' } },
+  { value: 'Public Transport', label: { en: 'Public transport', zh: '公共交通' } },
+  { value: 'Autonomous', label: { en: 'Autonomous', zh: '自动驾驶' } },
+];
 
 const vehicleReasons = [
   { en: 'Competitive pricing', zh: '价格具有竞争力' },
@@ -79,8 +91,12 @@ const buyerGroups = [
 
 export function ChinaVehicles() {
   const { text } = useLanguage();
+  const [vehicleFilter, setVehicleFilter] = useState<VehicleFilter>('All');
   const formatPrice = (priceFrom: string) =>
     priceFrom.toLowerCase().startsWith('from ') ? priceFrom : `From ${priceFrom}`;
+  const visibleVehicles = vehicleFilter === 'All'
+    ? chinaVehicles
+    : chinaVehicles.filter((vehicle) => vehicle.category === vehicleFilter);
 
   return (
     <div className="pt-20">
@@ -213,8 +229,33 @@ export function ChinaVehicles() {
             </p>
           </div>
 
+          <div className="mb-7 flex flex-col gap-4 rounded-[22px] border border-black/6 bg-white/75 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2" role="group" aria-label={text({ en: 'Filter China vehicles', zh: '筛选中国车型' })}>
+              {vehicleFilters.map((filter) => {
+                const isActive = vehicleFilter === filter.value;
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    onClick={() => setVehicleFilter(filter.value)}
+                    aria-pressed={isActive}
+                    className={`rounded-full px-4 py-2 text-sm font-bold transition ${isActive ? 'bg-[#101113] text-white shadow-sm' : 'border border-black/8 bg-white text-foreground/70 hover:border-primary/40 hover:text-foreground'}`}
+                  >
+                    {text(filter.label)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="shrink-0 text-sm font-bold text-foreground/55">
+              {text({
+                en: `${visibleVehicles.length} ${visibleVehicles.length === 1 ? 'model' : 'models'}`,
+                zh: `共 ${visibleVehicles.length} 款`,
+              })}
+            </p>
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-3">
-            {chinaVehicles.map((vehicle) => (
+            {visibleVehicles.map((vehicle) => (
               <Link
                 key={vehicle.slug}
                 to={vehicle.href}
@@ -230,21 +271,23 @@ export function ChinaVehicles() {
                 <div className="space-y-4 p-6">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                      {text({ en: formatPrice(vehicle.priceFrom), zh: `${vehicle.priceFrom.replace(/^From /, '')} 起` })}
+                      {vehicle.priceFrom
+                        ? text({ en: formatPrice(vehicle.priceFrom), zh: `${vehicle.priceFrom.replace(/^From /, '')} 起` })
+                        : text(vehicle.status)}
                     </p>
                     <h3 className="mt-2">{vehicle.name}</h3>
                     <p className="mt-2 text-sm font-semibold text-foreground/72">
-                      {vehicle.subtitle}
+                      {text(vehicle.subtitle)}
                     </p>
                   </div>
-                  <p className="text-sm">{vehicle.summary}</p>
+                  <p className="text-sm">{text(vehicle.summary)}</p>
                   <div className="flex flex-wrap gap-2">
                     {vehicle.tags.map((tag) => (
                       <span
-                        key={tag}
+                        key={tag.en}
                         className="rounded-full border border-black/6 bg-black/[0.03] px-3 py-1.5 text-xs font-bold text-foreground/70"
                       >
-                        {tag}
+                        {text(tag)}
                       </span>
                     ))}
                   </div>
