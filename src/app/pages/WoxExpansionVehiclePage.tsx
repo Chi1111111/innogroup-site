@@ -24,7 +24,7 @@ export function WoxExpansionVehiclePage() {
 
   if (!vehicle) return <Navigate to="/vehicles/china" replace />;
 
-  const enquiryHref = `/contact?message=${encodeURIComponent(
+  const enquiryHref = `/contact?source=china&type=china&vehicle=${encodeURIComponent(vehicle.name)}&message=${encodeURIComponent(
     `Hi Inno Group, I would like more information about ${vehicle.name}.`,
   )}#quote`;
 
@@ -63,7 +63,7 @@ export function WoxExpansionVehiclePage() {
           </div>
 
           <div className="overflow-hidden rounded-[30px] bg-gradient-to-br from-white to-[#e9e5dc] p-4 shadow-[0_34px_100px_rgba(0,0,0,0.35)] sm:p-7">
-            <img src={vehicle.image} alt={`${vehicle.name} official product image`} className="aspect-[16/10] w-full object-contain" />
+            <img src={vehicle.image} alt={`${vehicle.name} official product image`} decoding="async" fetchPriority="high" className="aspect-[16/10] w-full object-contain" />
           </div>
         </div>
       </section>

@@ -36,7 +36,9 @@ export function FindMyCar() {
 
       <section className="border-y border-black/6 bg-white/55 px-4 py-16"><div className="section-shell grid gap-4 md:grid-cols-4">{steps.map((step, index) => { const Icon = step.icon; return <div key={step.en} className="rounded-xl border border-black/7 bg-white p-6"><span className="text-sm font-bold text-primary">0{index + 1}</span><Icon className="mt-8 h-6 w-6"/><p className="mt-4 font-bold capitalize text-foreground">{text({ en: step.en, zh: step.zh })}</p></div>; })}</div></section>
 
-      <PriceCalculator />
+      <div id="calculator">
+        <PriceCalculator />
+      </div>
       <div id="find-car-form"><QuoteFormSection focusedImport /></div>
     </div>
   );

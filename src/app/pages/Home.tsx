@@ -58,6 +58,14 @@ const startPaths = [
     text: { en: 'Share your target model, budget and must-haves. We will search for you.', zh: '告诉我们目标车型、预算和必备配置，由我们帮你寻找。' },
     action: { en: 'Send your brief', zh: '提交找车需求' },
   },
+  {
+    number: '03',
+    to: '/vehicles/china#available-models',
+    icon: BatteryCharging,
+    title: { en: 'Explore Cars from China', zh: '查看中国车型' },
+    text: { en: 'Review selected EVs, MPVs, SUVs and commercial models available to enquire about.', zh: '查看可咨询的精选 EV、MPV、SUV 及商用车型。' },
+    action: { en: 'View China models', zh: '查看中国车型' },
+  },
 ];
 
 const importPoints = [

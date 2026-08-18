@@ -205,7 +205,7 @@ export function ChinaVehicles() {
         </div>
       </section>
 
-      <section id="available-models" className="px-4 py-14 sm:py-18">
+      <section id="available-models" className="scroll-mt-24 px-4 py-14 sm:py-18">
         <div className="section-shell">
           <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl space-y-5 animate-slideUp">
@@ -265,6 +265,8 @@ export function ChinaVehicles() {
                   <img
                     src={vehicle.image}
                     alt={`${vehicle.name} available through Cars from China`}
+                    loading="lazy"
+                    decoding="async"
                     className="aspect-[16/10] w-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
                   />
                 </div>

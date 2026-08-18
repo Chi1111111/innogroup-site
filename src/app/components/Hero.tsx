@@ -53,6 +53,9 @@ export function Hero() {
             src={image}
             alt=""
             aria-hidden="true"
+            loading={index === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            fetchPriority={index === 0 ? 'high' : 'auto'}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1800ms] ${
               index === currentImage ? 'opacity-100' : 'opacity-0'
             }`}
@@ -139,7 +142,7 @@ export function Hero() {
             <div className="mt-3 flex items-center gap-2">
               {supplierBadges.map((supplier) => (
                 <span key={supplier.name} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white p-1.5" title={supplier.name}>
-                  <img src={supplier.image} alt={supplier.name} className="h-full w-full rounded-full object-contain" />
+                  <img src={supplier.image} alt={supplier.name} loading="lazy" decoding="async" className="h-full w-full rounded-full object-contain" />
                 </span>
               ))}
             </div>

@@ -1,8 +1,36 @@
 {
   "rewrites": [
+    { "source": "/admin/:path*", "destination": "/workflow.html" },
+    { "source": "/sign/:path*", "destination": "/workflow.html" },
+    { "source": "/contract/:path*", "destination": "/workflow.html" },
+    { "source": "/weekly-report/:issue/:slug", "destination": "/weekly-report/detail.html" },
+    { "source": "/ownership", "destination": "/index.html" },
+    { "source": "/vehicles/japan-special-order", "destination": "/index.html" },
+    { "source": "/zh/:path*", "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "source": "/((?!api/)(?!.*\\.).*)",
-      "destination": "/index.html"
+      "source": "/assets/:path*",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/admin/:path*",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
+    },
+    {
+      "source": "/sign/:path*",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
+    },
+    {
+      "source": "/contract/:path*",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
+    },
+    {
+      "source": "/:path*",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
     }
   ]
 }

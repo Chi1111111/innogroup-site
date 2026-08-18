@@ -36,6 +36,21 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.innogroup.co.nz/weekly-report</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/selected-vehicles</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/vehicles/find-my-car</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://www.innogroup.co.nz/vehicles/china/wox-pixel</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -124,5 +139,10 @@
     <loc>https://www.innogroup.co.nz/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

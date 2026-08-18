@@ -1,69 +1,56 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { Root } from './Root';
-import { Home } from './pages/Home';
-import { BawM8Page } from './pages/BawM8Page';
-import { ChinaVehicles } from './pages/ChinaVehicles';
-import { WoxAirPage, WoxNebulaPage, WoxSheraPage, WoxZenyPage } from './pages/WoxVehiclePage';
-import { WoxExpansionVehiclePage } from './pages/WoxExpansionVehiclePage';
-import { Services } from './pages/Services';
-import { About } from './pages/About';
-import { Contact } from './pages/Contact';
-import { Finance } from './pages/Finance';
-import { AdminVehicles } from './pages/AdminVehicles';
-import { AdminContracts } from './pages/AdminContracts';
-import { AdminCrm } from './pages/AdminCrm';
-import { AdminInvoices } from './pages/AdminInvoices';
-import { SignContract } from './pages/SignContract';
-import { WeeklyReport } from './pages/WeeklyReport';
-import { WeeklyVehicleDetail } from './pages/WeeklyVehicleDetail';
-import { SelectedVehicles } from './pages/SelectedVehicles';
-import { FindMyCar } from './pages/FindMyCar';
-import { AdminAuthGate } from './components/AdminAuthGate';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     Component: Root,
     children: [
-      { index: true, Component: Home },
-      { path: 'vehicles/china', Component: ChinaVehicles },
+      { index: true, lazy: async () => ({ Component: (await import('./pages/Home')).Home }) },
+      { path: 'vehicles/china', lazy: async () => ({ Component: (await import('./pages/ChinaVehicles')).ChinaVehicles }) },
       { path: 'vehicles/japan-special-order', Component: () => <Navigate to="/weekly-report" replace /> },
-      { path: 'vehicles/find-my-car', Component: FindMyCar },
-      { path: 'weekly-report', Component: WeeklyReport },
-      { path: 'selected-vehicles', Component: SelectedVehicles },
-      { path: 'weekly-report/:issue/:slug', Component: WeeklyVehicleDetail },
-      { path: 'vehicles/china/baw-m8', Component: BawM8Page },
-      { path: 'vehicles/china/wox-air', Component: WoxAirPage },
-      { path: 'vehicles/china/wox-nebula', Component: WoxNebulaPage },
-      { path: 'vehicles/china/wox-shera', Component: WoxSheraPage },
-      { path: 'vehicles/china/wox-zeny', Component: WoxZenyPage },
-      { path: 'vehicles/china/:slug', Component: WoxExpansionVehiclePage },
-      { path: 'services', Component: Services },
-      { path: 'about', Component: About },
-      { path: 'contact', Component: Contact },
-      { path: 'ownership', Component: Services },
-      { path: 'finance', Component: Finance },
+      { path: 'vehicles/find-my-car', lazy: async () => ({ Component: (await import('./pages/FindMyCar')).FindMyCar }) },
+      { path: 'weekly-report', lazy: async () => ({ Component: (await import('./pages/WeeklyReport')).WeeklyReport }) },
+      { path: 'selected-vehicles', lazy: async () => ({ Component: (await import('./pages/SelectedVehicles')).SelectedVehicles }) },
+      { path: 'weekly-report/:issue/:slug', lazy: async () => ({ Component: (await import('./pages/WeeklyVehicleDetail')).WeeklyVehicleDetail }) },
+      { path: 'vehicles/china/baw-m8', lazy: async () => ({ Component: (await import('./pages/BawM8Page')).BawM8Page }) },
+      { path: 'vehicles/china/wox-air', lazy: async () => ({ Component: (await import('./pages/WoxVehiclePage')).WoxAirPage }) },
+      { path: 'vehicles/china/wox-nebula', lazy: async () => ({ Component: (await import('./pages/WoxVehiclePage')).WoxNebulaPage }) },
+      { path: 'vehicles/china/wox-shera', lazy: async () => ({ Component: (await import('./pages/WoxVehiclePage')).WoxSheraPage }) },
+      { path: 'vehicles/china/wox-zeny', lazy: async () => ({ Component: (await import('./pages/WoxVehiclePage')).WoxZenyPage }) },
+      { path: 'vehicles/china/:slug', lazy: async () => ({ Component: (await import('./pages/WoxExpansionVehiclePage')).WoxExpansionVehiclePage }) },
+      { path: 'services', lazy: async () => ({ Component: (await import('./pages/Services')).Services }) },
+      { path: 'about', lazy: async () => ({ Component: (await import('./pages/About')).About }) },
+      { path: 'contact', lazy: async () => ({ Component: (await import('./pages/Contact')).Contact }) },
+      { path: 'ownership', Component: () => <Navigate to="/services" replace /> },
+      { path: 'finance', lazy: async () => ({ Component: (await import('./pages/Finance')).Finance }) },
+      { path: 'privacy', lazy: async () => ({ Component: (await import('./pages/Privacy')).Privacy }) },
       {
         path: 'admin',
-        Component: AdminAuthGate,
+        lazy: async () => ({ Component: (await import('./components/AdminAuthGate')).AdminAuthGate }),
         children: [
-          { index: true, Component: AdminVehicles },
+          { index: true, lazy: async () => ({ Component: (await import('./pages/AdminVehicles')).AdminVehicles }) },
           {
             path: 'weekly-reports',
-            Component: () => <AdminVehicles mode="weekly" />,
+            lazy: async () => {
+              const { AdminVehicles } = await import('./pages/AdminVehicles');
+              return { Component: () => <AdminVehicles mode="weekly" /> };
+            },
           },
-          { path: 'crm', Component: AdminCrm },
-          { path: 'contracts', Component: AdminContracts },
-          { path: 'invoices', Component: AdminInvoices },
+          { path: 'crm', lazy: async () => ({ Component: (await import('./pages/AdminCrm')).AdminCrm }) },
+          { path: 'contracts', lazy: async () => ({ Component: (await import('./pages/AdminContracts')).AdminContracts }) },
+          { path: 'invoices', lazy: async () => ({ Component: (await import('./pages/AdminInvoices')).AdminInvoices }) },
         ],
       },
-      { path: 'contract/:contractId', Component: SignContract },
-      { path: 'sign/:contractId', Component: SignContract },
+      { path: 'contract/:contractId', lazy: async () => ({ Component: (await import('./pages/SignContract')).SignContract }) },
+      { path: 'sign/:contractId', lazy: async () => ({ Component: (await import('./pages/SignContract')).SignContract }) },
       { path: 'zh', Component: () => <Navigate to="/" replace /> },
       { path: 'zh/services', Component: () => <Navigate to="/services" replace /> },
       { path: 'zh/finance', Component: () => <Navigate to="/finance" replace /> },
       { path: 'zh/about', Component: () => <Navigate to="/about" replace /> },
       { path: 'zh/contact', Component: () => <Navigate to="/contact" replace /> },
+      { path: '404', lazy: async () => ({ Component: (await import('./pages/NotFound')).NotFound }) },
+      { path: '*', lazy: async () => ({ Component: (await import('./pages/NotFound')).NotFound }) },
     ],
   },
 ]);

@@ -84,8 +84,7 @@ export function Footer() {
               </li>
               <li>
                 <strong className="text-white">{text({ en: 'Email', zh: '邮箱' })}</strong><br />
-                <a href="mailto:innogroup.shawn@gmail.com" className="transition-colors hover:text-primary">innogroup.shawn@gmail.com</a><br />
-                <a href="mailto:innogroup.cao@gmail.com" className="transition-colors hover:text-primary">innogroup.cao@gmail.com</a>
+                <a href="mailto:innogroup.shawn@gmail.com" className="transition-colors hover:text-primary">innogroup.shawn@gmail.com</a>
               </li>
               <li>
                 <strong className="text-white">{text({ en: 'Address', zh: '地址' })}</strong><br />
@@ -109,6 +108,9 @@ export function Footer() {
                 zh: '多市场车源采购、奥克兰本地支持及海外出口能力。',
               })}
             </p>
+            <Link to="/privacy" className="mt-2 inline-block text-white/55 underline underline-offset-4 transition-colors hover:text-primary">
+              {text({ en: 'Privacy statement', zh: '隐私声明' })}
+            </Link>
           </div>
 
           <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 uppercase tracking-[0.16em] text-white/48">

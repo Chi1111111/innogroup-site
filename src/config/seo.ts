@@ -5,7 +5,7 @@ export const SEO_CONFIG = {
   defaultTitle: 'Import Car Auckland NZ | Vehicle Sourcing | Inno Group',
   defaultDescription:
     'Inno Group helps New Zealand customers, dealers and partners source quality vehicles through suitable overseas channels, with local support in New Zealand.',
-  defaultImage: '/og-image.png',
+  defaultImage: '/og-social-2026.png',
   phone: '+64272858065',
   email: 'innogroup.shawn@gmail.com',
   priceRange: '$$',
@@ -19,8 +19,6 @@ export const SEO_CONFIG = {
     addressCountry: 'NZ',
   },
 } as const;
-
-export const SEO_ROUTE_PAIRS = {} as const;
 
 export const SEO_ROUTES = {
   '/': {
@@ -51,6 +49,11 @@ export const SEO_ROUTES = {
     keywords:
       'Japan vehicle market weekly, Japan import opportunities NZ, Japanese car market report, Inno Group weekly report',
   },
+  '/selected-vehicles': {
+    title: 'Selected Vehicles NZ | Inno Group Weekly Finds',
+    description: 'Browse selected Japan-market vehicle opportunities reviewed by Inno Group for New Zealand buyers.',
+    keywords: 'selected vehicles NZ, Japan car finds NZ, Japanese import opportunities',
+  },
   '/vehicles/find-my-car': {
     title: 'Find My Car NZ | Custom Vehicle Sourcing from Japan',
     description:
@@ -64,6 +67,7 @@ export const SEO_ROUTES = {
       'Configure the BAW M8 EV / REEV MPV for New Zealand direct import enquiry. A practical 7/9-seater new-energy people mover for family, shuttle, tourism and business transport.',
     keywords:
       'BAW M8 NZ, BAW M8 EV New Zealand, electric MPV NZ, 9 seater EV NZ, 7 seater MPV NZ, China car import NZ, new energy MPV NZ',
+    image: '/images/baw-m8/baw-m8-hero-left-75.jpg',
   },
   '/vehicles/china/wox-air': {
     title: 'WOX AIR Import NZ | Electric Sedan from China',
@@ -71,6 +75,7 @@ export const SEO_ROUTES = {
       'Explore WOX AIR electric sedan versions, battery options, range, charging and specification details for New Zealand sourcing enquiries.',
     keywords:
       'WOX AIR NZ, WOX AIR import, Chinese electric sedan NZ, EV import NZ, China EV sourcing',
+    image: '/images/wox-air/air-front-car.jpg',
   },
   '/vehicles/china/wox-nebula': {
     title: 'WOX Nebula Import NZ | Electric SUV from China',
@@ -78,6 +83,7 @@ export const SEO_ROUTES = {
       'Explore WOX Nebula E501 SUV model information, battery, range, performance and specification details for New Zealand sourcing enquiries.',
     keywords:
       'WOX Nebula NZ, WOX Nebula import, Chinese EV SUV NZ, China vehicle sourcing, EV import New Zealand',
+    image: '/images/wox-nebula/nebula-front-car.jpg',
   },
   '/vehicles/china/wox-shera': {
     title: 'WOX Shera Taxi Edition Import NZ | RHD Electric Taxi',
@@ -85,6 +91,7 @@ export const SEO_ROUTES = {
       'Explore the WOX Shera Taxi Edition, a right-hand-drive compact electric sedan for fleet and taxi sourcing enquiries.',
     keywords:
       'WOX Shera NZ, WOX Shera Taxi Edition, RHD electric taxi, Chinese taxi EV NZ, China fleet EV sourcing',
+    image: '/images/wox-shera/shera-front.jpg',
   },
   '/vehicles/china/wox-zeny': {
     title: 'WOX Zeny Import NZ | Solar Assisted Electric City Car',
@@ -92,6 +99,7 @@ export const SEO_ROUTES = {
       'Explore the WOX Zeny solar-assisted electric city car with compact dimensions, customizable panels and flexible short-distance EV usability.',
     keywords:
       'WOX Zeny NZ, solar electric car, solar assisted EV, compact city EV NZ, China mini EV import',
+    image: '/images/wox-zeny/zeny-front.jpg',
   },
   '/services': {
     title: 'Vehicle Import Service Auckland | Inno Group Ltd',
@@ -127,5 +135,10 @@ export const SEO_ROUTES = {
       'Contact Inno Group Ltd in Albany, Auckland for vehicle sourcing, import car quotes, China vehicle enquiries, finance enquiries and tailored recommendations.',
     keywords:
       'vehicle sourcing quote Auckland, import car quote Auckland, China car quote NZ, contact car dealer Auckland, Inno Group contact',
+  },
+  '/privacy': {
+    title: 'Privacy Statement | Inno Group Ltd',
+    description: 'How Inno Group Ltd collects, uses, stores and protects information submitted through this website.',
+    keywords: 'Inno Group privacy, vehicle enquiry privacy New Zealand',
   },
 } as const;

@@ -1,5 +1,4 @@
 import { Mail, Phone, MapPin, Clock, MessageCircle } from 'lucide-react';
-import { ContactSection } from '../components/ContactSection';
 import { QuoteFormSection } from '../components/QuoteFormSection';
 import { useLanguage } from '../components/SiteTranslator';
 
@@ -76,9 +75,6 @@ export function Contact() {
                 <p className="whitespace-nowrap text-sm text-muted-foreground">
                   innogroup.shawn@gmail.com
                 </p>
-                <p className="mt-1 whitespace-nowrap text-sm text-muted-foreground">
-                  innogroup.cao@gmail.com
-                </p>
                 <p className="mt-2 text-sm font-semibold text-primary">
                   {text({ en: 'Please use the form below', zh: '请优先填写下方表格' })}
                 </p>
@@ -114,8 +110,9 @@ export function Contact() {
         </div>
       </section>
 
-      <QuoteFormSection />
-      <ContactSection />
+      <div id="quote" className="scroll-mt-20">
+        <QuoteFormSection />
+      </div>
     </div>
   );
 }

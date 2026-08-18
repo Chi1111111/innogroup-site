@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calculator, MessageCircle, X } from 'lucide-react';
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useLanguage } from './SiteTranslator';
 
 export function StickyCTA() {
@@ -8,7 +8,8 @@ export function StickyCTA() {
   const [isExpanded, setIsExpanded] = useState(true);
   const location = useLocation();
   const { text } = useLanguage();
-  const showCalculatorCta = location.pathname !== '/services';
+  const showCalculatorCta = location.pathname === '/' || location.pathname === '/vehicles/find-my-car';
+  const calculatorHref = '#calculator';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,7 +21,7 @@ export function StickyCTA() {
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -37,13 +38,13 @@ export function StickyCTA() {
         </p>
         <div className="flex flex-col gap-2.5 sm:flex-row">
           {showCalculatorCta ? (
-            <a
-              href="#calculator"
+            <Link
+              to={calculatorHref}
               className="flex flex-1 items-center justify-center gap-2 rounded-[18px] border border-black/8 bg-black/[0.04] px-4 py-3 text-center text-sm font-semibold text-foreground transition-all active:scale-95"
             >
               <Calculator className="w-5 h-5" />
               <span>{text({ en: 'Landing Price', zh: '落地价' })}</span>
-            </a>
+            </Link>
           ) : null}
           <a
             href="https://wa.me/64272858065"
@@ -61,13 +62,13 @@ export function StickyCTA() {
         {isExpanded ? (
           <>
             {showCalculatorCta ? (
-              <a
-                href="#calculator"
+              <Link
+                to={calculatorHref}
                 className="group flex items-center gap-3 rounded-2xl bg-primary px-6 py-4 font-semibold text-white shadow-[0_22px_50px_rgba(199,162,74,0.32)] transition-all hover:scale-[1.02] hover:bg-primary/90"
               >
                 <Calculator className="w-6 h-6" />
               <span>{text({ en: 'Landing Price', zh: '落地价' })}</span>
-              </a>
+              </Link>
             ) : null}
 
             <a

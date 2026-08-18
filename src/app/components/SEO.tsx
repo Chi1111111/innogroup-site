@@ -1,6 +1,7 @@
 ﻿import { useEffect } from 'react';
 import { useLocation } from 'react-router';
-import { SEO_CONFIG, SEO_ROUTE_PAIRS, SEO_ROUTES } from '../../config/seo';
+import { SEO_CONFIG, SEO_ROUTES } from '../../config/seo';
+import { getWoxExpansionVehicle } from '../../data/woxExpansionVehicles';
 
 const routeKeys = Object.keys(SEO_ROUTES) as Array<keyof typeof SEO_ROUTES>;
 
@@ -20,6 +21,10 @@ function removeJsonLd(id: string) {
   document.getElementById(id)?.remove();
 }
 
+function removeMeta(name: string, attribute: 'name' | 'property' = 'name') {
+  document.head.querySelector(`meta[${attribute}="${name}"]`)?.remove();
+}
+
 function setLink(rel: string, href: string) {
   let element = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
 
@@ -30,31 +35,6 @@ function setLink(rel: string, href: string) {
   }
 
   element.href = href;
-}
-
-function setAlternateLinks(pathname: string) {
-  document.head
-    .querySelectorAll<HTMLLinkElement>('link[rel="alternate"][data-inno-alternate="true"]')
-    .forEach((element) => element.remove());
-
-  const pairs = SEO_ROUTE_PAIRS as Record<string, string>;
-  const englishPath = pathname;
-  const chinesePath = englishPath ? pairs[englishPath] : undefined;
-
-  if (!englishPath || !chinesePath) return;
-
-  [
-    ['en-NZ', englishPath],
-    ['zh-NZ', chinesePath],
-    ['x-default', englishPath],
-  ].forEach(([hrefLang, path]) => {
-    const element = document.createElement('link');
-    element.rel = 'alternate';
-    element.hrefLang = hrefLang;
-    element.href = `${SEO_CONFIG.siteUrl}${path === '/' ? '' : path}`;
-    element.dataset.innoAlternate = 'true';
-    document.head.appendChild(element);
-  });
 }
 
 function setJsonLd(id: string, data: Record<string, unknown>) {
@@ -71,13 +51,27 @@ function setJsonLd(id: string, data: Record<string, unknown>) {
 }
 
 function getRouteMeta(pathname: string) {
+  const expansionVehicle = pathname.startsWith('/vehicles/china/')
+    ? getWoxExpansionVehicle(pathname.split('/').filter(Boolean).at(-1))
+    : undefined;
+  if (expansionVehicle) {
+    return {
+      title: `${expansionVehicle.name} Import NZ | Inno Group`,
+      description: `${expansionVehicle.summary.en} Ask Inno Group about New Zealand availability, specification and landed pricing.`,
+      keywords: `${expansionVehicle.name} NZ, ${expansionVehicle.name} import, Cars from China NZ`,
+      image: expansionVehicle.image,
+      vehicle: expansionVehicle,
+      isKnown: true,
+    };
+  }
   const routeKey = routeKeys.find((key) => key === pathname) ??
-    (pathname.startsWith('/weekly-report/') ? '/weekly-report' : '/');
-  return SEO_ROUTES[routeKey];
+    (pathname.startsWith('/weekly-report/') ? '/weekly-report' : undefined);
+  const fallback = SEO_ROUTES['/'];
+  return { ...(routeKey ? SEO_ROUTES[routeKey] : fallback), isKnown: Boolean(routeKey) || pathname === '/' };
 }
 
 function getBreadcrumbItems(pathname: string) {
-  const segments = pathname.split('/').filter(Boolean);
+  const segments = pathname.split('/').filter(Boolean).filter((segment) => segment !== 'vehicles');
   const names: Record<string, string> = {
     vehicles: 'Vehicles',
     'weekly-report': 'Japan Market Weekly',
@@ -87,6 +81,8 @@ function getBreadcrumbItems(pathname: string) {
     finance: 'Finance',
     about: 'About',
     contact: 'Contact',
+    privacy: 'Privacy',
+    'selected-vehicles': 'Selected Vehicles',
     'baw-m8': 'BAW M8 EV / REEV MPV',
     'wox-air': 'WOX AIR',
     'wox-nebula': 'WOX Nebula',
@@ -105,12 +101,18 @@ function getBreadcrumbItems(pathname: string) {
   ];
 
   let currentPath = '';
-  segments.forEach((segment, index) => {
-    currentPath += `/${segment}`;
+  segments.forEach((segment) => {
+    currentPath = segment === 'china'
+      ? '/vehicles/china'
+      : segment === 'find-my-car'
+        ? '/vehicles/find-my-car'
+        : currentPath === '/vehicles/china'
+          ? `${currentPath}/${segment}`
+          : `${currentPath}/${segment}`;
     items.push({
       '@type': 'ListItem',
       position: items.length + 1,
-      name: names[segment] ?? segment,
+      name: names[segment] ?? segment.replaceAll('-', ' '),
       item: `${SEO_CONFIG.siteUrl}${currentPath}`,
     });
   });
@@ -123,20 +125,18 @@ export function SEO() {
 
   useEffect(() => {
     const meta = getRouteMeta(location.pathname);
-    const canonicalUrl = `${SEO_CONFIG.siteUrl}${location.pathname === '/' ? '' : location.pathname}`;
-    const imageUrl = new URL(SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href;
+    const canonicalUrl = `${SEO_CONFIG.siteUrl}${location.pathname === '/' ? '/' : location.pathname}`;
+    const imageUrl = new URL('image' in meta ? meta.image : SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href;
     const lang = 'en-NZ';
+    const isWorkflowRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/sign/') || location.pathname.startsWith('/contract/');
+    const shouldIndex = meta.isKnown && !isWorkflowRoute && location.pathname !== '/404';
     document.title = meta.title;
     setMeta('description', meta.description);
-    if ('keywords' in meta) {
-      setMeta('keywords', meta.keywords);
-    }
-    setMeta('robots', 'index, follow');
+    removeMeta('keywords');
+    setMeta('robots', shouldIndex ? 'index, follow' : 'noindex, nofollow');
     setMeta('theme-color', '#c7a24a');
 
     setLink('canonical', canonicalUrl);
-    setAlternateLinks(location.pathname);
-
     setMeta('og:site_name', SEO_CONFIG.siteName, 'property');
     setMeta('og:type', 'website', 'property');
     setMeta('og:locale', SEO_CONFIG.locale, 'property');
@@ -144,20 +144,30 @@ export function SEO() {
     setMeta('og:description', meta.description, 'property');
     setMeta('og:url', canonicalUrl, 'property');
     setMeta('og:image', imageUrl, 'property');
-    setMeta('og:image:alt', 'Inno Group import cars Auckland', 'property');
+    const imageAlt = 'vehicle' in meta && meta.vehicle ? `${meta.vehicle.name} vehicle information` : 'Inno Group vehicle sourcing across Japan and China';
+    setMeta('og:image:alt', imageAlt, 'property');
+    if (imageUrl.endsWith('/og-social-2026.png')) {
+      setMeta('og:image:width', '1729', 'property');
+      setMeta('og:image:height', '910', 'property');
+    } else {
+      removeMeta('og:image:width', 'property');
+      removeMeta('og:image:height', 'property');
+    }
 
     setMeta('twitter:card', 'summary_large_image');
     setMeta('twitter:title', meta.title);
     setMeta('twitter:description', meta.description);
     setMeta('twitter:image', imageUrl);
-    setMeta('twitter:image:alt', 'Inno Group import cars Auckland');
+    setMeta('twitter:image:alt', imageAlt);
 
-    setJsonLd('inno-local-business-schema', {
+    if (location.pathname === '/' || location.pathname === '/about' || location.pathname === '/contact') {
+      setJsonLd('inno-local-business-schema', {
       '@context': 'https://schema.org',
       '@type': 'AutoDealer',
       name: SEO_CONFIG.siteName,
       url: SEO_CONFIG.siteUrl,
-      image: imageUrl,
+      image: new URL(SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href,
+      logo: `${SEO_CONFIG.siteUrl}/og-image.png`,
       telephone: SEO_CONFIG.phone,
       email: SEO_CONFIG.email,
       priceRange: SEO_CONFIG.priceRange,
@@ -209,49 +219,48 @@ export function SEO() {
           },
         ],
       },
-    });
+      });
+    } else {
+      removeJsonLd('inno-local-business-schema');
+    }
 
-    setJsonLd('inno-website-schema', {
-      '@context': 'https://schema.org',
-      '@type': 'WebSite',
-      name: SEO_CONFIG.siteName,
-      url: SEO_CONFIG.siteUrl,
-      inLanguage: lang,
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: `${SEO_CONFIG.siteUrl}/vehicles/china?search={search_term_string}`,
-        'query-input': 'required name=search_term_string',
-      },
-    });
+    if (location.pathname === '/') {
+      setJsonLd('inno-website-schema', {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: SEO_CONFIG.siteName,
+        url: SEO_CONFIG.siteUrl,
+        inLanguage: lang,
+      });
+    } else {
+      removeJsonLd('inno-website-schema');
+    }
 
-    setJsonLd('inno-breadcrumb-schema', {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: getBreadcrumbItems(location.pathname),
-    });
+    if (location.pathname === '/') {
+      removeJsonLd('inno-breadcrumb-schema');
+    } else {
+      setJsonLd('inno-breadcrumb-schema', {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: getBreadcrumbItems(location.pathname),
+      });
+    }
 
-    setJsonLd('inno-faq-schema', {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: [
-        {
-          '@type': 'Question',
-          name: 'Can Inno Group help me buy a used car in Auckland?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Yes. Inno Group can help Auckland and New Zealand buyers compare local used cars with suitable import options based on budget, model, mileage, and use case.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: 'What costs are included in an import landed price?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'A landed price can include the source vehicle price, service fees, exchange rate, GST, shipping, customs, compliance, registration, and condition-related costs.',
-          },
-        },
-      ],
-    });
+    removeJsonLd('inno-faq-schema');
+    if ('vehicle' in meta && meta.vehicle) {
+      setJsonLd('inno-vehicle-schema', {
+        '@context': 'https://schema.org',
+        '@type': 'Vehicle',
+        name: meta.vehicle.name,
+        brand: { '@type': 'Brand', name: meta.vehicle.brand },
+        description: meta.vehicle.overview.en,
+        image: imageUrl,
+        url: canonicalUrl,
+        vehicleConfiguration: meta.vehicle.subtitle.en,
+      });
+    } else {
+      removeJsonLd('inno-vehicle-schema');
+    }
     removeJsonLd('inno-vehicle-list-schema');
   }, [location.pathname]);
 

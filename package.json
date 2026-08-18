@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-static-meta.mjs",
     "dev": "vite",
     "jpauc:scrape": "node scripts/jpauc-scrape.mjs",
     "jpauc:oneprice:japan:scrape": "node scripts/jpauc-oneprice-japan-scrape.mjs",

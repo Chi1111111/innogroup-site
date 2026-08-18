@@ -139,7 +139,7 @@ export function SelectedVehicles() {
                 return (
                   <article key={vehicle.slug} className="group overflow-hidden rounded-[24px] border border-black/8 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.06)]">
                     <Link to={`/weekly-report/issue-${issueNumber}/${vehicle.slug}`} className="relative block aspect-[16/10] overflow-hidden bg-[#111214]">
-                      <img src={getJapanSpecialOrderImages(vehicle)[0]} alt={text({ en: vehicle.title, zh: vehicle.zhTitle })} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+                      <img src={getJapanSpecialOrderImages(vehicle)[0]} alt={text({ en: vehicle.title, zh: vehicle.zhTitle })} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
                       <span className="absolute left-4 top-4 rounded-full bg-primary px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-black">
                         {text({ en: isCollector ? 'Collector & special' : 'Value opportunity', zh: isCollector ? '玩家珍藏' : '价值机会' })}

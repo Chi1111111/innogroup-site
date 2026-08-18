@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Upload, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
+import { Link } from 'react-router';
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
 import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 import { tradeMeMakes, tradeMeVehicleCatalog } from '../../data/tradeMeVehicleCatalog';
+import { useLanguage } from './SiteTranslator';
 
 const carBrands = [...tradeMeMakes];
 const carModels = tradeMeVehicleCatalog;
@@ -11,6 +13,8 @@ const carModels = tradeMeVehicleCatalog;
 const fieldLabelClass = 'text-xs font-bold uppercase tracking-[0.16em] text-[#151C26]/62';
 const fieldClass =
   'w-full rounded-lg border border-[#151C26]/12 bg-[#F7F4EE] px-4 py-3.5 text-base font-medium text-[#151C26] transition-all placeholder:text-[#151C26]/35 focus:border-[#C6A54A] focus:outline-none focus:ring-1 focus:ring-[#C6A54A]';
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const CONTACT_FORM_RECIPIENT = 'innogroup.shawn@gmail.com';
 
 interface QuoteFormSectionProps {
@@ -18,6 +22,7 @@ interface QuoteFormSectionProps {
 }
 
 export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProps = {}) {
+  const { text } = useLanguage();
   const [briefStep, setBriefStep] = useState(focusedImport ? 2 : 1);
   const [formData, setFormData] = useState({
     inquiryType: 'buy',
@@ -34,6 +39,9 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
 
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const imagePreviews = useMemo(() => uploadedImages.map((image) => URL.createObjectURL(image)), [uploadedImages]);
+
+  useEffect(() => () => imagePreviews.forEach((preview) => URL.revokeObjectURL(preview)), [imagePreviews]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -42,7 +50,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
     const source = params.get('source');
     const message = params.get('message') ?? '';
     const enquiryType = params.get('type') ?? '';
-    if (source !== 'jpauc' && source !== 'japan-special-order' && source !== 'weekly-report' && !message && !enquiryType) return;
+    if (!source && !message && !enquiryType && !params.get('vehicle')) return;
 
     const vehicle = params.get('vehicle') ?? '';
     const year = params.get('year') ?? '';
@@ -52,8 +60,10 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
       : enquiryType === 'support'
         ? 'Hi Inno Group, I need help with vehicle ownership support.'
         : '';
+    const isChinaSource = source === 'china' || source === 'wox' || enquiryType === 'china';
+    const isJapanSource = source === 'jpauc' || source === 'japan-special-order' || source === 'weekly-report' || source === 'inno-auto-weekly' || source === 'find-similar-weekly-vehicle';
     const fallbackMessage =
-      source === 'japan-special-order' || source === 'weekly-report'
+      source === 'japan-special-order' || isJapanSource
         ? `Hi Inno Group, I'm interested in a Japan special order search:\n${vehicle || 'Rare / classic / supercar from Japan'}`
         : vehicle
           ? `Hi Inno Group, I'm interested in this vehicle:\n${vehicle}`
@@ -62,12 +72,13 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
     setFormData((current) => ({
       ...current,
       inquiryType: 'buy',
-      sourceType: 'japan',
+      sourceType: isChinaSource ? 'china' : isJapanSource ? 'japan' : current.sourceType,
       model: current.model || vehicle,
       year: current.year || year,
       budget: current.budget || price,
       message: current.message || message || fallbackMessage,
     }));
+    setBriefStep(2);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -185,8 +196,12 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newImages = Array.from(files);
+      const newImages = Array.from(files).filter((file) => ALLOWED_IMAGE_TYPES.has(file.type) && file.size <= MAX_IMAGE_BYTES);
+      if (newImages.length !== files.length) {
+        alert(text({ en: 'Please use JPG, PNG or WebP images up to 5 MB each.', zh: '请上传 JPG、PNG 或 WebP 图片，每张不超过 5 MB。' }));
+      }
       setUploadedImages((prev) => [...prev, ...newImages].slice(0, 8));
+      e.target.value = '';
     }
   };
 
@@ -196,11 +211,11 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
 
   const selectedModels = formData.brand ? carModels[formData.brand] ?? [] : [];
 
-  const chooseBriefType = (type: 'buy-local' | 'import-japan' | 'sell') => {
+  const chooseBriefType = (type: 'buy-local' | 'import-japan' | 'import-china' | 'sell') => {
     setFormData((current) => ({
       ...current,
       inquiryType: type === 'sell' ? 'sell' : 'buy',
-      sourceType: type === 'import-japan' ? 'japan' : 'local',
+      sourceType: type === 'import-japan' ? 'japan' : type === 'import-china' ? 'china' : 'local',
     }));
     setBriefStep(2);
   };
@@ -210,11 +225,14 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
       ? 'sell'
       : formData.sourceType === 'japan'
         ? 'import-japan'
+        : formData.sourceType === 'china'
+          ? 'import-china'
         : 'buy-local';
 
   const briefOptions = [
     { id: 'buy-local', label: 'Buy a Car', description: 'Browse our available vehicles' },
     { id: 'import-japan', label: 'Import from Japan', description: 'Find the exact car you want' },
+    { id: 'import-china', label: 'Cars from China', description: 'Explore selected new models' },
     { id: 'sell', label: 'Sell My Car', description: 'Get a quick valuation' },
   ] as const;
 
@@ -426,7 +444,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                         <label className={fieldLabelClass}>Vehicle Photos (Optional, Max 8)</label>
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/jpeg,image/png,image/webp"
                           multiple
                           onChange={handleImageUpload}
                           className="hidden"
@@ -445,13 +463,16 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                             {uploadedImages.map((image, index) => (
                               <div key={index} className="group relative">
                                 <img
-                                  src={URL.createObjectURL(image)}
+                                  src={imagePreviews[index]}
                                   alt={`Vehicle ${index + 1}`}
+                                  loading="lazy"
+                                  decoding="async"
                                   className="h-24 w-full rounded-lg border border-[#151C26]/10 object-cover"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => removeImage(index)}
+                                  aria-label={text({ en: `Remove photo ${index + 1}`, zh: `删除第 ${index + 1} 张图片` })}
                                   className="absolute -right-2 -top-2 rounded-full bg-[#151C26] p-1.5 text-[#F7F4EE] transition-transform hover:scale-105"
                                 >
                                   <X className="h-3.5 w-3.5" />
@@ -531,7 +552,11 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                     </button>
 
                     <p className="mt-5 text-center text-xs font-medium text-[#151C26]/45">
-                      Your information is secure and confidential. We respect your privacy.
+                      {text({ en: 'We use these details only to respond to your enquiry. See our ', zh: '我们仅使用这些信息回复你的咨询。查看' })}
+                      <Link to="/privacy" className="underline underline-offset-2 hover:text-[#151C26]">
+                        {text({ en: 'privacy statement', zh: '隐私声明' })}
+                      </Link>
+                      {text({ en: '.', zh: '。' })}
                     </p>
                   </div>
                 )}
