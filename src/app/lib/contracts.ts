@@ -130,6 +130,7 @@ type ContractRow = {
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const SIGNING_REQUEST_TIMEOUT_MS = 20_000;
 
 const supabase =
   supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey, {
@@ -142,6 +143,46 @@ function assertSupabase() {
   }
 
   return supabase;
+}
+
+type ContractSigningEnvelope<T> = {
+  data?: T;
+  error?: string;
+};
+
+async function contractSigningRequest<T>(action: 'view' | 'sign', payload: Record<string, unknown>) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Contract signing is not configured.');
+  }
+
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), SIGNING_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${supabaseUrl.replace(/\/$/, '')}/functions/v1/contract-signing`, {
+      method: 'POST',
+      headers: {
+        apikey: supabaseAnonKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action, ...payload }),
+      signal: controller.signal,
+    });
+    const result = await response.json().catch(() => ({})) as ContractSigningEnvelope<T>;
+
+    if (!response.ok) {
+      throw new Error(result.error || `Signing service is temporarily unavailable (${response.status}).`);
+    }
+
+    return result.data as T;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('The signing request timed out. Please check your connection and try again.');
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 export function getErrorMessage(error: unknown) {
@@ -347,6 +388,18 @@ export async function getContractBySigningToken(signingToken: string): Promise<V
 
   if (error) throw error;
   return data ? rowToContract(data as ContractRow) : null;
+}
+
+export async function markContractViewed(signingToken: string) {
+  return contractSigningRequest<{ viewed: boolean }>('view', { signingToken });
+}
+
+export async function submitContractSignature(signingToken: string, signerName: string, signatureData: string) {
+  return contractSigningRequest<{ signedAt: string; alreadySigned?: boolean }>('sign', {
+    signingToken,
+    signerName,
+    signatureData,
+  });
 }
 
 export async function recordContractEvent(contractId: string, eventType: string, note?: string) {

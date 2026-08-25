@@ -14,9 +14,8 @@ import {
   formatDateTime,
   getContractBySigningToken,
   getErrorMessage,
-  recordContractEvent,
-  saveSignature,
-  upsertContract,
+  markContractViewed,
+  submitContractSignature,
 } from '../lib/contracts';
 
 type AckKey = 'terms' | 'cin' | 'docs' | 'odometer' | 'privacy' | 'deposit';
@@ -85,11 +84,8 @@ export function SignContract() {
             : found;
 
         if (nextFound && found?.status === 'sent') {
-          upsertContract(nextFound).catch((error) => {
+          markContractViewed(nextFound.signingToken).catch((error) => {
             console.warn('Could not mark contract as viewed:', error);
-          });
-          recordContractEvent(nextFound.id, 'viewed').catch((error) => {
-            console.warn('Could not record contract view event:', error);
           });
         }
 
@@ -254,40 +250,42 @@ export function SignContract() {
       return;
     }
 
-    const signature = canvasRef.current.toDataURL('image/png');
-    const signedContract: VehicleContract = {
-      ...contract,
-      status: 'signed',
-      signedAt: new Date().toISOString(),
-      signedIpNote: 'Captured in browser signing session',
-      signedUserAgent: navigator.userAgent,
-      acknowledgements: {
-        ...contract.acknowledgements,
-        termsAccepted: true,
-        cinProvided: true,
-        signDocumentsAccepted: true,
-        odometerAcknowledged: true,
-        privacyAccepted: true,
-        depositForfeitureAccepted: true,
-      },
-      signatures: {
-        ...contract.signatures,
-        purchaserName: purchaserName.trim(),
-        purchaser: signature,
-      },
-    };
+    let signature: string;
+    try {
+      signature = canvasRef.current.toDataURL('image/png');
+    } catch (error) {
+      setMessage(`Could not prepare signature: ${getErrorMessage(error)}`);
+      return;
+    }
 
     setIsSubmitting(true);
+    setMessage('Submitting your signature securely...');
     try {
-      await upsertContract(signedContract);
+      const result = await submitContractSignature(contract.signingToken, purchaserName.trim(), signature);
+      const signedContract: VehicleContract = {
+        ...contract,
+        status: 'signed',
+        signedAt: result.signedAt,
+        signedIpNote: 'Captured in browser signing session',
+        signedUserAgent: navigator.userAgent,
+        acknowledgements: {
+          ...contract.acknowledgements,
+          termsAccepted: true,
+          cinProvided: true,
+          signDocumentsAccepted: true,
+          odometerAcknowledged: true,
+          privacyAccepted: true,
+          depositForfeitureAccepted: true,
+        },
+        signatures: {
+          ...contract.signatures,
+          purchaserName: purchaserName.trim(),
+          purchaser: signature,
+        },
+      };
       setContract(signedContract);
       setMessage('Signed successfully. You can now print or save the completed agreement as a PDF.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      await Promise.allSettled([
-        saveSignature(signedContract, purchaserName.trim(), signature),
-        recordContractEvent(signedContract.id, 'signed', 'Captured in browser signing session'),
-      ]);
     } catch (error) {
       setMessage(`Could not submit signature: ${getErrorMessage(error)}`);
     } finally {
@@ -506,6 +504,9 @@ export function SignContract() {
                   >
                     {isSubmitting ? 'Submitting...' : 'Finish signing'}
                   </button>
+                  <div className="mt-3" aria-live="polite">
+                    <Notice message={message} />
+                  </div>
                   <p className="mt-3 text-xs leading-5 text-slate-500">
                     By selecting finish signing, your typed name, signature, acknowledgements, completion time, and
                     browser details will be saved with this agreement.

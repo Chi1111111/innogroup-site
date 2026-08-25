@@ -1,6 +1,9 @@
 [functions.admin-api]
 verify_jwt = false
 
+[functions.contract-signing]
+verify_jwt = false
+
 [functions.send-invoice]
 verify_jwt = false
 
