@@ -54,6 +54,25 @@ function serviceClient() {
   });
 }
 
+function websiteLeadToCrmLead(value: unknown) {
+  const row = asRecord(value);
+  const id = asText(row.id);
+  return {
+    id: `web:${id}`,
+    createdAt: asText(row.created_at).slice(0, 10),
+    name: asText(row.name),
+    phone: asText(row.phone),
+    email: asText(row.email),
+    contact: asText(row.contact),
+    channel: asText(row.channel) || 'Website · Japan Market',
+    interest: asText(row.interest),
+    budget: asText(row.budget),
+    status: asText(row.status) || '了解',
+    nextFollowUp: asText(row.next_follow_up),
+    notes: asText(row.notes),
+  };
+}
+
 async function handleLogin(req: Request, client: ReturnType<typeof serviceClient>, body: JsonRecord) {
   const expectedPassword = Deno.env.get('ADMIN_SHARED_PASSWORD');
   const sessionSecret = Deno.env.get('ADMIN_SESSION_SECRET');
@@ -142,12 +161,56 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === 'crm.get') {
-      const { data, error } = await client.from('crm_state').select('payload').eq('id', 'main').maybeSingle();
-      if (error) throw error;
-      return jsonResponse(req, { data: data?.payload ?? null });
+      const [crmResult, newLeadResult] = await Promise.all([
+        client.from('crm_state').select('payload').eq('id', 'main').maybeSingle(),
+        client
+          .from('website_leads')
+          .select('*')
+          .is('synced_to_crm_at', null)
+          .order('created_at', { ascending: false }),
+      ]);
+      if (crmResult.error) throw crmResult.error;
+      if (newLeadResult.error) throw newLeadResult.error;
+
+      const payload = asRecord(crmResult.data?.payload);
+      const existingLeads = Array.isArray(payload.leads) ? payload.leads : [];
+      const knownIds = new Set(existingLeads.map((lead) => asText(asRecord(lead).id)));
+      const incomingLeads = (newLeadResult.data ?? [])
+        .map(websiteLeadToCrmLead)
+        .filter((lead) => lead.id !== 'web:' && !knownIds.has(lead.id));
+
+      return jsonResponse(req, {
+        data: {
+          ...payload,
+          leads: [...incomingLeads, ...existingLeads],
+          orders: Array.isArray(payload.orders) ? payload.orders : [],
+          loanCars: Array.isArray(payload.loanCars) ? payload.loanCars : [],
+        },
+      });
     }
     if (action === 'crm.upsert') {
       const payload = asRecord(body.payload);
+      const leads = Array.isArray(payload.leads) ? payload.leads.map(asRecord) : [];
+      const websiteLeads = leads.filter((lead) => asText(lead.id).startsWith('web:'));
+      const syncedAt = new Date().toISOString();
+
+      const websiteLeadUpdates = await Promise.all(websiteLeads.map(async (lead) => {
+        const id = asText(lead.id).slice(4);
+        if (!id) return null;
+        return client.from('website_leads').update({
+          contact: asText(lead.contact),
+          channel: asText(lead.channel),
+          interest: asText(lead.interest),
+          budget: asText(lead.budget),
+          status: asText(lead.status) || '了解',
+          next_follow_up: asText(lead.nextFollowUp) || null,
+          notes: asText(lead.notes),
+          synced_to_crm_at: syncedAt,
+        }).eq('id', id);
+      }));
+      const leadUpdateError = websiteLeadUpdates.find((result) => result?.error)?.error;
+      if (leadUpdateError) throw leadUpdateError;
+
       const { error } = await client.from('crm_state').upsert({
         id: 'main',
         payload,

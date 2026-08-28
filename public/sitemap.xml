@@ -36,6 +36,51 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.innogroup.co.nz/japan-market</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/japan-market/toyota</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/japan-market/toyota/crown</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/japan-market/toyota/alphard</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/japan-market/lexus</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/japan-market/nissan</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/japan-market/honda</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/japan-market/mazda</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.innogroup.co.nz/japan-market/subaru</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
     <loc>https://www.innogroup.co.nz/weekly-report</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

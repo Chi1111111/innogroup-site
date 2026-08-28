@@ -4,6 +4,8 @@
     { "source": "/sign/:path*", "destination": "/workflow.html" },
     { "source": "/contract/:path*", "destination": "/workflow.html" },
     { "source": "/weekly-report/:issue/:slug", "destination": "/weekly-report/detail.html" },
+    { "source": "/japan-market", "destination": "/japan-market/index.html" },
+    { "source": "/japan-market/:path*", "destination": "/index.html" },
     { "source": "/ownership", "destination": "/index.html" },
     { "source": "/vehicles/japan-special-order", "destination": "/index.html" },
     { "source": "/zh/:path*", "destination": "/index.html" }

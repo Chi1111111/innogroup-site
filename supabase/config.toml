@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.send-admin-magic-link]
 verify_jwt = false
+
+[functions.capture-lead]
+verify_jwt = false

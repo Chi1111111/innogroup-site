@@ -9,6 +9,7 @@ export function StickyCTA() {
   const location = useLocation();
   const { text } = useLanguage();
   const showCalculatorCta = location.pathname === '/' || location.pathname === '/vehicles/find-my-car';
+  const hasVehicleSpecificActions = /^\/japan-market\/JP[\w-]+$/i.test(location.pathname);
   const calculatorHref = '#calculator';
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export function StickyCTA() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (!isVisible) return null;
+  if (!isVisible || hasVehicleSpecificActions) return null;
 
   return (
     <>

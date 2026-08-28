@@ -40,7 +40,7 @@ export function Navbar() {
           <img src={logoImage} alt="Inno Group" className="h-9 w-auto object-contain transition-opacity group-hover:opacity-80 sm:h-10" />
         </Link>
 
-        <div className="hidden items-center justify-center gap-6 xl:flex">
+        <div className="hidden items-center justify-center gap-5 xl:flex">
           <Link to="/" className={`border-b-2 px-1 py-2 text-[13px] font-bold ${isActive('/') ? 'border-primary text-foreground' : 'border-transparent text-foreground/60 hover:text-foreground'}`}>{text({ en: 'Home', zh: '首页' })}</Link>
           <div className="group relative">
             <Link
@@ -60,6 +60,7 @@ export function Navbar() {
               </div>
             </div>
           </div>
+          <Link to="/japan-market" className={`border-b-2 px-1 py-2 text-[13px] font-bold ${isActive('/japan-market') ? 'border-primary text-foreground' : 'border-transparent text-foreground/60 hover:text-foreground'}`}>{text({ en: 'Japan Market', zh: '日本车源市场' })}</Link>
           <div className="group relative">
             <button type="button" className={`flex items-center gap-1 border-b-2 px-1 py-2 text-[13px] font-bold ${vehiclesActive ? 'border-primary text-foreground' : 'border-transparent text-foreground/60 hover:text-foreground'}`} aria-haspopup="true">
               {text({ en: 'Find a Car', zh: '找车' })}<ChevronDown className="h-4 w-4" />
@@ -92,6 +93,7 @@ export function Navbar() {
         <div className="max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-black/10 bg-[#f6f1e8] px-4 py-4 shadow-lg xl:hidden">
           <div className="mx-auto max-w-7xl space-y-1">
             <Link to="/" onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold">{text({ en: 'Home', zh: '首页' })}</Link>
+            <Link to="/japan-market" onClick={() => setIsOpen(false)} className="block rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-bold text-[#8b6b1d]">{text({ en: 'Japan Market', zh: '日本车源市场' })}</Link>
             <div className="mx-2 rounded-xl border border-primary/40 bg-primary/12 p-2">
               <p className="px-2 py-1 text-xs font-extrabold tracking-[0.08em] text-[#8b6b1d]">{text({ en: 'INNO SELECT', zh: 'INNO 甄选' })}</p>
               <Link to="/weekly-report" onClick={() => setIsOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-semibold">{text({ en: 'Weekly Reports & Arrivals', zh: '每周周报与到港动态' })}</Link>

@@ -49,6 +49,13 @@ export const SEO_ROUTES = {
     keywords:
       'Japan vehicle market weekly, Japan import opportunities NZ, Japanese car market report, Inno Group weekly report',
   },
+  '/japan-market': {
+    title: 'Japan Market Cars for Import | Inno Group NZ',
+    description:
+      'Browse vehicles currently available from Japan, filter by make, model, year, price, mileage and auction grade, and view estimated landed pricing for New Zealand.',
+    keywords:
+      'Japan cars for import NZ, Japanese vehicles NZ, auction grade cars Japan, estimated landed price NZ, Inno Group Japan Market',
+  },
   '/selected-vehicles': {
     title: 'Selected Vehicles NZ | Inno Group Weekly Finds',
     description: 'Browse selected Japan-market vehicle opportunities reviewed by Inno Group for New Zealand buyers.',

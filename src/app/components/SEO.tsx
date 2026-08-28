@@ -51,6 +51,30 @@ function setJsonLd(id: string, data: Record<string, unknown>) {
 }
 
 function getRouteMeta(pathname: string) {
+  if (pathname.startsWith('/japan-market')) {
+    const [, , first = '', second = ''] = pathname.split('/');
+    if (!first) return { ...SEO_ROUTES['/japan-market'], isKnown: true };
+    if (/^JP[\w-]+$/i.test(first)) {
+      return {
+        title: 'Japan Market Vehicle for Import | Inno Group NZ',
+        description: 'View vehicle information, auction grade and estimated landed pricing for a Japan Market vehicle available to import to New Zealand.',
+        isKnown: true,
+      };
+    }
+    const displayName = (value: string) => value
+      .split('-')
+      .map((part) => ['bmw', 'audi', 'nz'].includes(part) ? part.toUpperCase() : `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+      .join(' ')
+      .replace('Mercedes Benz', 'Mercedes-Benz');
+    const make = displayName(first);
+    const model = second ? displayName(second) : '';
+    const vehicleName = [make, model].filter(Boolean).join(' ');
+    return {
+      title: `${vehicleName} for Import from Japan | Inno Group NZ`,
+      description: `Browse ${vehicleName} vehicles available from Japan and view estimated landed pricing for New Zealand.`,
+      isKnown: true,
+    };
+  }
   const expansionVehicle = pathname.startsWith('/vehicles/china/')
     ? getWoxExpansionVehicle(pathname.split('/').filter(Boolean).at(-1))
     : undefined;
@@ -83,6 +107,7 @@ function getBreadcrumbItems(pathname: string) {
     contact: 'Contact',
     privacy: 'Privacy',
     'selected-vehicles': 'Selected Vehicles',
+    'japan-market': 'Japan Market',
     'baw-m8': 'BAW M8 EV / REEV MPV',
     'wox-air': 'WOX AIR',
     'wox-nebula': 'WOX Nebula',

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { Hero } from '../components/Hero';
+import { JapanMarketPreview } from '../components/JapanMarketPreview';
 import { PriceCalculator } from '../components/PriceCalculator';
 import { QuoteFormSection } from '../components/QuoteFormSection';
 import { useLanguage } from '../components/SiteTranslator';
@@ -44,6 +45,14 @@ const sourceMarkets = [
 const startPaths = [
   {
     number: '01',
+    to: '/japan-market',
+    icon: Car,
+    title: { en: 'Browse Japan Market', zh: '浏览日本市场' },
+    text: { en: 'Search thousands of vehicles with estimated New Zealand landed pricing.', zh: '浏览数万台日本车辆，并查看新西兰预计落地价。' },
+    action: { en: 'Explore vehicles', zh: '开始浏览' },
+  },
+  {
+    number: '02',
     to: '/weekly-report',
     icon: Sparkles,
     title: { en: 'See This Week’s Picks', zh: '查看本周精选' },
@@ -51,7 +60,7 @@ const startPaths = [
     action: { en: 'Open weekly report', zh: '打开本周周报' },
   },
   {
-    number: '02',
+    number: '03',
     to: '/vehicles/find-my-car',
     icon: MessageSquareText,
     title: { en: 'Ask Inno to Find It', zh: '请 Inno 帮我找车' },
@@ -59,7 +68,7 @@ const startPaths = [
     action: { en: 'Send your brief', zh: '提交找车需求' },
   },
   {
-    number: '03',
+    number: '04',
     to: '/vehicles/china#available-models',
     icon: BatteryCharging,
     title: { en: 'Explore Cars from China', zh: '查看中国车型' },
@@ -110,7 +119,7 @@ export function Home() {
           <div className="grid gap-8 border-b border-black/8 pb-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
               <div className="section-kicker">01 · {text({ en: 'Start here', zh: '从这里开始' })}</div>
-              <h2 className="mt-5 max-w-xl">{text({ en: 'Three clear ways to find your next car.', zh: '三种清晰方式，找到下一辆车。' })}</h2>
+              <h2 className="mt-5 max-w-xl">{text({ en: 'Four clear ways to find your next car.', zh: '四种清晰方式，找到下一辆车。' })}</h2>
             </div>
             <p className="max-w-2xl text-base leading-8 text-foreground/62 lg:justify-self-end lg:text-right">
               {text({
@@ -120,7 +129,7 @@ export function Home() {
             </p>
           </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {startPaths.map((path) => {
               const Icon = path.icon;
 
@@ -146,6 +155,8 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      <JapanMarketPreview />
 
       <section className="bg-white/45 px-4 py-16 sm:py-20">
         <div className="section-shell">

@@ -11,23 +11,5 @@ drop policy if exists "crm_state_select" on public.crm_state;
 drop policy if exists "crm_state_insert" on public.crm_state;
 drop policy if exists "crm_state_update" on public.crm_state;
 
-create policy "crm_state_select"
-on public.crm_state
-for select
-to anon
-using (true);
-
-create policy "crm_state_insert"
-on public.crm_state
-for insert
-to anon
-with check (id = 'main');
-
-create policy "crm_state_update"
-on public.crm_state
-for update
-to anon
-using (id = 'main')
-with check (id = 'main');
-
-grant select, insert, update on public.crm_state to anon;
+revoke all on public.crm_state from anon, authenticated;
+grant all on public.crm_state to service_role;
