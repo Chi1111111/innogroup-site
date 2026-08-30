@@ -38,8 +38,8 @@ const MAKE_LABELS = new Map([
 ]);
 
 const SPORTS_MODELS = /\b(86|GR86|BRZ|GT-?R|SUPRA|RX-?7|ROADSTER|MX-?5|FAIRLADY|CAYMAN|BOXSTER|911|MUSTANG|CORVETTE|NSX|S2000)\b/i;
-const MPV_MODELS = /\b(ALPHARD|VELLFIRE|VOXY|NOAH|SERENA|ELGRAND|STEPWGN|ODYSSEY|FREED|ESTIMA|HIACE|CARAVAN|NV200|ATRAI|EVERY|CLIPPER|VAN|TRUCK|MPV|MINIVAN)\b/i;
-const SUV_MODELS = /\b(SUV|HARRIER|LAND CRUISER|PRADO|RAV4|BZ4X|C-HR|COROLLA CROSS|COUNTRY\s*MA(?:N)?|CROSSOVER|PACEMAN|CX-[3-9]|FORESTER|X-TRAIL|OUTLANDER|ECLIPSE CROSS|CR-V|ZR-V|VEZEL|KICKS|JIMNY|WRANGLER|CAYENNE|Q[2-9]|GL[ABCES]|X[1-7]|RX|NX|UX|GX|LX)\b/i;
+const MPV_MODELS = /\b(ALPHARD|VELLFIRE|VOXY|NOAH|SERENA|ELGRAND|STEPWGN|ODYSSEY|FREED|ESTIMA|HIACE|CARAVAN|NV200|DELICA\s+D:?5|ATRAI|EVERY|CLIPPER|VAN|TRUCK|MPV|MINIVAN)\b/i;
+const SUV_MODELS = /\b(SUV|HARRIER|LAND CRUISER|PRADO|RAV4|BZ4X|C-HR|COROLLA CROSS|COUNTRY\s*MA(?:N)?|CROSSOVER|PACEMAN|CX-[3-9]|FORESTER|X-TRAIL|OUTLANDER|ECLIPSE CROSS|CR-V|ZR-V|VEZEL|KICKS|JUKE|JIMNY|COMPASS|RENEGADE|WRANGLER|MACAN|CAYENNE|Q[2-9]|GL[ABCES][A-Z0-9]*|X[1-7]|XC\d{2}|RX|NX|UX|GX)\b/i;
 const WAGON_MODELS = /\b(WAGON|TOURING|SHOOTING BRAKE|LEVORG|OUTBACK|AVANTE|ESTATE|FIELDER|SHUTTLE)\b/i;
 const COUPE_MODELS = /\b(COUPE|CABRIO|CONVERTIBLE)\b/i;
 const HATCH_MODELS = /\b(HATCH|SPORTBACK|AQUA|FIT|NOTE|DEMIO|MAZDA2|SWIFT|YARIS|VITZ|MARCH|LEAF|PRIUS|COROLLA SPORT|CUBE|N BOX|DAYZ|ROOX|TANTO|MOVE|MIRA|TAFT|HUSTLER|SPACIA|WAGON R)\b/i;
@@ -132,10 +132,13 @@ function fuelTypeFor(vehicle) {
 }
 
 function bodyTypeFor(vehicle) {
-  const value = `${vehicle.model} ${vehicle.modelGrade}`;
+  const model = normalizeText(vehicle.model);
+  const value = `${model} ${normalizeText(vehicle.modelGrade)}`;
   if (SPORTS_MODELS.test(value)) return 'Sports';
   if (MPV_MODELS.test(value)) return 'Van / MPV';
-  if (SUV_MODELS.test(value)) return 'SUV';
+  // Keep useful grade-based matches (for example BMW X5), while avoiding
+  // ordinary trims such as Honda Grace LX being classified as an SUV.
+  if (SUV_MODELS.test(value) || /^LX$/i.test(model)) return 'SUV';
   if (WAGON_MODELS.test(value)) return 'Wagon';
   if (COUPE_MODELS.test(value)) return 'Coupe';
   if (HATCH_MODELS.test(value)) return 'Hatchback';
@@ -167,6 +170,12 @@ function normalizedVehicle(vehicle, refreshedAt, fixedPrice) {
   ].find(([maker, modelPrefix]) => rawMake === maker && new RegExp(`^${modelPrefix}\\b`, 'i').test(rawModel));
   const make = splitMake ? splitMake[2] : normalizeMake(rawMake);
   const model = normalizeModel(splitMake ? rawModel.replace(new RegExp(`^${splitMake[1]}\\s+`, 'i'), '') : rawModel);
+  const rawVariant = normalizeVariant(vehicle.modelGrade);
+  const normalizedModel = model.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const normalizedVariant = rawVariant.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const variant = normalizedVariant && normalizedModel !== normalizedVariant && !normalizedModel.endsWith(` ${normalizedVariant}`)
+    ? rawVariant
+    : '';
   const year = numberFrom(vehicle.year);
   const mileage = numberFrom(vehicle.mileage);
   const japanPrice = fixedPrice ? yenFrom(vehicle.startPrice) : null;
@@ -178,7 +187,7 @@ function normalizedVehicle(vehicle, refreshedAt, fixedPrice) {
     id,
     make,
     model,
-    variant: normalizeVariant(vehicle.modelGrade),
+    variant,
     year,
     mileage,
     fuelType: fuelTypeFor(vehicle),

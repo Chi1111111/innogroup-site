@@ -63,7 +63,7 @@ export function WoxExpansionVehiclePage() {
           </div>
 
           <div className="overflow-hidden rounded-[30px] bg-gradient-to-br from-white to-[#e9e5dc] p-4 shadow-[0_34px_100px_rgba(0,0,0,0.35)] sm:p-7">
-            <img src={vehicle.image} alt={`${vehicle.name} official product image`} decoding="async" fetchPriority="high" className="aspect-[16/10] w-full object-contain" />
+            <img src={vehicle.image} alt={`${vehicle.name} official product image`} decoding="async" className="aspect-[16/10] w-full object-contain" />
           </div>
         </div>
       </section>

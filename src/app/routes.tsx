@@ -5,6 +5,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     Component: Root,
+    hydrateFallbackElement: <div className="min-h-screen bg-[#F7F4EE]" aria-label="Loading page" />,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('./pages/Home')).Home }) },
       { path: 'japan-market', lazy: async () => ({ Component: (await import('./pages/JapanMarket')).JapanMarket }) },

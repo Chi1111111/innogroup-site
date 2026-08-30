@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Calculator, TrendingUp, DollarSign, Info } from 'lucide-react';
+import { useLanguage } from './SiteTranslator';
 
 const FALLBACK_NZD_TO_JPY_RATE = 86.5;
 const RATE_ADJUSTMENT = 5;
 const NZD_TO_JPY_RATE_URL = 'https://api.frankfurter.dev/v2/rates?base=NZD&quotes=JPY';
 
 export function PriceCalculator() {
+  const { text } = useLanguage();
   const [vehiclePrice, setVehiclePrice] = useState('');
   const [exchangeRate, setExchangeRate] = useState(FALLBACK_NZD_TO_JPY_RATE.toString());
   const [rateDate, setRateDate] = useState('');
   const [rateStatus, setRateStatus] = useState<'loading' | 'live' | 'fallback'>('loading');
   const [landedPrice, setLandedPrice] = useState<number | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   // Breakdown values
   const [breakdown, setBreakdown] = useState({
@@ -71,9 +74,14 @@ export function PriceCalculator() {
     const y = parseFloat(exchangeRate);
 
     if (!x || !y || x <= 0 || y <= 0) {
-      alert('Please enter valid positive numbers for both vehicle price and exchange rate.');
+      setValidationError(text({
+        en: 'Enter a valid positive vehicle price to calculate an estimate.',
+        zh: '请输入有效且大于零的车辆价格。',
+      }));
       return;
     }
+
+    setValidationError('');
 
     // Formula: ((x + 100000) / y * 1.15 + 2100 + 1000 + 500) * 1.05 = z
     const basePriceJPY = x + 100000;
@@ -103,6 +111,7 @@ export function PriceCalculator() {
     setVehiclePrice('');
     setLandedPrice(null);
     setShowBreakdown(false);
+    setValidationError('');
   };
 
   const formatCurrency = (value: number, currency: 'JPY' | 'NZD') => {
@@ -119,12 +128,15 @@ export function PriceCalculator() {
           <div>
             <div className="section-kicker">
               <Calculator className="h-4 w-4" />
-              03 · Import Cost Calculator
+              03 · {text({ en: 'Import Cost Calculator', zh: '进口落地价计算器' })}
             </div>
-            <h2 className="mt-5">Estimate the landed price.</h2>
+            <h2 className="mt-5">{text({ en: 'Estimate the landed price.', zh: '快速估算新西兰落地价。' })}</h2>
           </div>
           <p className="max-w-2xl text-base leading-8 text-muted-foreground lg:justify-self-end lg:text-right">
-            Quick estimate for imported vehicle landed costs, including common shipping, compliance and service fees.
+            {text({
+              en: 'A quick guide to common import, shipping, compliance and service costs before requesting a confirmed quote.',
+              zh: '在索取正式报价前，先快速了解常见进口、运输、合规与服务费用。',
+            })}
           </p>
         </div>
 
@@ -136,7 +148,7 @@ export function PriceCalculator() {
                 <div className="rounded-xl bg-primary/10 p-2.5 sm:p-3">
                   <Calculator className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground sm:text-2xl">Price Calculator</h3>
+                <h3 className="text-xl font-bold text-foreground sm:text-2xl">{text({ en: 'Price Calculator', zh: '价格计算器' })}</h3>
               </div>
 
               <div className="space-y-5 sm:space-y-6">
@@ -144,21 +156,25 @@ export function PriceCalculator() {
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-foreground font-bold">
                     <span className="text-primary">●</span>
-                    Vehicle Price (JPY)
+                    {text({ en: 'Vehicle Price (JPY)', zh: '日本车辆价格（JPY）' })}
                   </label>
                   <div className="relative">
                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground text-lg font-semibold">¥</span>
                     <input
                       type="number"
                       value={vehiclePrice}
-                      onChange={(e) => setVehiclePrice(e.target.value)}
+                      onChange={(e) => {
+                        setVehiclePrice(e.target.value);
+                        if (validationError) setValidationError('');
+                      }}
                       placeholder="3000000"
+                      aria-label={text({ en: 'Vehicle price in Japanese yen', zh: '日元车辆价格' })}
                       className="w-full rounded-xl border border-black/12 bg-[#fbf8f2] py-3.5 pl-11 pr-4 text-base font-medium transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:py-4 sm:pl-12 sm:pr-6 sm:text-lg"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Info className="w-4 h-4" />
-                    Enter the source-market price in Japanese yen
+                    {text({ en: 'Enter the source-market price in Japanese yen', zh: '请输入日本车源页面显示的日元价格' })}
                   </p>
                 </div>
 
@@ -166,7 +182,7 @@ export function PriceCalculator() {
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-foreground font-bold">
                     <span className="text-primary">●</span>
-                    Exchange Rate (NZD to JPY)
+                    {text({ en: 'Exchange Rate (NZD to JPY)', zh: '参考汇率（NZD 兑 JPY）' })}
                   </label>
                   <div className="relative">
                     <TrendingUp className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
@@ -176,38 +192,47 @@ export function PriceCalculator() {
                       value={exchangeRate}
                       placeholder="91.50"
                       readOnly
+                      aria-label={text({ en: 'Reference exchange rate from New Zealand dollars to Japanese yen', zh: '纽币兑日元参考汇率' })}
                       className="w-full rounded-xl border border-black/12 bg-[#fbf8f2] py-3.5 pl-11 pr-4 text-base font-medium transition-all focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:py-4 sm:pl-12 sm:pr-6 sm:text-lg"
                     />
                   </div>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Info className="w-4 h-4" />
                     {rateStatus === 'loading'
-                      ? 'Updating today’s reference rate...'
+                      ? text({ en: 'Updating today’s reference rate…', zh: '正在更新今日参考汇率…' })
                       : rateStatus === 'fallback'
-                        ? `Reference rate: 1 NZD = ${exchangeRate} JPY`
-                        : `Today's reference rate${rateDate ? ` (${rateDate})` : ''}: 1 NZD = ${exchangeRate} JPY`}
+                        ? text({ en: `Reference rate: 1 NZD = ${exchangeRate} JPY`, zh: `备用参考汇率：1 NZD = ${exchangeRate} JPY` })
+                        : text({ en: `Today's reference rate${rateDate ? ` (${rateDate})` : ''}: 1 NZD = ${exchangeRate} JPY`, zh: `今日参考汇率${rateDate ? `（${rateDate}）` : ''}：1 NZD = ${exchangeRate} JPY` })}
                   </p>
                 </div>
+
+                {validationError ? (
+                  <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                    {validationError}
+                  </p>
+                ) : null}
 
                 {/* Calculate Button */}
                 <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:pt-4">
                   <button
+                    type="button"
                     onClick={calculatePrice}
                     className="button-primary group relative flex-1 overflow-hidden text-base sm:text-lg"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                     <span className="relative flex items-center justify-center gap-2">
                       <Calculator className="w-5 h-5" />
-                      Calculate
+                      {text({ en: 'Calculate', zh: '开始计算' })}
                     </span>
                   </button>
                   
                   {landedPrice !== null && (
                     <button
+                      type="button"
                       onClick={resetCalculator}
                       className="button-secondary px-6 text-base sm:text-lg"
                     >
-                      Reset
+                      {text({ en: 'Reset', zh: '重新输入' })}
                     </button>
                   )}
                 </div>
@@ -224,7 +249,7 @@ export function PriceCalculator() {
                     <DollarSign className="w-12 h-12 text-primary" />
                   </div>
                   <p className="text-base text-muted-foreground sm:text-lg">
-                    Enter vehicle price and exchange rate<br />to see your landing cost
+                    {text({ en: 'Enter the vehicle price to see an estimated landed cost.', zh: '输入车辆价格后，即可查看预计落地费用。' })}
                   </p>
                 </div>
               </div>
@@ -234,11 +259,11 @@ export function PriceCalculator() {
                   {/* Main Result */}
                   <div className="rounded-xl border border-primary/40 bg-primary/10 p-1">
                     <div className="rounded-lg bg-white/80 p-5 text-center sm:p-6">
-                      <p className="text-muted-foreground mb-2 font-semibold">Estimated Landed Price</p>
+                      <p className="text-muted-foreground mb-2 font-semibold">{text({ en: 'Estimated Landed Price', zh: '预计新西兰落地价' })}</p>
                       <p className="mb-2 text-4xl font-bold text-primary sm:text-5xl">
                         {formatCurrency(breakdown.total, 'NZD').split(' ')[0]}
                       </p>
-                      <p className="text-sm text-muted-foreground">New Zealand Dollars</p>
+                      <p className="text-sm text-muted-foreground">{text({ en: 'New Zealand dollars', zh: '纽币（NZD）' })}</p>
                     </div>
                   </div>
 
@@ -246,45 +271,45 @@ export function PriceCalculator() {
                   <div className="space-y-4">
                     <h4 className="font-bold text-foreground text-lg flex items-center gap-2">
                       <span className="text-primary">●</span>
-                      Cost Breakdown
+                      {text({ en: 'Cost Breakdown', zh: '费用明细' })}
                     </h4>
                     
                     <div className="space-y-3 rounded-xl border border-black/10 bg-white/60 p-4 backdrop-blur-sm sm:p-5">
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
-                        <span className="text-sm text-muted-foreground sm:text-base">Vehicle Price (JPY)</span>
+                        <span className="text-sm text-muted-foreground sm:text-base">{text({ en: 'Vehicle Price (JPY)', zh: '日本车辆价格（JPY）' })}</span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(parseFloat(vehiclePrice), 'JPY')}</span>
                       </div>
                       
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
-                        <span className="text-sm text-muted-foreground sm:text-base">Base Fees</span>
+                        <span className="text-sm text-muted-foreground sm:text-base">{text({ en: 'Japan-side base allowance', zh: '日本端基础费用预留' })}</span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(100000, 'JPY')}</span>
                       </div>
 
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
-                        <span className="text-sm text-muted-foreground sm:text-base">Subtotal in NZD</span>
+                        <span className="text-sm text-muted-foreground sm:text-base">{text({ en: 'Vehicle subtotal in NZD', zh: '车辆纽币换算小计' })}</span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(breakdown.basePriceNZD, 'NZD')}</span>
                       </div>
 
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
-                        <span className="text-sm text-muted-foreground sm:text-base">Import Duty (15%)</span>
+                        <span className="text-sm text-muted-foreground sm:text-base">{text({ en: '15% import cost allowance', zh: '15% 进口费用预留' })}</span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(breakdown.import15Percent, 'NZD')}</span>
                       </div>
 
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
                         <span className="text-sm text-muted-foreground sm:text-base">
-                          Processing Fees
-                          <span className="block text-xs">Shipping + Compliance + Admin</span>
+                          {text({ en: 'Processing allowance', zh: '办理费用预留' })}
+                          <span className="block text-xs">{text({ en: 'Shipping + compliance + administration', zh: '运输 + 合规 + 行政办理' })}</span>
                         </span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(breakdown.fixedFees, 'NZD')}</span>
                       </div>
 
                       <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-3">
-                        <span className="text-sm text-muted-foreground sm:text-base">Service Fee (5%)</span>
+                        <span className="text-sm text-muted-foreground sm:text-base">{text({ en: 'Service allowance (5%)', zh: '服务费用预留（5%）' })}</span>
                         <span className="text-right font-semibold text-foreground">{formatCurrency(breakdown.final5Percent, 'NZD')}</span>
                       </div>
 
                       <div className="-mx-4 -mb-4 flex items-start justify-between gap-4 rounded-b-xl bg-primary/8 px-4 pb-4 pt-3 sm:-mx-5 sm:-mb-5 sm:px-5 sm:pb-5">
-                        <span className="text-base font-bold text-foreground sm:text-lg">Total Landed Price</span>
+                        <span className="text-base font-bold text-foreground sm:text-lg">{text({ en: 'Estimated landed total', zh: '预计落地总价' })}</span>
                         <span className="text-right text-xl font-bold text-primary sm:text-2xl">{formatCurrency(breakdown.total, 'NZD').split(' ')[0]}</span>
                       </div>
                     </div>
@@ -293,8 +318,11 @@ export function PriceCalculator() {
                   {/* Disclaimer */}
                   <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
                     <p className="text-sm text-blue-900 leading-relaxed">
-                      <strong>Note:</strong> This is an estimate only. Final costs may vary based on vehicle specifications, 
-                      additional compliance requirements, and market conditions.
+                      <strong>{text({ en: 'Estimate only:', zh: '仅供估算：' })}</strong>{' '}
+                      {text({
+                        en: 'This is not a quote. Final costs depend on the vehicle, exchange rate, shipping, compliance requirements and market conditions.',
+                        zh: '该结果不构成正式报价。最终费用取决于具体车辆、汇率、运输、合规要求及市场情况。',
+                      })}
                     </p>
                   </div>
                 </div>

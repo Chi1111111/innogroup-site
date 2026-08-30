@@ -3,13 +3,19 @@ import { Link } from 'react-router';
 import {
   formatMileage,
   formatNzd,
+  formatBodyType,
+  formatFuelType,
+  formatTransmission,
+  formatVehicleUpdatedAt,
   japanMarketVehiclePath,
   type JapanMarketVehicleSummary,
   vehicleName,
+  vehicleVariant,
 } from '../../data/japanMarket';
 import { useLanguage } from './SiteTranslator';
 
 export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle: JapanMarketVehicleSummary; className?: string }) {
+  const { language } = useLanguage();
   return (
     <div className={`relative overflow-hidden bg-[#17191c] ${className}`}>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_46%,rgba(199,162,74,0.18),transparent_29%)]" />
@@ -19,7 +25,7 @@ export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle:
       <div className="absolute inset-0 flex flex-col justify-between p-5 text-white">
         <div className="relative flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
           <span>Inno Group</span>
-          <span>{vehicle.bodyType}</span>
+          <span>{formatBodyType(vehicle.bodyType, language)}</span>
         </div>
         <div className="relative">
           <div className="mb-4 h-px w-12 bg-primary" />
@@ -34,6 +40,7 @@ export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle:
 export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: JapanMarketVehicleSummary; compact?: boolean }) {
   const { language, text } = useLanguage();
   const hasPrice = vehicle.estimatedNzdPrice != null;
+  const variant = vehicleVariant(vehicle);
 
   return (
     <Link
@@ -47,10 +54,11 @@ export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: 
           <span className="text-sm font-bold text-foreground/48">{vehicle.year}</span>
         </div>
         <h3 className="mt-4 line-clamp-2 text-xl leading-snug">{vehicleName(vehicle)}</h3>
-        {vehicle.variant ? <p className="mt-1 line-clamp-1 text-sm text-foreground/48">{vehicle.variant}</p> : null}
+        {variant ? <p className="mt-1 line-clamp-1 text-sm text-foreground/48">{variant}</p> : null}
         <div className="mt-5 space-y-2 border-t border-black/7 pt-4 text-sm text-foreground/65">
           <p className="flex items-center justify-between"><span>{formatMileage(vehicle.mileage, language)}</span><span>{vehicle.auctionGrade ? `${text({ en: 'Grade', zh: '评分' })} ${vehicle.auctionGrade}` : text({ en: 'Unrated', zh: '暂无评分' })}</span></p>
-          <p>{vehicle.fuelType} · {vehicle.transmission}</p>
+          <p>{formatFuelType(vehicle.fuelType, language)} · {formatTransmission(vehicle.transmission, language)}</p>
+          <p className="text-xs text-foreground/45">{formatVehicleUpdatedAt(vehicle.updatedAt, language)} · {text({ en: 'Availability to confirm', zh: '库存需再次确认' })}</p>
         </div>
         <div className="mt-auto pt-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground/42">{text({ en: 'Estimated landed price', zh: '预计新西兰落地价' })}</p>

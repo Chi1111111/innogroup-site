@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, ChevronDown, MessageCircle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, Clock3, MessageCircle, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router';
 import { JapanMarketEnquiryForm } from '../components/JapanMarketEnquiryForm';
 import { JapanMarketVehicleVisual } from '../components/JapanMarketVehicleCard';
@@ -7,11 +7,16 @@ import { useLanguage } from '../components/SiteTranslator';
 import {
   formatMileage,
   formatNzd,
+  formatDriveType,
+  formatFuelType,
+  formatTransmission,
+  formatVehicleUpdatedAt,
   getCostBreakdown,
   loadJapanMarketVehicle,
   type JapanMarketPricing,
   type JapanMarketVehicle,
   vehicleFullName,
+  vehicleVariant,
 } from '../../data/japanMarket';
 import { SEO_CONFIG } from '../../config/seo';
 
@@ -95,14 +100,14 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
     [text({ en: 'Year', zh: '年份' }), vehicle.year],
     [text({ en: 'Make', zh: '品牌' }), vehicle.make],
     [text({ en: 'Model', zh: '车型' }), vehicle.model],
-    [text({ en: 'Variant', zh: '版本' }), vehicle.variant || text({ en: 'Not listed', zh: '暂无信息' })],
+    [text({ en: 'Variant', zh: '版本' }), vehicleVariant(vehicle) || text({ en: 'Not listed', zh: '暂无信息' })],
     [text({ en: 'Mileage', zh: '公里数' }), formatMileage(vehicle.mileage, language)],
-    [text({ en: 'Fuel Type', zh: '燃料类型' }), vehicle.fuelType],
+    [text({ en: 'Fuel Type', zh: '燃料类型' }), formatFuelType(vehicle.fuelType, language)],
     [text({ en: 'Engine', zh: '排量' }), vehicle.engine === 'Not listed' ? text({ en: 'Not listed', zh: '暂无信息' }) : `${vehicle.engine} cc`],
-    [text({ en: 'Transmission', zh: '变速箱' }), vehicle.transmission],
-    [text({ en: 'Drive Type', zh: '驱动方式' }), vehicle.driveType],
-    [text({ en: 'Colour', zh: '颜色' }), vehicle.colour],
-    [text({ en: 'Chassis Code', zh: '底盘编号' }), vehicle.chassisCode],
+    [text({ en: 'Transmission', zh: '变速箱' }), formatTransmission(vehicle.transmission, language)],
+    [text({ en: 'Drive Type', zh: '驱动方式' }), formatDriveType(vehicle.driveType, language)],
+    [text({ en: 'Colour', zh: '颜色' }), vehicle.colour === 'Not listed' ? text({ en: 'Not listed', zh: '暂无信息' }) : vehicle.colour],
+    [text({ en: 'Chassis Code', zh: '底盘编号' }), vehicle.chassisCode === 'Not listed' ? text({ en: 'Not listed', zh: '暂无信息' }) : vehicle.chassisCode],
     [text({ en: 'Auction Area', zh: '拍卖地区' }), vehicle.location],
   ];
   const costRows = breakdown ? [
@@ -131,7 +136,25 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
               <JapanMarketVehicleVisual vehicle={vehicle} className="aspect-[16/10] rounded-3xl" />
-              <div className="mt-8"><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Japan Market · {vehicle.id}</p><h1 className="mt-4 text-4xl sm:text-5xl">{vehicleFullName(vehicle)}</h1></div>
+              <div className="mt-8">
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Japan Market · {vehicle.id}</p>
+                <h1 className="mt-4 text-4xl sm:text-5xl">{vehicleFullName(vehicle)}</h1>
+                <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 rounded-2xl border border-black/8 bg-white/55 px-5 py-4 text-sm">
+                  <span className="inline-flex items-center gap-2 font-bold text-foreground">
+                    <span className={`h-2.5 w-2.5 rounded-full ${vehicle.status === 'Available' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                    {vehicle.status === 'Available'
+                      ? text({ en: 'Source listing active', zh: '车源页面显示在售' })
+                      : text({ en: 'Source listing unavailable', zh: '车源页面显示不可售' })}
+                  </span>
+                  <span className="inline-flex items-center gap-2 text-foreground/55">
+                    <Clock3 className="h-4 w-4 text-primary" />
+                    {formatVehicleUpdatedAt(vehicle.lastSeenAt, language)}
+                  </span>
+                  <span className="w-full text-xs leading-5 text-foreground/45">
+                    {text({ en: 'Availability is reconfirmed with the source before any commitment.', zh: '确认购买或支付任何款项前，Inno 会再次核实实际库存。' })}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">

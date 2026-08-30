@@ -1,16 +1,17 @@
 import {
   ArrowRight,
   BatteryCharging,
-  Building2,
   Car,
   CheckCircle2,
-  Factory,
+  Clock3,
+  FileCheck2,
   Globe2,
   MapPin,
   MessageSquareText,
+  ReceiptText,
+  ShieldCheck,
   Ship,
   Sparkles,
-  Users,
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { Hero } from '../components/Hero';
@@ -89,21 +90,26 @@ const chinaPoints = [
   { en: 'Warranty support where applicable', zh: '符合条件车型可提供质保支持' },
 ];
 
-const partnerAudiences = [
+const buyerAssurances = [
   {
-    title: { en: 'For Customers', zh: '面向客户' },
-    icon: Users,
-    text: { en: 'Find the right vehicle with clear pricing and local support.', zh: '用清晰价格和本地支持，帮你找到合适车辆。' },
+    title: { en: 'Availability Reconfirmed', zh: '再次确认实际库存' },
+    icon: Clock3,
+    text: { en: 'The source listing is checked again before you make any commitment.', zh: '在你作出任何购买承诺前，我们会再次核实车源是否仍然有效。' },
   },
   {
-    title: { en: 'For Dealers', zh: '面向车商' },
-    icon: Building2,
-    text: { en: 'Access overseas vehicle sources and wholesale opportunities.', zh: '对接海外车源与批发合作机会。' },
+    title: { en: 'Condition and Documents', zh: '确认车况与文件' },
+    icon: FileCheck2,
+    text: { en: 'Available condition information and key documents are reviewed before purchase.', zh: '购买前会核对可用车况信息与关键车辆文件。' },
   },
   {
-    title: { en: 'For Manufacturers', zh: '面向厂家' },
-    icon: Factory,
-    text: { en: 'Explore New Zealand market entry and local distribution support.', zh: '探索进入新西兰市场及本地分销支持。' },
+    title: { en: 'Itemised Cost Estimate', zh: '费用明细清楚可见' },
+    icon: ReceiptText,
+    text: { en: 'Vehicle, shipping, compliance and service allowances are explained before a final quote.', zh: '正式报价前，先说明车辆、运输、合规与服务费用预估。' },
+  },
+  {
+    title: { en: 'Local Support', zh: '新西兰本地支持' },
+    icon: ShieldCheck,
+    text: { en: 'Auckland-based support continues through compliance, handover and ownership questions.', zh: '奥克兰本地团队持续协助合规、交付和用车问题。' },
   },
 ];
 
@@ -268,27 +274,27 @@ export function Home() {
         <div className="section-shell">
           <div className="mb-10 max-w-3xl space-y-4">
             <div className="section-kicker">
-              <Users className="h-4 w-4" />
-              {text({ en: 'Partner With Us', zh: '合作机会' })}
+              <ShieldCheck className="h-4 w-4" />
+              {text({ en: 'Before You Commit', zh: '确认购买之前' })}
             </div>
-            <h2>{text({ en: 'For Customers, Dealers and Manufacturers', zh: '面向客户、车商和厂家' })}</h2>
+            <h2>{text({ en: 'Know what is checked before you move forward.', zh: '先把关键问题确认清楚，再决定下一步。' })}</h2>
             <p className="text-lg leading-8 text-foreground/70">
               {text({
-                en: 'A multi-market vehicle sourcing network built for New Zealand buyers and business partners.',
-                zh: '为新西兰买家和商业合作伙伴打造的多市场车源网络。',
+                en: 'An enquiry is not a purchase commitment. We explain availability, condition, expected costs and the New Zealand delivery path before you decide.',
+                zh: '提交咨询不等于承诺购买。我们会先说明库存、车况、预计费用和新西兰交付流程，再由你决定。',
               })}
             </p>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
-            {partnerAudiences.map((audience) => {
-              const Icon = audience.icon;
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {buyerAssurances.map((assurance) => {
+              const Icon = assurance.icon;
 
               return (
-                <article key={text(audience.title)} className="section-card p-6">
+                <article key={text(assurance.title)} className="section-card p-6">
                   <Icon className="mb-5 h-7 w-7 text-primary" />
-                  <h3>{text(audience.title)}</h3>
-                  <p className="mt-3 text-sm leading-7 text-foreground/68">{text(audience.text)}</p>
+                  <h3>{text(assurance.title)}</h3>
+                  <p className="mt-3 text-sm leading-7 text-foreground/68">{text(assurance.text)}</p>
                 </article>
               );
             })}

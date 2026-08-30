@@ -55,7 +55,6 @@ export function Hero() {
             aria-hidden="true"
             loading={index === 0 ? 'eager' : 'lazy'}
             decoding="async"
-            fetchPriority={index === 0 ? 'high' : 'auto'}
             className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1800ms] ${
               index === currentImage ? 'opacity-100' : 'opacity-0'
             }`}

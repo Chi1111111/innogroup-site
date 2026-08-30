@@ -184,7 +184,7 @@ function VehicleDetailModal({
       <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/85 p-3 backdrop-blur-md sm:p-6" role="dialog" aria-modal="true" onMouseDown={(event) => event.currentTarget === event.target && onClose()}>
         <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#f6f1e8] shadow-[0_35px_120px_rgba(0,0,0,.55)]">
           <header className="flex flex-none items-center justify-between border-b border-white/10 bg-[#141517] px-5 py-4 text-white sm:px-6">
-            <div><p className="!text-[10px] font-bold uppercase tracking-[0.16em] !text-primary">{arrived ? 'Customer arrival' : 'Weekly pick'}</p><p className="mt-1 !font-bold !text-white">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</p></div>
+            <div><p className="!text-[10px] font-bold uppercase tracking-[0.16em] !text-primary">{text({ en: arrived ? 'Customer arrival' : 'Weekly pick', zh: arrived ? '客户车辆到港' : '本周甄选' })}</p><p className="mt-1 !font-bold !text-white">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</p></div>
             <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 hover:bg-white hover:text-black" aria-label={text({ en: 'Close vehicle details', zh: '关闭车辆详情' })}><X className="h-5 w-5" /></button>
           </header>
           <div className="min-h-0 overflow-x-hidden overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
@@ -327,7 +327,7 @@ export function WeeklyReport() {
         <div className="section-shell relative grid gap-10 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-primary">INNO SELECT · WEEKLY</p>
-            <h1 className="mt-5 max-w-5xl !text-white">Market intelligence.<br /><span className="text-primary">Real vehicle progress.</span></h1>
+            <h1 className="mt-5 max-w-5xl !text-white">{text({ en: 'Market intelligence.', zh: '真实市场信息，' })}<br /><span className="text-primary">{text({ en: 'Real vehicle progress.', zh: '真实车辆进展。' })}</span></h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/65">
               {text({
                 en: 'The latest vehicles, landed-cost guidance, customer arrivals and practical buying notes from our Japan sourcing team.',
@@ -342,7 +342,7 @@ export function WeeklyReport() {
               <p className="mt-2 !text-sm !leading-6 !text-white/55">{text({ en: 'Market notes, weekly picks and real customer progress.', zh: '市场观察、本周推荐和真实客户车辆进展。' })}</p>
             </a>
             <Link to="/selected-vehicles" className="group block rounded-[24px] border border-primary/20 bg-white/[0.045] p-6 transition hover:border-primary/50 hover:bg-white/[0.075]">
-              <p className="!text-xs font-bold uppercase tracking-[0.18em] !text-primary">Explore the archive</p>
+              <p className="!text-xs font-bold uppercase tracking-[0.18em] !text-primary">{text({ en: 'Explore the archive', zh: '浏览历期甄选' })}</p>
               <p className="mt-3 !text-xl !font-semibold !leading-7 !text-white">{text({ en: 'Selected Vehicle Collection', zh: '甄选车型库' })}</p>
               <p className="mt-2 !text-sm !leading-6 !text-white/55">{text({ en: 'Browse every value opportunity and collector car we have featured.', zh: '浏览历期发布的价值机会车型与玩家珍藏车型。' })}</p>
               <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-primary">{text({ en: 'Browse collection', zh: '进入车型库' })}<ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
@@ -355,7 +355,7 @@ export function WeeklyReport() {
         <div className="section-shell">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="section-kicker"><Newspaper className="h-4 w-4" />Latest weekly</p>
+              <p className="section-kicker"><Newspaper className="h-4 w-4" />{text({ en: 'Latest weekly', zh: '最新周报' })}</p>
               <h2 className="mt-4">{text({ en: 'The latest from our Japan sourcing desk.', zh: '日本采购团队最新动态。' })}</h2>
             </div>
             <p className="text-sm text-foreground/50">{isLoadingCloudVehicles ? text({ en: 'Loading latest issues…', zh: '正在获取最新周报…' }) : `${reports.length} ${text({ en: 'issues', zh: '期周报' })}`}</p>
@@ -386,7 +386,7 @@ export function WeeklyReport() {
                   </div>
                 ) : null}
                 <div className="mb-6 flex items-end justify-between gap-4">
-                  <div><p className="section-kicker"><Sparkles className="h-4 w-4" />Weekly picks</p><h3 className="mt-4">{text({ en: 'Vehicles selected this week.', zh: '本周甄选车型。' })}</h3></div>
+                  <div><p className="section-kicker"><Sparkles className="h-4 w-4" />{text({ en: 'Weekly picks', zh: '本周甄选' })}</p><h3 className="mt-4">{text({ en: 'Vehicles selected this week.', zh: '本周甄选车型。' })}</h3></div>
                   <span className="text-sm text-foreground/45">{latestReport.vehicles.length} {text({ en: 'vehicles', zh: '台车辆' })}</span>
                 </div>
                 <div className="grid gap-6 lg:grid-cols-2">
@@ -459,7 +459,7 @@ export function WeeklyReport() {
         <div className="section-shell">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
-              <p className="section-kicker"><Search className="h-4 w-4" />Selected vehicle collection</p>
+              <p className="section-kicker"><Search className="h-4 w-4" />{text({ en: 'Selected vehicle collection', zh: '甄选车型库' })}</p>
               <h2 className="mt-5">{text({ en: 'Every selected vehicle, kept in one collection.', zh: '历期发布过的甄选车型，全部汇总在这里。' })}</h2>
               <p className="mt-4 max-w-3xl leading-7 text-foreground/60">
                 {text({
@@ -588,7 +588,7 @@ export function WeeklyReport() {
             ) : null}
 
             <section className="px-5 py-12 sm:px-10 sm:py-16">
-              <p className="section-kicker"><Sparkles className="h-4 w-4" />Weekly picks</p>
+              <p className="section-kicker"><Sparkles className="h-4 w-4" />{text({ en: 'Weekly picks', zh: '本周甄选' })}</p>
               <h2 className="mt-5">{text({ en: 'Vehicles worth your attention.', zh: '本周值得关注的车辆。' })}</h2>
               <div className="mt-9 grid gap-6 lg:grid-cols-2">
                 {selectedReport.vehicles.map((vehicle, index) => (
@@ -599,7 +599,7 @@ export function WeeklyReport() {
 
             <section className="bg-[#111214] px-5 py-12 text-white sm:px-10 sm:py-16">
               <div className="grid gap-9 lg:grid-cols-[0.7fr_1.3fr]">
-                <div><p className="section-kicker"><Newspaper className="h-4 w-4" />This week at Inno</p><h2 className="mt-5 !text-white">{text({ en: 'Real work, clearly updated.', zh: '本周真实工作进展。' })}</h2></div>
+                <div><p className="section-kicker"><Newspaper className="h-4 w-4" />{text({ en: 'This week at Inno', zh: 'Inno 本周进展' })}</p><h2 className="mt-5 !text-white">{text({ en: 'Real work, clearly updated.', zh: '本周真实工作进展。' })}</h2></div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {(language === 'zh' ? selectedReport.zhWeeklyUpdates : selectedReport.weeklyUpdates)?.map((note, index) => <article key={note} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.05] p-5"><span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-primary text-xs font-bold text-black">{String(index + 1).padStart(2, '0')}</span><p className="!text-sm !leading-7 !text-white/68">{note}</p></article>)}
                 </div>
@@ -608,7 +608,7 @@ export function WeeklyReport() {
 
             <section className="px-5 py-12 sm:px-10 sm:py-16">
               <div className="grid gap-9 lg:grid-cols-[0.7fr_1.3fr]">
-                <div><p className="section-kicker"><TrendingUp className="h-4 w-4" />Market watch</p><h2 className="mt-5">{text({ en: 'What matters this week.', zh: '本周真正重要的市场变化。' })}</h2><p className="mt-4 flex items-center gap-2 !text-sm"><Clock3 className="h-4 w-4" />{selectedReport.dataUpdatedAt}</p></div>
+                <div><p className="section-kicker"><TrendingUp className="h-4 w-4" />{text({ en: 'Market watch', zh: '市场观察' })}</p><h2 className="mt-5">{text({ en: 'What matters this week.', zh: '本周真正重要的市场变化。' })}</h2><p className="mt-4 flex items-center gap-2 !text-sm"><Clock3 className="h-4 w-4" />{selectedReport.dataUpdatedAt}</p></div>
                 <div className="space-y-3">
                   {(language === 'zh' ? selectedReport.zhMarketNotes : selectedReport.marketNotes).map((note, index) => <article key={`${index}-${note}`} className="flex gap-4 rounded-2xl border border-black/8 bg-white p-5"><CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-primary" /><p className="!font-medium !text-foreground">{note}</p></article>)}
                 </div>
@@ -617,7 +617,7 @@ export function WeeklyReport() {
 
             <section className="bg-[#0d0e10] px-5 py-10 text-white sm:px-10">
               <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                <div><p className="!text-xs font-bold uppercase tracking-[0.18em] !text-primary">What’s next</p><p className="mt-2 !text-lg !font-semibold !text-white">{text({ en: selectedReport.nextWeekTeaser || 'New vehicle opportunities every week.', zh: selectedReport.zhNextWeekTeaser || '每周更新新的车辆机会。' })}</p></div>
+                <div><p className="!text-xs font-bold uppercase tracking-[0.18em] !text-primary">{text({ en: 'What’s next', zh: '下期预告' })}</p><p className="mt-2 !text-lg !font-semibold !text-white">{text({ en: selectedReport.nextWeekTeaser || 'New vehicle opportunities every week.', zh: selectedReport.zhNextWeekTeaser || '每周更新新的车辆机会。' })}</p></div>
                 <Link to="/contact?source=inno-auto-weekly#quote" className="button-primary">{text({ en: 'Tell Us What You Want', zh: '告诉我们你想找什么车' })}<ArrowRight className="h-5 w-5" /></Link>
               </div>
             </section>

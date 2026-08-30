@@ -114,8 +114,18 @@ export function vehicleName(vehicle: JapanMarketVehicleSummary) {
   return `${vehicle.make} ${vehicle.model}`;
 }
 
+export function vehicleVariant(vehicle: JapanMarketVehicleSummary) {
+  const variant = vehicle.variant.trim();
+  if (!variant) return '';
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const model = normalize(vehicle.model);
+  const normalizedVariant = normalize(variant);
+  return model === normalizedVariant || model.endsWith(` ${normalizedVariant}`) ? '' : variant;
+}
+
 export function vehicleFullName(vehicle: JapanMarketVehicleSummary) {
-  return `${vehicle.year} ${vehicleName(vehicle)}${vehicle.variant ? ` ${vehicle.variant}` : ''}`;
+  const variant = vehicleVariant(vehicle);
+  return `${vehicle.year} ${vehicleName(vehicle)}${variant ? ` ${variant}` : ''}`;
 }
 
 export function japanMarketVehiclePath(vehicle: JapanMarketVehicleSummary) {
@@ -131,6 +141,57 @@ export function formatNzd(value: number | null | undefined, language: 'en' | 'zh
 export function formatMileage(value: number, language: 'en' | 'zh' = 'en') {
   if (value < 1_000) return language === 'zh' ? '1,000 公里以下' : 'Under 1,000 km';
   return `${new Intl.NumberFormat('en-NZ').format(value)} km`;
+}
+
+export function formatVehicleUpdatedAt(value: string, language: 'en' | 'zh' = 'en') {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return language === 'zh' ? '更新时间待确认' : 'Update time pending';
+  const formatted = new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en-NZ', {
+    day: 'numeric',
+    month: language === 'zh' ? 'long' : 'short',
+    year: 'numeric',
+  }).format(date);
+  return language === 'zh' ? `数据更新：${formatted}` : `Data updated ${formatted}`;
+}
+
+export function formatFuelType(value: JapanMarketFuelType, language: 'en' | 'zh' = 'en') {
+  if (language === 'en') return value;
+  return ({ Petrol: '汽油', Hybrid: '混合动力', PHEV: '插电混动', EV: '纯电', Diesel: '柴油' } as const)[value];
+}
+
+export function formatTransmission(value: string, language: 'en' | 'zh' = 'en') {
+  if (language === 'en') return value;
+  const translations: Record<string, string> = {
+    Automatic: '自动挡',
+    Manual: '手动挡',
+    CVT: 'CVT 无级变速',
+    'Dual-clutch automatic': '双离合自动挡',
+    'Not listed': '暂无信息',
+  };
+  return translations[value] ?? value;
+}
+
+export function formatBodyType(value: JapanMarketBodyType, language: 'en' | 'zh' = 'en') {
+  if (language === 'en') return value;
+  return ({
+    Sedan: '轿车',
+    SUV: 'SUV',
+    Hatchback: '掀背车',
+    Wagon: '旅行车',
+    Coupe: '双门轿跑',
+    'Van / MPV': '厢式车 / MPV',
+    Sports: '跑车',
+  } as const)[value];
+}
+
+export function formatDriveType(value: string, language: 'en' | 'zh' = 'en') {
+  if (language === 'en') return value;
+  const translations: Record<string, string> = {
+    '4WD / AWD': '四驱 / 全轮驱动',
+    '2WD': '两驱',
+    'Not listed': '暂无信息',
+  };
+  return translations[value] ?? value;
 }
 
 export function slugifyVehicleValue(value: string) {

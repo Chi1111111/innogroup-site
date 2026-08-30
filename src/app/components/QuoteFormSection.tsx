@@ -39,6 +39,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
 
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactError, setContactError] = useState('');
   const imagePreviews = useMemo(() => uploadedImages.map((image) => URL.createObjectURL(image)), [uploadedImages]);
 
   useEffect(() => () => imagePreviews.forEach((preview) => URL.revokeObjectURL(preview)), [imagePreviews]);
@@ -78,11 +79,18 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
       budget: current.budget || price,
       message: current.message || message || fallbackMessage,
     }));
-    setBriefStep(2);
+    setBriefStep(enquiryType === 'finance' ? 3 : 2);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.phone.trim() && !formData.email.trim()) {
+      setContactError(text({ en: 'Add a phone number or email address so we can reply.', zh: '请填写电话号码或邮箱，方便我们回复。' }));
+      setBriefStep(3);
+      return;
+    }
+
+    setContactError('');
     setIsSubmitting(true);
 
     try {
@@ -139,7 +147,11 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
         from_email: formData.email,
         subject: `[Website ${formData.inquiryType === 'buy' ? 'Buy' : 'Sell'} Enquiry] ${formData.name}`,
         inquiryType: formData.inquiryType === 'buy' ? 'Buy a Car' : 'Sell My Car',
-        sourceType: formData.sourceType === 'japan' ? 'Import from Japan' : 'Buy Local Stock (NZ)',
+        sourceType: formData.sourceType === 'japan'
+          ? 'Import from Japan'
+          : formData.sourceType === 'china'
+            ? 'Cars from China'
+            : 'Buy Local Stock (NZ)',
         brand: formData.brand || 'Not specified',
         model: formData.model || 'Not specified',
         year: formData.year || 'Not specified',
@@ -159,7 +171,10 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
         EMAILJS_CONFIG.publicKey
       );
 
-      alert("Thank you. Your form has been sent to Inno Group and we'll be in touch within 24 hours.");
+      alert(text({
+        en: "Thank you. Your enquiry has been sent to Inno Group. We'll usually reply within one business day.",
+        zh: '谢谢，您的咨询已发送给 Inno Group。我们通常会在一个工作日内回复。',
+      }));
 
       setFormData({
         inquiryType: 'buy',
@@ -174,9 +189,13 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
         message: '',
       });
       setUploadedImages([]);
+      setBriefStep(focusedImport ? 2 : 1);
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Sorry, there was an error sending your inquiry. Please try again, or call/WhatsApp us.');
+      alert(text({
+        en: 'We could not send the enquiry. Please try again, or contact us by phone or WhatsApp.',
+        zh: '咨询暂时无法发送，请重试，或通过电话、WhatsApp 联系我们。',
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -186,6 +205,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    if ((name === 'name' || name === 'phone' || name === 'email') && contactError) setContactError('');
     setFormData({
       ...formData,
       [name]: value,
@@ -230,10 +250,10 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
         : 'buy-local';
 
   const briefOptions = [
-    { id: 'buy-local', label: 'Buy a Car', description: 'Browse our available vehicles' },
-    { id: 'import-japan', label: 'Import from Japan', description: 'Find the exact car you want' },
-    { id: 'import-china', label: 'Cars from China', description: 'Explore selected new models' },
-    { id: 'sell', label: 'Sell My Car', description: 'Get a quick valuation' },
+    { id: 'buy-local', label: text({ en: 'Buy a Car', zh: '购买现车' }), description: text({ en: 'Browse available vehicles and local options', zh: '查看现有车辆与新西兰本地选择' }) },
+    { id: 'import-japan', label: text({ en: 'Import from Japan', zh: '从日本进口' }), description: text({ en: 'Ask us to find the exact car you want', zh: '请我们寻找你指定的车型' }) },
+    { id: 'import-china', label: text({ en: 'Cars from China', zh: '中国车源' }), description: text({ en: 'Explore selected new models', zh: '了解精选新车型' }) },
+    { id: 'sell', label: text({ en: 'Sell My Car', zh: '出售我的车辆' }), description: text({ en: 'Request an initial valuation', zh: '提交车辆信息，获取初步估价' }) },
   ] as const;
 
   const displayedStep = focusedImport ? briefStep - 1 : briefStep;
@@ -245,25 +265,27 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
         <div className="relative max-w-xl pt-2">
           <div className="absolute -left-7 top-3 hidden h-32 w-px bg-[#C6A54A]/60 lg:block" />
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#C6A54A]">
-            Personalised Vehicle Sourcing
+            {text({ en: 'Personalised Vehicle Sourcing', zh: '个性化车辆采购' })}
           </p>
           <h2 className="mt-7 max-w-xl text-4xl leading-[1.05] text-[#F3F0E9] sm:text-5xl xl:text-[3.7rem]">
-            Tell Us What You Want.
+            {text({ en: 'Tell Us What You Want.', zh: '告诉我们你想要什么车。' })}
             <span className="block">
-              We’ll Find <span className="text-[#C6A54A]">the Right One.</span>
+              {text({ en: 'We’ll Find ', zh: '我们帮你找到' })}<span className="text-[#C6A54A]">{text({ en: 'the Right One.', zh: '合适的选择。' })}</span>
             </span>
           </h2>
           <p className="mt-7 max-w-lg text-base leading-8 text-[#F3F0E9]/70 sm:text-lg">
-            Share the model, specification and budget you have in mind. We’ll search our Japan
-            network and selected New Zealand stock, then return with options chosen for you.
+            {text({
+              en: 'Share the model, specification and budget you have in mind. We’ll search our Japan network and selected New Zealand stock, then return with options chosen for you.',
+              zh: '告诉我们车型、配置和预算。我们会从日本采购网络与精选新西兰车源中寻找，并回复适合你的选择。',
+            })}
           </p>
 
           <div className="mt-14 flex flex-wrap items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-[#F3F0E9]/58">
-            <span>Japan Network</span>
+            <span>{text({ en: 'Japan Network', zh: '日本车源网络' })}</span>
             <span className="h-px w-7 bg-[#C6A54A]/55" />
-            <span>Selected NZ Stock</span>
+            <span>{text({ en: 'Selected NZ Stock', zh: '精选新西兰现车' })}</span>
             <span className="h-px w-7 bg-[#C6A54A]/55" />
-            <span>Personal Response</span>
+            <span>{text({ en: 'Personal Response', zh: '专人回复' })}</span>
           </div>
         </div>
 
@@ -281,7 +303,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                       onClick={() => setBriefStep(briefStep - 1)}
                       className="text-xs font-bold uppercase tracking-[0.16em] text-[#151C26]/45 hover:text-[#151C26]"
                     >
-                      Back
+                      {text({ en: 'Back', zh: '返回' })}
                     </button>
                   )}
                 </div>
@@ -290,14 +312,14 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                   <div>
                     <div className="space-y-3">
                       <h3 className="font-display text-[2.35rem] font-bold leading-tight text-[#151C26] sm:text-[2.65rem]">
-                        How can we help?
+                        {text({ en: 'How can we help?', zh: '你希望我们怎样协助？' })}
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <p className="text-base font-medium text-[#151C26]/62">
-                          Choose an option to get started.
+                          {text({ en: 'Choose an option to get started.', zh: '选择最符合你需求的入口。' })}
                         </p>
                         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#151C26]/38">
-                          Takes less than 2 minutes
+                          {text({ en: 'Takes less than 2 minutes', zh: '约 2 分钟完成' })}
                         </p>
                       </div>
                     </div>
@@ -336,19 +358,21 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                 {briefStep === 2 && (
                   <div>
                     <h3 className="font-display text-3xl font-bold text-[#151C26] sm:text-4xl">
-                      Tell us about the car.
+                      {text({ en: 'Tell us about the car.', zh: '告诉我们车辆需求。' })}
                     </h3>
 
                     {formData.inquiryType === 'sell' && (
                       <p className="mt-4 max-w-2xl text-sm leading-6 text-[#151C26]/60">
-                        We buy quality vehicles for local stock and export channels. Share the key
-                        details and optional photos for a more accurate valuation.
+                        {text({
+                          en: 'We buy quality vehicles for local stock and export channels. Share the key details and optional photos for a more accurate valuation.',
+                          zh: '我们为本地库存与出口渠道收购优质车辆。提供主要信息和可选照片，有助于获得更准确的初步估价。',
+                        })}
                       </p>
                     )}
 
                     <div className="mt-8 grid gap-5 md:grid-cols-2">
                       <div className="space-y-2">
-                        <label className={fieldLabelClass}>Make</label>
+                        <label className={fieldLabelClass}>{text({ en: 'Make', zh: '品牌' })}</label>
                         <select
                           name="brand"
                           value={formData.brand}
@@ -356,7 +380,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                           required={formData.inquiryType === 'sell'}
                           className={fieldClass}
                         >
-                          <option value="">Select make</option>
+                          <option value="">{text({ en: 'Select make', zh: '选择品牌' })}</option>
                           {carBrands.map((brand) => (
                             <option key={brand} value={brand}>
                               {brand}
@@ -366,7 +390,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                       </div>
 
                       <div className="space-y-2">
-                        <label className={fieldLabelClass}>Model</label>
+                        <label className={fieldLabelClass}>{text({ en: 'Model', zh: '车型' })}</label>
                         {formData.brand && selectedModels.length > 0 ? (
                           <select
                             name="model"
@@ -375,7 +399,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                             required={formData.inquiryType === 'sell' && formData.brand !== ''}
                             className={fieldClass}
                           >
-                            <option value="">Select model</option>
+                            <option value="">{text({ en: 'Select model', zh: '选择车型' })}</option>
                             {selectedModels.map((model) => (
                               <option key={model} value={model}>
                                 {model}
@@ -390,13 +414,13 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                             onChange={handleChange}
                             required={formData.inquiryType === 'sell' && formData.brand !== ''}
                             className={fieldClass}
-                            placeholder={formData.brand ? 'Enter model' : 'Model or trim'}
+                            placeholder={formData.brand ? text({ en: 'Enter model', zh: '输入车型' }) : text({ en: 'Model or trim', zh: '车型或版本' })}
                           />
                         )}
                       </div>
 
                       <div className="space-y-2">
-                        <label className={fieldLabelClass}>Preferred Year</label>
+                        <label className={fieldLabelClass}>{text({ en: 'Preferred Year', zh: '期望年份' })}</label>
                         <input
                           type="text"
                           name="year"
@@ -404,13 +428,13 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                           onChange={handleChange}
                           required={formData.inquiryType === 'sell'}
                           className={fieldClass}
-                          placeholder="e.g. 2018 - 2023"
+                          placeholder={text({ en: 'e.g. 2018–2023', zh: '例如：2018–2023' })}
                         />
                       </div>
 
                       <div className="space-y-2">
                         <label className={fieldLabelClass}>
-                          {formData.inquiryType === 'buy' ? 'Approximate Budget' : 'Expected Price'}
+                          {formData.inquiryType === 'buy' ? text({ en: 'Approximate Budget', zh: '大概预算' }) : text({ en: 'Expected Price', zh: '期望售价' })}
                         </label>
                         <input
                           type="text"
@@ -418,12 +442,12 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                           value={formData.budget}
                           onChange={handleChange}
                           className={fieldClass}
-                          placeholder={formData.inquiryType === 'buy' ? '$40,000 - $50,000' : '$35,000'}
+                          placeholder={formData.inquiryType === 'buy' ? '$40,000–$50,000' : '$35,000'}
                         />
                       </div>
 
                       <div className="space-y-2 md:col-span-2">
-                        <label className={fieldLabelClass}>Additional Preferences</label>
+                        <label className={fieldLabelClass}>{text({ en: 'Additional Preferences', zh: '其他要求' })}</label>
                         <textarea
                           name="message"
                           value={formData.message}
@@ -432,8 +456,8 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                           className={fieldClass}
                           placeholder={
                             formData.inquiryType === 'buy'
-                              ? 'Colour, transmission, features, mileage, timing...'
-                              : 'Mileage, condition, service history, modifications...'
+                              ? text({ en: 'Colour, transmission, features, mileage, timing…', zh: '颜色、变速箱、配置、公里数、时间要求等…' })
+                              : text({ en: 'Mileage, condition, service history, modifications…', zh: '公里数、车况、保养记录、改装情况等…' })
                           }
                         />
                       </div>
@@ -441,7 +465,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
 
                     {formData.inquiryType === 'sell' && (
                       <div className="mt-6 space-y-3">
-                        <label className={fieldLabelClass}>Vehicle Photos (Optional, Max 8)</label>
+                        <label className={fieldLabelClass}>{text({ en: 'Vehicle Photos (Optional, Max 8)', zh: '车辆照片（可选，最多 8 张）' })}</label>
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -455,7 +479,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                           className="flex cursor-pointer items-center justify-center gap-3 rounded-lg border border-dashed border-[#151C26]/18 px-4 py-5 text-sm font-semibold text-[#151C26]/65 transition-colors hover:border-[#C6A54A] hover:text-[#151C26]"
                         >
                           <Upload className="h-5 w-5" />
-                          Upload clear photos
+                          {text({ en: 'Upload clear photos', zh: '上传清晰照片' })}
                         </label>
 
                         {uploadedImages.length > 0 && (
@@ -489,7 +513,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                       onClick={() => setBriefStep(3)}
                       className="group mt-8 flex w-full items-center justify-between rounded-lg border border-[#151C26] px-5 py-4 text-base font-bold text-[#151C26] transition-colors hover:border-[#C6A54A]"
                     >
-                      Continue
+                      {text({ en: 'Continue', zh: '继续' })}
                       <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                     </button>
                   </div>
@@ -498,12 +522,16 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                 {briefStep === 3 && (
                   <div>
                     <h3 className="font-display text-3xl font-bold text-[#151C26] sm:text-4xl">
-                      Where should we send your options?
+                      {text({ en: 'Where should we send your options?', zh: '我们应该怎样联系你？' })}
                     </h3>
+
+                    <p className="mt-3 text-sm leading-6 text-[#151C26]/58">
+                      {text({ en: 'Add either a phone number or an email address. You do not need to provide both.', zh: '电话号码或邮箱填写其中一项即可，无需同时提供。' })}
+                    </p>
 
                     <div className="mt-8 grid gap-5 md:grid-cols-3">
                       <div className="space-y-2">
-                        <label className={fieldLabelClass}>Full Name</label>
+                        <label className={fieldLabelClass}>{text({ en: 'Full Name', zh: '姓名' })}</label>
                         <input
                           type="text"
                           name="name"
@@ -511,43 +539,53 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
                           onChange={handleChange}
                           required
                           className={fieldClass}
-                          placeholder="Your name"
+                          placeholder={text({ en: 'Your name', zh: '你的姓名' })}
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <label className={fieldLabelClass}>Phone</label>
+                        <label className={fieldLabelClass}>{text({ en: 'Phone', zh: '电话' })}</label>
                         <input
                           type="tel"
                           name="phone"
                           value={formData.phone}
                           onChange={handleChange}
-                          required
                           className={fieldClass}
                           placeholder="+64 21..."
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <label className={fieldLabelClass}>Email</label>
+                        <label className={fieldLabelClass}>{text({ en: 'Email', zh: '邮箱' })}</label>
                         <input
                           type="email"
                           name="email"
                           value={formData.email}
                           onChange={handleChange}
-                          required
                           className={fieldClass}
                           placeholder="your@email.com"
                         />
                       </div>
                     </div>
 
+                    {contactError ? (
+                      <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                        {contactError}
+                      </p>
+                    ) : null}
+
                     <button
                       type="submit"
                       disabled={isSubmitting}
                       className="group mt-9 flex w-full items-center justify-between rounded-lg bg-[#151C26] px-5 py-4 text-base font-bold text-[#F7F4EE] transition-colors hover:bg-[#1d2735] disabled:cursor-not-allowed disabled:opacity-55"
                     >
-                      <span>{isSubmitting ? 'Sending...' : formData.inquiryType === 'sell' ? 'Get My Valuation' : 'Request My Options'}</span>
+                      <span>
+                        {isSubmitting
+                          ? text({ en: 'Sending…', zh: '正在发送…' })
+                          : formData.inquiryType === 'sell'
+                            ? text({ en: 'Request My Valuation', zh: '提交估价需求' })
+                            : text({ en: 'Request My Options', zh: '提交车辆需求' })}
+                      </span>
                       <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                     </button>
 

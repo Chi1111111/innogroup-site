@@ -5,7 +5,7 @@ import { useLanguage } from './SiteTranslator';
 
 export function StickyCTA() {
   const [isVisible, setIsVisible] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const location = useLocation();
   const { text } = useLanguage();
   const showCalculatorCta = location.pathname === '/' || location.pathname === '/vehicles/find-my-car';
@@ -31,17 +31,14 @@ export function StickyCTA() {
   return (
     <>
       <div
-        className="fixed bottom-3 left-3 right-3 z-50 animate-fadeIn rounded-[22px] border border-white/70 bg-white/92 p-2.5 shadow-[0_20px_50px_rgba(17,17,17,0.18)] backdrop-blur-xl md:hidden"
-        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        className="fixed bottom-2 left-3 right-3 z-50 animate-fadeIn rounded-[18px] border border-white/70 bg-white/92 p-2 shadow-[0_16px_40px_rgba(17,17,17,0.16)] backdrop-blur-xl md:hidden"
+        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
       >
-        <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground/42">
-          {text({ en: 'Quick Actions', zh: '快捷操作' })}
-        </p>
-        <div className="flex flex-col gap-2.5 sm:flex-row">
+        <div className="flex gap-2">
           {showCalculatorCta ? (
             <Link
               to={calculatorHref}
-              className="flex flex-1 items-center justify-center gap-2 rounded-[18px] border border-black/8 bg-black/[0.04] px-4 py-3 text-center text-sm font-semibold text-foreground transition-all active:scale-95"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-black/8 bg-black/[0.04] px-3 py-2.5 text-center text-sm font-semibold text-foreground transition-all active:scale-95"
             >
               <Calculator className="w-5 h-5" />
               <span>{text({ en: 'Landing Price', zh: '落地价' })}</span>
@@ -51,7 +48,7 @@ export function StickyCTA() {
             href="https://wa.me/64272858065"
             target="_blank"
             rel="noopener noreferrer"
-            className={`${showCalculatorCta ? 'flex-1' : 'w-full'} flex items-center justify-center gap-2 rounded-[18px] bg-[#151515] px-4 py-3 text-center text-sm font-semibold text-white transition-all active:scale-95`}
+            className={`${showCalculatorCta ? 'flex-1' : 'w-full'} flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#151515] px-3 py-2.5 text-center text-sm font-semibold text-white transition-all active:scale-95`}
           >
             <MessageCircle className="w-5 h-5" />
             <span>WhatsApp</span>
@@ -83,7 +80,9 @@ export function StickyCTA() {
             </a>
 
             <button
+              type="button"
               onClick={() => setIsExpanded(false)}
+              aria-label={text({ en: 'Minimize quick actions', zh: '收起快捷操作' })}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-800 px-4 py-2 text-sm text-white transition-all hover:bg-gray-700"
             >
               <X className="w-4 h-4" />
@@ -92,7 +91,9 @@ export function StickyCTA() {
           </>
         ) : (
           <button
+            type="button"
             onClick={() => setIsExpanded(true)}
+            aria-label={text({ en: 'Open quick actions', zh: '打开快捷操作' })}
             className="rounded-full bg-primary p-4 text-white shadow-[0_20px_40px_rgba(199,162,74,0.3)] transition-all hover:scale-105 hover:bg-primary/90"
           >
             <MessageCircle className="w-6 h-6" />
