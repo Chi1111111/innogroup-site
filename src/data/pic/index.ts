@@ -8,6 +8,7 @@ import heroToyotaSupraImage from './hero-toyota-supra.jpg';
 import japanLuxurySedanImage from './japan-luxury-sedan.jpg';
 import logoImage from './logo-transparent.png';
 import logoMarkImage from './logo-mark.png';
+import partnerIaucImage from './partner-iauc.png';
 import partnerJhMotorsImage from './partner-jh-motors.png';
 import partnerNichiboImage from './partner-nichibo.png';
 import partnerPekemaImage from './partner-pekema.png';
@@ -36,6 +37,7 @@ export {
   japanLuxurySedanImage,
   logoImage,
   logoMarkImage,
+  partnerIaucImage,
   partnerJhMotorsImage,
   partnerNichiboImage,
   partnerPekemaImage,

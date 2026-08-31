@@ -3,6 +3,7 @@ import { ArrowRight, MapPin, MessageSquareText, Sparkles } from 'lucide-react';
 import { Link } from 'react-router';
 import {
   heroGalleryImages,
+  partnerIaucImage,
   partnerNichiboImage,
   partnerPekemaImage,
   partnerUssImage,
@@ -13,6 +14,7 @@ const supplierBadges = [
   { name: 'PEKEMA', image: partnerPekemaImage },
   { name: 'USS Japan', image: partnerUssImage },
   { name: 'Nichibo', image: partnerNichiboImage },
+  { name: 'i-AUC', image: partnerIaucImage },
 ];
 
 const startingPoints = [
@@ -140,7 +142,13 @@ export function Hero() {
             </p>
             <div className="mt-3 flex items-center gap-2">
               {supplierBadges.map((supplier) => (
-                <span key={supplier.name} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white p-1.5" title={supplier.name}>
+                <span
+                  key={supplier.name}
+                  className={`flex h-9 items-center justify-center rounded-full border border-white/15 bg-white ${
+                    supplier.name === 'i-AUC' ? 'w-20 px-2.5 py-1.5' : 'w-9 p-1.5'
+                  }`}
+                  title={supplier.name}
+                >
                   <img src={supplier.image} alt={supplier.name} loading="lazy" decoding="async" className="h-full w-full rounded-full object-contain" />
                 </span>
               ))}

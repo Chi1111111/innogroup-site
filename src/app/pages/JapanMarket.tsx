@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowRight, Info, SlidersHorizontal, X } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { JapanMarketVehicleCard } from '../components/JapanMarketVehicleCard';
 import { useLanguage } from '../components/SiteTranslator';
@@ -17,6 +17,34 @@ const BODY_TYPES: JapanMarketBodyType[] = ['Sedan', 'SUV', 'Hatchback', 'Wagon',
 const GRADES = ['5', '4.5', '4', '3.5', 'Unrated'] as const;
 const YEARS = Array.from({ length: 37 }, (_, index) => new Date().getFullYear() - index);
 const PAGE_SIZE = 24;
+
+const AUCTION_GRADE_GUIDE = [
+  {
+    grade: '5',
+    condition: { en: 'Excellent / near-new', zh: '优秀 / 接近新车' },
+    meaning: { en: 'Usually very low mileage with minimal visible wear.', zh: '通常公里数较低，明显使用痕迹很少。' },
+  },
+  {
+    grade: '4.5',
+    condition: { en: 'Very good', zh: '车况很好' },
+    meaning: { en: 'Generally well kept, with only light signs of use.', zh: '通常保养良好，可能有轻微使用痕迹。' },
+  },
+  {
+    grade: '4',
+    condition: { en: 'Good used condition', zh: '良好二手车况' },
+    meaning: { en: 'May have minor marks or repair notes that should be reviewed.', zh: '可能有轻微划痕或维修备注，需要进一步核对。' },
+  },
+  {
+    grade: '3.5',
+    condition: { en: 'Average used condition', zh: '一般二手车况' },
+    meaning: { en: 'Wear or repair history is more likely; condition needs careful review.', zh: '更可能存在磨损或维修记录，需要仔细确认车况。' },
+  },
+  {
+    grade: '—',
+    condition: { en: 'Unrated', zh: '未评分' },
+    meaning: { en: 'No grade is available, so the condition cannot be inferred from a score.', zh: '没有可用评分，不能仅凭等级判断车辆状况。' },
+  },
+] as const;
 
 const PRICE_BUCKETS: Record<string, [number, number]> = {
   under20: [0, 20_000],
@@ -213,6 +241,49 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
           <div className="mt-5 grid gap-7 lg:grid-cols-[1fr_0.7fr] lg:items-end">
             <div><h1 className="max-w-4xl text-white">{text({ en: 'Find your next car from Japan.', zh: '从日本找到你的下一辆车。' })}</h1><p className="mt-5 max-w-3xl text-lg leading-8 text-white/65">{text({ en: 'Browse vehicles from our Japan sourcing network. Pricing shown is an estimated landed cost in New Zealand and may change with exchange rates, shipping, compliance and vehicle condition.', zh: '浏览 Inno 日本采购网络中的车辆。页面价格为新西兰预计落地价，可能因汇率、运输、合规和实际车况而调整。' })}</p></div>
             <div className="lg:text-right"><p className="text-3xl font-bold text-white">{payload ? filtered.length.toLocaleString('en-NZ') : '—'}</p><p className="mt-1 text-sm font-bold uppercase tracking-[0.16em] text-primary">{text({ en: 'Vehicles Available', zh: '可浏览车辆' })}</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="auction-grade-guide" className="border-b border-black/8 bg-white/55 px-4 py-12 sm:py-16">
+        <div className="section-shell">
+          <div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
+            <div>
+              <p className="section-kicker"><Info className="h-4 w-4" />{text({ en: 'Auction Grade Guide', zh: '拍卖评分说明' })}</p>
+              <h2 className="mt-5">{text({ en: 'What does each grade mean?', zh: '不同评分大概代表什么？' })}</h2>
+            </div>
+            <p className="max-w-2xl text-sm leading-7 text-foreground/62 lg:justify-self-end">
+              {text({
+                en: 'This is a general buyer guide. Standards can vary between auction houses, so the grade should always be reviewed together with the available condition notes and inspection information.',
+                zh: '以下内容是面向买家的通用参考。不同拍卖场的标准可能略有差异，评分仍需结合可用的车况备注和检查信息一起判断。',
+              })}
+            </p>
+          </div>
+
+          <div className="mt-8 overflow-hidden rounded-2xl border border-black/10 bg-white">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] border-collapse text-left">
+                <caption className="sr-only">{text({ en: 'General Japan auction grade guide', zh: '日本拍卖评分通用说明表' })}</caption>
+                <thead className="bg-[#111214] text-white">
+                  <tr>
+                    <th scope="col" className="w-28 px-5 py-4 text-xs font-bold uppercase tracking-[0.16em] text-primary">{text({ en: 'Grade', zh: '评分' })}</th>
+                    <th scope="col" className="w-52 px-5 py-4 text-xs font-bold uppercase tracking-[0.16em] text-white/70">{text({ en: 'Typical condition', zh: '通常车况' })}</th>
+                    <th scope="col" className="px-5 py-4 text-xs font-bold uppercase tracking-[0.16em] text-white/70">{text({ en: 'Buyer interpretation', zh: '买家参考' })}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {AUCTION_GRADE_GUIDE.map((item) => (
+                    <tr key={item.grade} className="border-t border-black/8 first:border-t-0">
+                      <th scope="row" className="px-5 py-4">
+                        <span className="inline-flex min-w-12 items-center justify-center rounded-full bg-primary/12 px-3 py-1.5 text-sm font-extrabold text-[#7d6019]">{item.grade}</span>
+                      </th>
+                      <td className="px-5 py-4 text-sm font-bold text-foreground">{text(item.condition)}</td>
+                      <td className="px-5 py-4 text-sm leading-6 text-foreground/62">{text(item.meaning)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>

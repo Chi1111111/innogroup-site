@@ -56,7 +56,7 @@ export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: 
         <h3 className="mt-4 line-clamp-2 text-xl leading-snug">{vehicleName(vehicle)}</h3>
         {variant ? <p className="mt-1 line-clamp-1 text-sm text-foreground/48">{variant}</p> : null}
         <div className="mt-5 space-y-2 border-t border-black/7 pt-4 text-sm text-foreground/65">
-          <p className="flex items-center justify-between"><span>{formatMileage(vehicle.mileage, language)}</span><span>{vehicle.auctionGrade ? `${text({ en: 'Grade', zh: '评分' })} ${vehicle.auctionGrade}` : text({ en: 'Unrated', zh: '暂无评分' })}</span></p>
+          <p className="flex items-center justify-between gap-3"><span>{formatMileage(vehicle.mileage, language)}</span><span className="text-xs font-semibold text-foreground/52">{vehicle.auctionGrade ? `${text({ en: 'Grade', zh: '评分' })} ${vehicle.auctionGrade}` : text({ en: 'Unrated', zh: '暂无评分' })}</span></p>
           <p>{formatFuelType(vehicle.fuelType, language)} · {formatTransmission(vehicle.transmission, language)}</p>
           <p className="text-xs text-foreground/45">{formatVehicleUpdatedAt(vehicle.updatedAt, language)} · {text({ en: 'Availability to confirm', zh: '库存需再次确认' })}</p>
         </div>
