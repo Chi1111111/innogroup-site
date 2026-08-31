@@ -42,6 +42,64 @@ function vehicleStatus(vehicle: JapanSpecialOrderVehicle, index: number, zh: boo
   return index === 0 ? (zh ? '本周推荐' : 'WEEKLY PICK') : (zh ? '日本可选车源' : 'AVAILABLE IN JAPAN');
 }
 
+function hasArrivalContent(report: JapanWeeklyReportState) {
+  return Boolean(
+    report.arrivedVehicles?.length ||
+    report.arrivals?.length ||
+    report.zhArrivals?.length ||
+    report.arrivalImages?.length
+  );
+}
+
+function ArrivalReportDetails({ report }: { report: JapanWeeklyReportState }) {
+  const { text, language } = useLanguage();
+  const preferredNotes = language === 'zh' ? report.zhArrivals : report.arrivals;
+  const fallbackNotes = language === 'zh' ? report.arrivals : report.zhArrivals;
+  const notes = preferredNotes?.length ? preferredNotes : fallbackNotes ?? [];
+  const images = Array.from(new Set(report.arrivalImages ?? []));
+
+  if (notes.length === 0 && images.length === 0) return null;
+
+  return (
+    <div className="mt-6 grid gap-5 lg:grid-cols-2">
+      {notes.length > 0 ? (
+        <div className="rounded-2xl border border-sky-200 bg-white/80 p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-700">
+            {text({ en: 'Arrival progress', zh: '到港进度' })}
+          </p>
+          <div className="mt-4 space-y-3">
+            {notes.map((note, index) => (
+              <div key={`${index}-${note}`} className="flex gap-3 text-sm leading-7 text-slate-700">
+                <span className="mt-2 h-2 w-2 flex-none rounded-full bg-sky-600" />
+                <p>{note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {images.length > 0 ? (
+        <div className="rounded-2xl border border-sky-200 bg-white/80 p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-700">
+            {text({ en: 'Arrival photos', zh: '到港照片' })}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {images.map((image, index) => (
+              <img
+                key={image}
+                src={image}
+                alt={text({ en: `Arrival update ${index + 1}`, zh: `到港动态 ${index + 1}` })}
+                loading="lazy"
+                decoding="async"
+                className="aspect-[4/3] w-full rounded-xl bg-slate-100 object-cover"
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function WeeklyVehicleCard({
   vehicle,
   index,
@@ -375,14 +433,17 @@ export function WeeklyReport() {
                 <p className="mt-6 max-w-4xl text-base font-medium leading-7 text-white/72">{text({ en: latestReport.marketSummary, zh: latestReport.zhMarketSummary })}</p>
               </div>
               <div className="p-6 sm:p-9">
-                {(latestReport.arrivedVehicles?.length ?? 0) > 0 ? (
+                {hasArrivalContent(latestReport) ? (
                   <div className="mb-10 rounded-[24px] border border-sky-100 bg-sky-50 p-5 sm:p-7">
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-700">{text({ en: 'Customer arrivals', zh: '客户车辆到港' })}</p>
-                    <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                      {latestReport.arrivedVehicles?.map((vehicle, index) => (
-                        <WeeklyVehicleCard key={vehicle.slug} vehicle={vehicle} index={index} zh={language === 'zh'} arrived onOpen={() => setSelectedVehicleDetail({ vehicle, arrived: true })} />
-                      ))}
-                    </div>
+                    {(latestReport.arrivedVehicles?.length ?? 0) > 0 ? (
+                      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                        {latestReport.arrivedVehicles?.map((vehicle, index) => (
+                          <WeeklyVehicleCard key={vehicle.slug} vehicle={vehicle} index={index} zh={language === 'zh'} arrived onOpen={() => setSelectedVehicleDetail({ vehicle, arrived: true })} />
+                        ))}
+                      </div>
+                    ) : null}
+                    <ArrivalReportDetails report={latestReport} />
                   </div>
                 ) : null}
                 <div className="mb-6 flex items-end justify-between gap-4">
@@ -572,18 +633,21 @@ export function WeeklyReport() {
               </div>
             </section>
 
-            {arrivedVehicles.length > 0 ? (
+            {hasArrivalContent(selectedReport) ? (
               <section className="border-b border-sky-100 bg-sky-50 px-5 py-10 sm:px-10 sm:py-12">
                 <div>
                   <p className="inline-flex items-center gap-2 rounded-lg border border-sky-200 bg-white px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-sky-700"><Ship className="h-4 w-4" />Customer arrivals</p>
                   <h2 className="mt-5">{text({ en: 'Customer vehicles arriving in New Zealand.', zh: '本周客户订购车辆到港。' })}</h2>
                   <p className="mt-3 max-w-3xl !text-sm !leading-7 !text-slate-500">{text({ en: 'These vehicles have already been ordered by customers and are not available for sale. Follow their real progress from arrival through compliance and handover.', zh: '这些车辆均已由客户订购，并非在售现车。这里记录车辆抵达新西兰、进入合规流程直至准备交付的真实进度。' })}</p>
                 </div>
-                <div className="mt-8 grid gap-6 lg:grid-cols-2">
-                  {arrivedVehicles.map((vehicle, index) => (
-                    <WeeklyVehicleCard key={vehicle.slug} vehicle={vehicle} index={index} zh={language === 'zh'} arrived onOpen={() => setSelectedVehicleDetail({ vehicle, arrived: true })} />
-                  ))}
-                </div>
+                {arrivedVehicles.length > 0 ? (
+                  <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                    {arrivedVehicles.map((vehicle, index) => (
+                      <WeeklyVehicleCard key={vehicle.slug} vehicle={vehicle} index={index} zh={language === 'zh'} arrived onOpen={() => setSelectedVehicleDetail({ vehicle, arrived: true })} />
+                    ))}
+                  </div>
+                ) : null}
+                <ArrivalReportDetails report={selectedReport} />
               </section>
             ) : null}
 

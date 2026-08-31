@@ -1,10 +1,11 @@
-import { type ClipboardEvent, useEffect, useState } from 'react';
+import { type ClipboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 import type { PartnerPlaceholder } from '../../data/services';
 import {
   type JapanSpecialOrderVehicle,
   type JapanWeeklyReportMeta,
+  type JapanWeeklyReportState,
   DEFAULT_JAPAN_WEEKLY_REPORT_META,
   useJapanSpecialOrders,
 } from '../hooks/useJapanSpecialOrders';
@@ -24,6 +25,12 @@ interface AdminNotice {
   type: 'success' | 'error' | 'info';
   text: string;
 }
+
+type WeeklyAutoSaveStatus = 'loading' | 'saved' | 'pending' | 'saving' | 'incomplete' | 'error';
+
+type WeeklyReportBuildResult =
+  | { report: JapanWeeklyReportState; error: null }
+  | { report: null; error: string };
 
 const EMPTY_PARTNER_DRAFT: PartnerDraft = {
   id: '',
@@ -341,11 +348,51 @@ function getNoticeClass(type: AdminNotice['type']) {
   return 'border-blue-200 bg-blue-50 text-blue-700';
 }
 
+function buildWeeklyReport(
+  meta: JapanWeeklyReportMeta,
+  weeklyDrafts: JapanSpecialOrderDraft[],
+  arrivalDrafts: JapanSpecialOrderDraft[]
+): WeeklyReportBuildResult {
+  if (!meta.issueNumber.trim() || !meta.publishedAt.trim()) {
+    return { report: null, error: '请先填写期数和发布时间。' };
+  }
+
+  const normalizedWeeklyDrafts = uniquifyJapanFindSlugs(weeklyDrafts);
+  const vehicles = normalizedWeeklyDrafts
+    .map((draft) => toJapanSpecialOrderVehicle(draft))
+    .filter((vehicle): vehicle is JapanSpecialOrderVehicle => vehicle !== null);
+
+  if (vehicles.length !== normalizedWeeklyDrafts.length) {
+    return { report: null, error: '推荐车辆资料尚未填写完整，补全后会继续自动保存。' };
+  }
+
+  const normalizedArrivalDrafts = uniquifyJapanFindSlugs(arrivalDrafts);
+  const arrivedVehicles = normalizedArrivalDrafts
+    .map((draft) => toJapanSpecialOrderVehicle(draft))
+    .filter((vehicle): vehicle is JapanSpecialOrderVehicle => vehicle !== null);
+
+  if (arrivedVehicles.length !== normalizedArrivalDrafts.length) {
+    return { report: null, error: '到港车辆资料尚未填写完整，补全后会继续自动保存。' };
+  }
+
+  return {
+    report: {
+      ...meta,
+      issueNumber: meta.issueNumber.trim(),
+      publishedAt: meta.publishedAt.trim(),
+      vehicles,
+      arrivedVehicles,
+    },
+    error: null,
+  };
+}
+
 export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   const { partners, setPartners, resetPartners } = usePartnersCatalog();
   const {
     report: japanWeeklyReport,
     reports: japanWeeklyReports,
+    isLoadingCloudVehicles,
     setReports: setJapanWeeklyReports,
   } = useJapanSpecialOrders();
   const [selectedIssueNumber, setSelectedIssueNumber] = useState(
@@ -401,6 +448,17 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   const [arrivalAiFiles, setArrivalAiFiles] = useState<File[]>([]);
   const [arrivalAiPreviews, setArrivalAiPreviews] = useState<string[]>([]);
   const [isGeneratingArrivalDraft, setIsGeneratingArrivalDraft] = useState(false);
+  const [weeklyAutoSaveStatus, setWeeklyAutoSaveStatus] = useState<WeeklyAutoSaveStatus>('loading');
+  const [weeklyAutoSaveError, setWeeklyAutoSaveError] = useState('');
+  const [weeklyLastSavedAt, setWeeklyLastSavedAt] = useState<Date | null>(null);
+  const reportHydrationIssueRef = useRef<string | null>(null);
+  const lastPersistedReportRef = useRef('');
+  const lastQueuedReportRef = useRef('');
+  const failedReportRef = useRef('');
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const saveSequenceRef = useRef(0);
+  const reportsRef = useRef(japanWeeklyReports);
+  const setReportsRef = useRef(setJapanWeeklyReports);
 
   useEffect(() => {
     let robotsMeta = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
@@ -427,6 +485,26 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   }, [partners]);
 
   useEffect(() => {
+    reportsRef.current = japanWeeklyReports;
+    setReportsRef.current = setJapanWeeklyReports;
+  }, [japanWeeklyReports, setJapanWeeklyReports]);
+
+  useEffect(() => {
+    if (isLoadingCloudVehicles || japanWeeklyReports.length === 0) return;
+    if (japanWeeklyReports.some((report) => report.issueNumber === selectedIssueNumber)) return;
+    setSelectedIssueNumber(japanWeeklyReports[0].issueNumber);
+  }, [isLoadingCloudVehicles, japanWeeklyReports, selectedIssueNumber]);
+
+  useEffect(() => {
+    if (isLoadingCloudVehicles) {
+      setWeeklyAutoSaveStatus('loading');
+      return;
+    }
+
+    reportHydrationIssueRef.current = selectedWeeklyReport.issueNumber;
+    lastPersistedReportRef.current = '';
+    lastQueuedReportRef.current = '';
+    failedReportRef.current = '';
     const nextDrafts = selectedWeeklyReport.vehicles.map((vehicle) =>
       toJapanSpecialOrderDraft(vehicle)
     );
@@ -437,9 +515,6 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
       )
     );
     setExpandedJapanSpecialOrderSlug(null);
-  }, [selectedWeeklyReport]);
-
-  useEffect(() => {
     const { vehicles: _vehicles, arrivedVehicles: _arrivedVehicles, ...meta } = selectedWeeklyReport;
     setWeeklyReportDraft({
       ...meta,
@@ -451,7 +526,9 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
       nextWeekTeaser: meta.nextWeekTeaser ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.nextWeekTeaser,
       zhNextWeekTeaser: meta.zhNextWeekTeaser ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.zhNextWeekTeaser,
     });
-  }, [selectedWeeklyReport]);
+    setWeeklyAutoSaveStatus('loading');
+    setWeeklyAutoSaveError('');
+  }, [isLoadingCloudVehicles, selectedWeeklyReport.issueNumber]);
 
   const handleLogout = async () => {
     setNotice(null);
@@ -558,44 +635,141 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     );
   };
 
-  const handleSaveJapanSpecialOrders = async () => {
-    const normalizedDrafts = uniquifyJapanFindSlugs(japanSpecialOrderDrafts);
-    const nextVehicles = normalizedDrafts
-      .map((draft) => toJapanSpecialOrderVehicle(draft))
-      .filter((vehicle): vehicle is JapanSpecialOrderVehicle => vehicle !== null);
+  const weeklyReportBuild = useMemo(
+    () => buildWeeklyReport(weeklyReportDraft, japanSpecialOrderDrafts, arrivalVehicleDrafts),
+    [arrivalVehicleDrafts, japanSpecialOrderDrafts, weeklyReportDraft]
+  );
+  const weeklyReportSnapshot = useMemo(
+    () => (weeklyReportBuild.report ? JSON.stringify(weeklyReportBuild.report) : ''),
+    [weeklyReportBuild]
+  );
 
-    if (nextVehicles.length !== normalizedDrafts.length) {
-      setNotice({
-        type: 'error',
-        text: '保存失败：每张卡片都需要标题、图片、价格、年份、公里数、所在地、状态和简介。',
+  const persistWeeklyReport = useCallback(async (
+    nextReport: JapanWeeklyReportState,
+    source: 'auto' | 'manual'
+  ) => {
+    const snapshot = JSON.stringify(nextReport);
+    if (source === 'manual' && failedReportRef.current === snapshot) {
+      failedReportRef.current = '';
+    }
+    const saveSequence = saveSequenceRef.current + 1;
+    saveSequenceRef.current = saveSequence;
+    lastQueuedReportRef.current = snapshot;
+    setWeeklyAutoSaveStatus('saving');
+    setWeeklyAutoSaveError('');
+
+    const saveTask = saveQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const currentReports = reportsRef.current;
+        const selectedIndex = currentReports.findIndex(
+          (report) => report.issueNumber === selectedIssueNumber
+        );
+        const targetIndex = selectedIndex >= 0
+          ? selectedIndex
+          : currentReports.findIndex((report) => report.issueNumber === nextReport.issueNumber);
+        const nextReports = targetIndex >= 0
+          ? currentReports
+              .map((report, index) => (index === targetIndex ? nextReport : report))
+              .filter(
+                (report, index, all) =>
+                  all.findIndex((candidate) => candidate.issueNumber === report.issueNumber) === index
+              )
+          : [nextReport, ...currentReports];
+
+        reportsRef.current = nextReports;
+        await setReportsRef.current(nextReports);
       });
-      return;
-    }
 
-    const normalizedArrivalDrafts = uniquifyJapanFindSlugs(arrivalVehicleDrafts);
-    const nextArrivedVehicles = normalizedArrivalDrafts
-      .map((draft) => toJapanSpecialOrderVehicle(draft))
-      .filter((vehicle): vehicle is JapanSpecialOrderVehicle => vehicle !== null);
-
-    if (nextArrivedVehicles.length !== normalizedArrivalDrafts.length) {
-      setNotice({ type: 'error', text: '保存失败：到港车辆需要完整的车型、图片、年份、里程、所在地、状态和简介。' });
-      return;
-    }
+    saveQueueRef.current = saveTask.catch(() => undefined);
 
     try {
-      const nextReport = { ...weeklyReportDraft, vehicles: nextVehicles, arrivedVehicles: nextArrivedVehicles };
-      const nextReports = japanWeeklyReports.map((report) =>
-        report.issueNumber === selectedIssueNumber ? nextReport : report
-      );
-      await setJapanWeeklyReports(nextReports);
-      setSelectedIssueNumber(nextReport.issueNumber);
-      setNotice({ type: 'success', text: `第 ${nextReport.issueNumber} 期周报已保存到云端。` });
+      await saveTask;
+      lastPersistedReportRef.current = snapshot;
+      failedReportRef.current = '';
+      if (saveSequence === saveSequenceRef.current) {
+        setWeeklyAutoSaveStatus('saved');
+        setWeeklyLastSavedAt(new Date());
+      }
+      if (selectedIssueNumber !== nextReport.issueNumber) {
+        setSelectedIssueNumber(nextReport.issueNumber);
+      }
+      if (source === 'manual') {
+        setNotice({ type: 'success', text: `第 ${nextReport.issueNumber} 期周报已保存到云端。` });
+      }
     } catch (error) {
-      setNotice({
-        type: 'error',
-        text: `保存失败：日本精选车源没有写入云端。请确认 Supabase 表已创建。${error instanceof Error ? ` ${error.message}` : ''}`,
-      });
+      if (lastQueuedReportRef.current === snapshot) lastQueuedReportRef.current = '';
+      const message = error instanceof Error ? error.message : '未知错误';
+      if (saveSequence === saveSequenceRef.current) {
+        failedReportRef.current = snapshot;
+        setWeeklyAutoSaveStatus('error');
+        setWeeklyAutoSaveError(message);
+        setNotice({
+          type: 'error',
+          text: `自动保存失败：${message} 请重新登录后再试。`,
+        });
+      }
+      throw error;
     }
+  }, [selectedIssueNumber]);
+
+  useEffect(() => {
+    if (mode !== 'weekly' || isLoadingCloudVehicles) return;
+
+    if (!weeklyReportBuild.report) {
+      setWeeklyAutoSaveStatus('incomplete');
+      setWeeklyAutoSaveError(weeklyReportBuild.error);
+      return;
+    }
+
+    if (selectedIssueNumber !== selectedWeeklyReport.issueNumber) return;
+
+    if (
+      reportHydrationIssueRef.current === selectedWeeklyReport.issueNumber &&
+      weeklyReportBuild.report.issueNumber === selectedWeeklyReport.issueNumber
+    ) {
+      reportHydrationIssueRef.current = null;
+      lastPersistedReportRef.current = weeklyReportSnapshot;
+      lastQueuedReportRef.current = '';
+      setWeeklyAutoSaveStatus('saved');
+      setWeeklyAutoSaveError('');
+      return;
+    }
+
+    if (
+      weeklyReportSnapshot === lastPersistedReportRef.current ||
+      weeklyReportSnapshot === lastQueuedReportRef.current ||
+      weeklyReportSnapshot === failedReportRef.current
+    ) {
+      return;
+    }
+
+    setWeeklyAutoSaveStatus('pending');
+    setWeeklyAutoSaveError('');
+    const timer = window.setTimeout(() => {
+      void persistWeeklyReport(weeklyReportBuild.report, 'auto').catch(() => undefined);
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    isLoadingCloudVehicles,
+    mode,
+    persistWeeklyReport,
+    selectedIssueNumber,
+    selectedWeeklyReport.issueNumber,
+    weeklyReportBuild,
+    weeklyReportSnapshot,
+  ]);
+
+  const handleSaveJapanSpecialOrders = async () => {
+    if (!weeklyReportBuild.report) {
+      setWeeklyAutoSaveStatus('incomplete');
+      setWeeklyAutoSaveError(weeklyReportBuild.error);
+      setNotice({ type: 'error', text: weeklyReportBuild.error });
+      return;
+    }
+
+    await persistWeeklyReport(weeklyReportBuild.report, 'manual').catch(() => undefined);
   };
 
   const addWeeklyReport = async () => {
@@ -916,32 +1090,34 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
         zhArrivals: [...(current.zhArrivals ?? []), chineseArrival],
         arrivalImages: Array.from(new Set([...(current.arrivalImages ?? []), ...uploadedImages])),
       }));
-      const arrivalVehicleSlug = createId('arrived');
-      const arrivalVehicle: JapanSpecialOrderDraft = {
-        ...EMPTY_JAPAN_SPECIAL_ORDER_DRAFT,
-        ...parsed,
-        slug: arrivalVehicleSlug,
-        image: uploadedImages[0] ?? '',
-        images: uploadedImages,
-        imagesText: uploadedImages.join('\n'),
-        location: port,
-        status: 'Arrived in New Zealand',
-        japanPrice: parsed.price,
-        summary: `${parsed.title} has arrived in New Zealand. Port release and compliance inspection are being arranged before the vehicle is ready for viewing or delivery.`,
-        zhSummary: `${parsed.zhTitle} 已抵达新西兰，目前正在安排港口放行和合规检查，完成后可进一步预约看车或交付。`,
-        recommendation: 'Now physically in New Zealand, allowing local inspection and a clearer path to compliance and delivery.',
-        zhRecommendation: '车辆已实际抵达新西兰，可进行本地检查，后续合规和交付进度也更加清晰。',
-        risk: 'Port release, compliance outcome, registration timing and final on-road cost still require confirmation.',
-        zhRisk: '仍需确认港口放行、合规结果、注册时间以及最终上路成本。',
-        recommendedFor: 'Buyers who prefer a vehicle already in New Zealand and available for local follow-up.',
-        zhRecommendedFor: '希望购买已抵达新西兰、可以本地继续跟进车辆的客户。',
-        updatedAt: new Date().toLocaleDateString('en-NZ'),
-      };
-      setArrivalVehicleDrafts((current) => [...current, arrivalVehicle]);
+      if (uploadedImages.length > 0) {
+        const arrivalVehicleSlug = createId('arrived');
+        const arrivalVehicle: JapanSpecialOrderDraft = {
+          ...EMPTY_JAPAN_SPECIAL_ORDER_DRAFT,
+          ...parsed,
+          slug: arrivalVehicleSlug,
+          image: uploadedImages[0],
+          images: uploadedImages,
+          imagesText: uploadedImages.join('\n'),
+          location: port,
+          status: 'Arrived in New Zealand',
+          japanPrice: parsed.price,
+          summary: `${parsed.title} has arrived in New Zealand. Port release and compliance inspection are being arranged before the vehicle is ready for viewing or delivery.`,
+          zhSummary: `${parsed.zhTitle} 已抵达新西兰，目前正在安排港口放行和合规检查，完成后可进一步预约看车或交付。`,
+          recommendation: 'Now physically in New Zealand, allowing local inspection and a clearer path to compliance and delivery.',
+          zhRecommendation: '车辆已实际抵达新西兰，可进行本地检查，后续合规和交付进度也更加清晰。',
+          risk: 'Port release, compliance outcome, registration timing and final on-road cost still require confirmation.',
+          zhRisk: '仍需确认港口放行、合规结果、注册时间以及最终上路成本。',
+          recommendedFor: 'Buyers who prefer a vehicle already in New Zealand and available for local follow-up.',
+          zhRecommendedFor: '希望购买已抵达新西兰、可以本地继续跟进车辆的客户。',
+          updatedAt: new Date().toLocaleDateString('en-NZ'),
+        };
+        setArrivalVehicleDrafts((current) => [...current, arrivalVehicle]);
+      }
       setArrivalAiSource('');
       setArrivalAiImages([]);
       setIsArrivalAiOpen(false);
-      setNotice({ type: 'success', text: '到港资料已识别并加入草稿，请核对港口状态和下一步安排。' });
+      setNotice({ type: 'success', text: '到港资料已识别，核对内容后系统会自动保存到云端。' });
     } catch {
       setNotice({ type: 'error', text: '到港资料识别失败，请换清晰图片或直接粘贴文字后重试。' });
     } finally {
@@ -1024,6 +1200,23 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   ];
   const completedWeeklySteps = weeklyStepStatus.filter(Boolean).length;
   const weeklyCompletion = Math.round((completedWeeklySteps / weeklyStepStatus.length) * 100);
+  const weeklyAutoSaveLabel = (() => {
+    if (weeklyAutoSaveStatus === 'loading') return '正在载入云端数据…';
+    if (weeklyAutoSaveStatus === 'pending') return '有修改，等待自动保存…';
+    if (weeklyAutoSaveStatus === 'saving') return '正在自动保存…';
+    if (weeklyAutoSaveStatus === 'incomplete') return weeklyAutoSaveError || '资料不完整，暂未保存';
+    if (weeklyAutoSaveStatus === 'error') return `保存失败：${weeklyAutoSaveError}`;
+    return weeklyLastSavedAt
+      ? `已自动保存 · ${weeklyLastSavedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+      : '已与云端同步';
+  })();
+  const weeklyAutoSaveTone = weeklyAutoSaveStatus === 'error'
+    ? 'text-red-300'
+    : weeklyAutoSaveStatus === 'incomplete'
+      ? 'text-amber-300'
+      : weeklyAutoSaveStatus === 'saved'
+        ? 'text-emerald-300'
+        : 'text-primary';
 
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900 sm:py-8">
@@ -1106,8 +1299,11 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
               </div>
             </div>
             <div className="sticky top-0 z-20 flex flex-col gap-3 border-t border-white/10 bg-slate-900/95 px-5 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-7">
-              <p className="text-sm text-white/55">保存后会同步到周报封面和弹窗内容。</p>
-              <button type="button" onClick={() => void handleSaveJapanSpecialOrders()} className="min-h-11 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-black shadow-lg hover:bg-[#d2af59]">保存并同步本期周报</button>
+              <div>
+                <p className="text-sm text-white/55">自动保存已开启，停止修改约 1 秒后同步到客户页面。</p>
+                <p className={`mt-1 text-xs font-semibold ${weeklyAutoSaveTone}`} aria-live="polite">{weeklyAutoSaveLabel}</p>
+              </div>
+              <button type="button" disabled={weeklyAutoSaveStatus === 'loading' || weeklyAutoSaveStatus === 'saving'} onClick={() => void handleSaveJapanSpecialOrders()} className="min-h-11 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-black shadow-lg hover:bg-[#d2af59] disabled:cursor-wait disabled:opacity-60">立即保存</button>
             </div>
           </div>
 

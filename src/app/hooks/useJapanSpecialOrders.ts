@@ -245,7 +245,7 @@ export function useJapanSpecialOrders() {
     ...DEFAULT_JAPAN_WEEKLY_REPORT_META,
     vehicles: japanSpecialOrderVehicles,
   };
-  const [isLoadingCloudVehicles, setIsLoadingCloudVehicles] = useState(false);
+  const [isLoadingCloudVehicles, setIsLoadingCloudVehicles] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
