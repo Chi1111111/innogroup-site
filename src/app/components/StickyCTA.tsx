@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calculator, MessageCircle, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
+import { isJapanMarketVehicleId } from '../../data/japanMarket';
 import { useLanguage } from './SiteTranslator';
 
 export function StickyCTA() {
@@ -9,7 +10,8 @@ export function StickyCTA() {
   const location = useLocation();
   const { text } = useLanguage();
   const showCalculatorCta = location.pathname === '/' || location.pathname === '/vehicles/find-my-car';
-  const hasVehicleSpecificActions = /^\/japan-market\/JP[\w-]+$/i.test(location.pathname);
+  const japanMarketSegment = location.pathname.match(/^\/japan-market\/([^/]+)$/)?.[1] ?? '';
+  const hasVehicleSpecificActions = isJapanMarketVehicleId(japanMarketSegment);
   const calculatorHref = '#calculator';
 
   useEffect(() => {

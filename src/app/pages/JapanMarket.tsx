@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Info, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, RefreshCw, SlidersHorizontal, X } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { JapanMarketVehicleCard } from '../components/JapanMarketVehicleCard';
 import { useLanguage } from '../components/SiteTranslator';
@@ -12,39 +12,10 @@ import {
 } from '../../data/japanMarket';
 
 const PRIMARY_MAKES = ['Toyota', 'Lexus', 'Nissan', 'Honda', 'Mazda', 'Subaru', 'Mitsubishi', 'BMW', 'Mercedes-Benz', 'Audi', 'Volkswagen', 'Porsche'];
-const FUEL_TYPES: JapanMarketFuelType[] = ['Petrol', 'Hybrid', 'PHEV', 'EV', 'Diesel'];
-const BODY_TYPES: JapanMarketBodyType[] = ['Sedan', 'SUV', 'Hatchback', 'Wagon', 'Coupe', 'Van / MPV', 'Sports'];
-const GRADES = ['5', '4.5', '4', '3.5', 'Unrated'] as const;
+const FUEL_TYPES: JapanMarketFuelType[] = ['Petrol', 'Hybrid', 'PHEV', 'EV', 'Diesel', 'Other'];
+const BODY_TYPES: JapanMarketBodyType[] = ['Sedan', 'SUV', 'Hatchback', 'Wagon', 'Coupe', 'Van / MPV', 'Sports', 'Other'];
 const YEARS = Array.from({ length: 37 }, (_, index) => new Date().getFullYear() - index);
 const PAGE_SIZE = 24;
-
-const AUCTION_GRADE_GUIDE = [
-  {
-    grade: '5',
-    condition: { en: 'Excellent / near-new', zh: '优秀 / 接近新车' },
-    meaning: { en: 'Usually very low mileage with minimal visible wear.', zh: '通常公里数较低，明显使用痕迹很少。' },
-  },
-  {
-    grade: '4.5',
-    condition: { en: 'Very good', zh: '车况很好' },
-    meaning: { en: 'Generally well kept, with only light signs of use.', zh: '通常保养良好，可能有轻微使用痕迹。' },
-  },
-  {
-    grade: '4',
-    condition: { en: 'Good used condition', zh: '良好二手车况' },
-    meaning: { en: 'May have minor marks or repair notes that should be reviewed.', zh: '可能有轻微划痕或维修备注，需要进一步核对。' },
-  },
-  {
-    grade: '3.5',
-    condition: { en: 'Average used condition', zh: '一般二手车况' },
-    meaning: { en: 'Wear or repair history is more likely; condition needs careful review.', zh: '更可能存在磨损或维修记录，需要仔细确认车况。' },
-  },
-  {
-    grade: '—',
-    condition: { en: 'Unrated', zh: '未评分' },
-    meaning: { en: 'No grade is available, so the condition cannot be inferred from a score.', zh: '没有可用评分，不能仅凭等级判断车辆状况。' },
-  },
-] as const;
 
 const PRICE_BUCKETS: Record<string, [number, number]> = {
   under20: [0, 20_000],
@@ -75,7 +46,6 @@ interface FilterPanelProps {
   price: string;
   mileage: string;
   fuels: JapanMarketFuelType[];
-  grades: string[];
   bodies: JapanMarketBodyType[];
   setMake: (value: string) => void;
   setModel: (value: string) => void;
@@ -84,7 +54,6 @@ interface FilterPanelProps {
   setPrice: (value: string) => void;
   setMileage: (value: string) => void;
   setFuels: (value: JapanMarketFuelType[]) => void;
-  setGrades: (value: string[]) => void;
   setBodies: (value: JapanMarketBodyType[]) => void;
   clear: () => void;
 }
@@ -98,6 +67,7 @@ function FilterPanel(props: FilterPanelProps) {
     PHEV: text({ en: 'PHEV', zh: '插电混动' }),
     EV: text({ en: 'EV', zh: '纯电' }),
     Diesel: text({ en: 'Diesel', zh: '柴油' }),
+    Other: text({ en: 'Other', zh: '其他' }),
   })[fuel];
   const bodyLabel = (body: JapanMarketBodyType) => ({
     Sedan: text({ en: 'Sedan', zh: '轿车' }),
@@ -107,6 +77,7 @@ function FilterPanel(props: FilterPanelProps) {
     Coupe: text({ en: 'Coupe', zh: '双门轿跑' }),
     'Van / MPV': text({ en: 'Van / MPV', zh: '厢式车 / MPV' }),
     Sports: text({ en: 'Sports', zh: '跑车' }),
+    Other: text({ en: 'Other', zh: '其他' }),
   })[body];
 
   return (
@@ -118,7 +89,6 @@ function FilterPanel(props: FilterPanelProps) {
       <label className="block space-y-2"><span>{text({ en: 'Estimated NZ Price', zh: '预计新西兰价格' })}</span><select value={props.price} onChange={(event) => props.setPrice(event.target.value)} className={selectClass}><option value="">{text({ en: 'Any price', zh: '不限价格' })}</option><option value="under20">{text({ en: 'Under $20,000', zh: '$20,000 以下' })}</option><option value="20to30">$20,000–$30,000</option><option value="30to40">$30,000–$40,000</option><option value="40to50">$40,000–$50,000</option><option value="50to70">$50,000–$70,000</option><option value="over70">$70,000+</option></select></label>
       <label className="block space-y-2"><span>{text({ en: 'Mileage', zh: '公里数' })}</span><select value={props.mileage} onChange={(event) => props.setMileage(event.target.value)} className={selectClass}><option value="">{text({ en: 'Any mileage', zh: '不限公里数' })}</option><option value="20000">{text({ en: 'Under 20,000 km', zh: '20,000 公里以下' })}</option><option value="40000">{text({ en: 'Under 40,000 km', zh: '40,000 公里以下' })}</option><option value="60000">{text({ en: 'Under 60,000 km', zh: '60,000 公里以下' })}</option><option value="100000">{text({ en: 'Under 100,000 km', zh: '100,000 公里以下' })}</option></select></label>
       <fieldset><legend className="mb-3">{text({ en: 'Fuel Type', zh: '燃料类型' })}</legend><div className="grid grid-cols-2 gap-2">{FUEL_TYPES.map((fuel) => <label key={fuel} className="flex items-center gap-2 rounded-lg border border-black/8 bg-white/55 px-3 py-2 text-sm"><input type="checkbox" checked={props.fuels.includes(fuel)} onChange={() => props.setFuels(toggleValue(props.fuels, fuel))} className="accent-[#c7a24a]" />{fuelLabel(fuel)}</label>)}</div></fieldset>
-      <fieldset><legend className="mb-3">{text({ en: 'Auction Grade', zh: '拍卖评分' })}</legend><div className="grid grid-cols-3 gap-2">{GRADES.map((grade) => <label key={grade} className="flex items-center gap-2 rounded-lg border border-black/8 bg-white/55 px-3 py-2 text-sm"><input type="checkbox" checked={props.grades.includes(grade)} onChange={() => props.setGrades(toggleValue(props.grades, grade))} className="accent-[#c7a24a]" />{grade === 'Unrated' ? text({ en: 'Unrated', zh: '未评分' }) : grade}</label>)}</div></fieldset>
       <fieldset><legend className="mb-3">{text({ en: 'Body Type', zh: '车身类型' })}</legend><div className="space-y-2">{BODY_TYPES.map((body) => <label key={body} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={props.bodies.includes(body)} onChange={() => props.setBodies(toggleValue(props.bodies, body))} className="accent-[#c7a24a]" />{bodyLabel(body)}</label>)}</div></fieldset>
     </div>
   );
@@ -138,7 +108,6 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
   const [price, setPrice] = useState(() => searchParams.get('price') ?? '');
   const [mileage, setMileage] = useState(() => searchParams.get('mileage') ?? '');
   const [fuels, setFuels] = useState<JapanMarketFuelType[]>(() => valuesFromParam(searchParams.get('fuels'), FUEL_TYPES));
-  const [grades, setGrades] = useState<string[]>(() => valuesFromParam(searchParams.get('grades'), GRADES));
   const [bodies, setBodies] = useState<JapanMarketBodyType[]>(() => valuesFromParam(searchParams.get('bodies'), BODY_TYPES));
   const [sort, setSort] = useState(() => searchParams.get('sort') ?? 'recommended');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -167,10 +136,10 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
     const next = new URLSearchParams();
     const setIf = (key: string, value: string) => { if (value) next.set(key, value); };
     setIf('q', query.trim()); setIf('make', make); setIf('model', model); setIf('yearFrom', yearFrom); setIf('yearTo', yearTo);
-    setIf('price', price); setIf('mileage', mileage); setIf('fuels', fuels.join(',')); setIf('grades', grades.join(',')); setIf('bodies', bodies.join(','));
+    setIf('price', price); setIf('mileage', mileage); setIf('fuels', fuels.join(',')); setIf('bodies', bodies.join(','));
     if (sort !== 'recommended') next.set('sort', sort);
     if (next.toString() !== searchParams.toString()) setSearchParams(next, { replace: true });
-  }, [query, make, model, yearFrom, yearTo, price, mileage, fuels, grades, bodies, sort, searchParams, setSearchParams]);
+  }, [query, make, model, yearFrom, yearTo, price, mileage, fuels, bodies, sort, searchParams, setSearchParams]);
 
   const allMakes = useMemo(() => {
     if (!payload) return [...PRIMARY_MAKES, 'Other'];
@@ -200,7 +169,6 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
       if (priceRange && (vehicle.estimatedNzdPrice == null || vehicle.estimatedNzdPrice < priceRange[0] || vehicle.estimatedNzdPrice >= priceRange[1])) return false;
       if (maxMileage && vehicle.mileage >= maxMileage) return false;
       if (fuels.length && !fuels.includes(vehicle.fuelType)) return false;
-      if (grades.length && !grades.includes(vehicle.auctionGrade ?? 'Unrated')) return false;
       if (bodies.length && !bodies.includes(vehicle.bodyType)) return false;
       return true;
     });
@@ -210,17 +178,16 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
       if (sort === 'price-asc') return (a.estimatedNzdPrice ?? Number.POSITIVE_INFINITY) - (b.estimatedNzdPrice ?? Number.POSITIVE_INFINITY);
       if (sort === 'price-desc') return (b.estimatedNzdPrice ?? -1) - (a.estimatedNzdPrice ?? -1);
       if (sort === 'mileage') return a.mileage - b.mileage;
-      if (sort === 'grade') return Number(b.auctionGrade ?? 0) - Number(a.auctionGrade ?? 0);
       return 0;
     });
-  }, [payload, deferredQuery, make, model, yearFrom, yearTo, price, mileage, fuels, grades, bodies, sort, primaryMakeSet]);
+  }, [payload, deferredQuery, make, model, yearFrom, yearTo, price, mileage, fuels, bodies, sort, primaryMakeSet]);
 
-  useEffect(() => setVisibleCount(PAGE_SIZE), [deferredQuery, make, model, yearFrom, yearTo, price, mileage, fuels, grades, bodies, sort]);
+  useEffect(() => setVisibleCount(PAGE_SIZE), [deferredQuery, make, model, yearFrom, yearTo, price, mileage, fuels, bodies, sort]);
 
   const clearFilters = () => {
-    setMake(''); setModel(''); setYearFrom(''); setYearTo(''); setPrice(''); setMileage(''); setFuels([]); setGrades([]); setBodies([]); setQuery('');
+    setMake(''); setModel(''); setYearFrom(''); setYearTo(''); setPrice(''); setMileage(''); setFuels([]); setBodies([]); setQuery('');
   };
-  const filterProps: FilterPanelProps = { makes: allMakes, models, make, model, yearFrom, yearTo, price, mileage, fuels, grades, bodies, setMake, setModel, setYearFrom, setYearTo, setPrice, setMileage, setFuels, setGrades, setBodies, clear: clearFilters };
+  const filterProps: FilterPanelProps = { makes: allMakes, models, make, model, yearFrom, yearTo, price, mileage, fuels, bodies, setMake, setModel, setYearFrom, setYearTo, setPrice, setMileage, setFuels, setBodies, clear: clearFilters };
   const activeFilters = [
     query ? { key: 'query', label: `“${query}”`, clear: () => setQuery('') } : null,
     make ? { key: 'make', label: make === 'Other' ? text({ en: 'Other makes', zh: '其他品牌' }) : make, clear: () => { setMake(''); setModel(''); } } : null,
@@ -229,7 +196,6 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
     price ? { key: 'price', label: text({ en: 'Price range', zh: '价格范围' }), clear: () => setPrice('') } : null,
     mileage ? { key: 'mileage', label: `< ${Number(mileage).toLocaleString('en-NZ')} km`, clear: () => setMileage('') } : null,
     ...fuels.map((fuel) => ({ key: `fuel-${fuel}`, label: fuel, clear: () => setFuels(fuels.filter((item) => item !== fuel)) })),
-    ...grades.map((grade) => ({ key: `grade-${grade}`, label: grade === 'Unrated' ? text({ en: 'Unrated', zh: '未评分' }) : `${text({ en: 'Grade', zh: '评分' })} ${grade}`, clear: () => setGrades(grades.filter((item) => item !== grade)) })),
     ...bodies.map((body) => ({ key: `body-${body}`, label: body, clear: () => setBodies(bodies.filter((item) => item !== body)) })),
   ].filter((item): item is { key: string; label: string; clear: () => void } => Boolean(item));
 
@@ -245,45 +211,17 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
         </div>
       </section>
 
-      <section id="auction-grade-guide" className="border-b border-black/8 bg-white/55 px-4 py-12 sm:py-16">
-        <div className="section-shell">
-          <div className="grid gap-5 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
-            <div>
-              <p className="section-kicker"><Info className="h-4 w-4" />{text({ en: 'Auction Grade Guide', zh: '拍卖评分说明' })}</p>
-              <h2 className="mt-5">{text({ en: 'What does each grade mean?', zh: '不同评分大概代表什么？' })}</h2>
-            </div>
-            <p className="max-w-2xl text-sm leading-7 text-foreground/62 lg:justify-self-end">
-              {text({
-                en: 'This is a general buyer guide. Standards can vary between auction houses, so the grade should always be reviewed together with the available condition notes and inspection information.',
-                zh: '以下内容是面向买家的通用参考。不同拍卖场的标准可能略有差异，评分仍需结合可用的车况备注和检查信息一起判断。',
-              })}
-            </p>
+      <section className="border-b border-black/8 bg-white/55 px-4 py-12 sm:py-16">
+        <div className="section-shell grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-black/8 bg-white p-6">
+            <p className="section-kicker"><RefreshCw className="h-4 w-4" />CARAPIS · Carsensor</p>
+            <h2 className="mt-5 text-2xl">{text({ en: 'Real Japanese dealer listings', zh: '真实日本经销商车源' })}</h2>
+            <p className="mt-3 text-sm leading-7 text-foreground/62">{text({ en: 'Vehicle details and photos are supplied by Carsensor through CARAPIS and refreshed on our website.', zh: '车辆资料与照片由 CARAPIS 提供的 Carsensor 数据更新至本网站。' })}</p>
           </div>
-
-          <div className="mt-8 overflow-hidden rounded-2xl border border-black/10 bg-white">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] border-collapse text-left">
-                <caption className="sr-only">{text({ en: 'General Japan auction grade guide', zh: '日本拍卖评分通用说明表' })}</caption>
-                <thead className="bg-[#111214] text-white">
-                  <tr>
-                    <th scope="col" className="w-28 px-5 py-4 text-xs font-bold uppercase tracking-[0.16em] text-primary">{text({ en: 'Grade', zh: '评分' })}</th>
-                    <th scope="col" className="w-52 px-5 py-4 text-xs font-bold uppercase tracking-[0.16em] text-white/70">{text({ en: 'Typical condition', zh: '通常车况' })}</th>
-                    <th scope="col" className="px-5 py-4 text-xs font-bold uppercase tracking-[0.16em] text-white/70">{text({ en: 'Buyer interpretation', zh: '买家参考' })}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {AUCTION_GRADE_GUIDE.map((item) => (
-                    <tr key={item.grade} className="border-t border-black/8 first:border-t-0">
-                      <th scope="row" className="px-5 py-4">
-                        <span className="inline-flex min-w-12 items-center justify-center rounded-full bg-primary/12 px-3 py-1.5 text-sm font-extrabold text-[#7d6019]">{item.grade}</span>
-                      </th>
-                      <td className="px-5 py-4 text-sm font-bold text-foreground">{text(item.condition)}</td>
-                      <td className="px-5 py-4 text-sm leading-6 text-foreground/62">{text(item.meaning)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="rounded-2xl border border-black/8 bg-white p-6">
+            <p className="section-kicker"><BadgeCheck className="h-4 w-4" />{text({ en: 'Condition checked', zh: '车况复核' })}</p>
+            <h2 className="mt-5 text-2xl">{text({ en: 'Confirmed before you commit', zh: '决定购买前再次确认' })}</h2>
+            <p className="mt-3 text-sm leading-7 text-foreground/62">{text({ en: 'Carsensor is a dealer marketplace rather than an auction house. We confirm availability, condition and final landed cost before any purchase.', zh: 'Carsensor 是经销商车源平台，并非拍卖场。购买前我们会再次确认库存、实际车况和最终落地成本。' })}</p>
           </div>
         </div>
       </section>
@@ -294,7 +232,7 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
             <label className="relative"><span className="sr-only">{text({ en: 'Search make or model', zh: '搜索品牌或车型' })}</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={text({ en: 'Search make or model', zh: '搜索品牌或车型' })} className="h-13 w-full rounded-2xl border border-black/12 bg-white px-5 pr-12 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" />{query ? <button type="button" onClick={() => setQuery('')} aria-label={text({ en: 'Clear search', zh: '清除搜索' })} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 hover:bg-black/5"><X className="h-4 w-4" /></button> : null}</label>
             <div className="grid grid-cols-2 gap-3 lg:flex">
               <button type="button" onClick={() => setMobileFiltersOpen((value) => !value)} className="button-secondary lg:hidden"><SlidersHorizontal className="h-4 w-4" />{text({ en: 'Filters', zh: '筛选' })}{activeFilters.length ? ` (${activeFilters.length})` : ''}</button>
-              <label className="flex items-center gap-3 rounded-2xl border border-black/12 bg-white px-4"><span className="whitespace-nowrap text-sm font-semibold text-foreground/55">{text({ en: 'Sort by', zh: '排序' })}</span><select value={sort} onChange={(event) => setSort(event.target.value)} className="h-12 bg-transparent text-sm font-bold outline-none"><option value="recommended">{text({ en: 'Recommended', zh: '推荐' })}</option><option value="newest">{text({ en: 'Recently added', zh: '最近添加' })}</option><option value="year">{text({ en: 'Model year: newest', zh: '年份：从新到旧' })}</option><option value="price-asc">{text({ en: 'Price: Low to High', zh: '价格：从低到高' })}</option><option value="price-desc">{text({ en: 'Price: High to Low', zh: '价格：从高到低' })}</option><option value="mileage">{text({ en: 'Mileage: Low to High', zh: '公里数：从低到高' })}</option><option value="grade">{text({ en: 'Auction Grade', zh: '拍卖评分' })}</option></select></label>
+              <label className="flex items-center gap-3 rounded-2xl border border-black/12 bg-white px-4"><span className="whitespace-nowrap text-sm font-semibold text-foreground/55">{text({ en: 'Sort by', zh: '排序' })}</span><select value={sort} onChange={(event) => setSort(event.target.value)} className="h-12 bg-transparent text-sm font-bold outline-none"><option value="recommended">{text({ en: 'Recommended', zh: '推荐' })}</option><option value="newest">{text({ en: 'Recently added', zh: '最近添加' })}</option><option value="year">{text({ en: 'Model year: newest', zh: '年份：从新到旧' })}</option><option value="price-asc">{text({ en: 'Price: Low to High', zh: '价格：从低到高' })}</option><option value="price-desc">{text({ en: 'Price: High to Low', zh: '价格：从高到低' })}</option><option value="mileage">{text({ en: 'Mileage: Low to High', zh: '公里数：从低到高' })}</option></select></label>
             </div>
           </div>
 

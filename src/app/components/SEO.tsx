@@ -1,6 +1,7 @@
 ﻿import { useEffect } from 'react';
 import { useLocation } from 'react-router';
 import { SEO_CONFIG, SEO_ROUTES } from '../../config/seo';
+import { isJapanMarketVehicleId } from '../../data/japanMarket';
 import { getWoxExpansionVehicle } from '../../data/woxExpansionVehicles';
 
 const routeKeys = Object.keys(SEO_ROUTES) as Array<keyof typeof SEO_ROUTES>;
@@ -54,10 +55,10 @@ function getRouteMeta(pathname: string) {
   if (pathname.startsWith('/japan-market')) {
     const [, , first = '', second = ''] = pathname.split('/');
     if (!first) return { ...SEO_ROUTES['/japan-market'], isKnown: true };
-    if (/^JP[\w-]+$/i.test(first)) {
+    if (isJapanMarketVehicleId(first)) {
       return {
         title: 'Japan Market Vehicle for Import | Inno Group NZ',
-        description: 'View vehicle information, auction grade and estimated landed pricing for a Japan Market vehicle available to import to New Zealand.',
+        description: 'View Carsensor vehicle information, condition details and estimated landed pricing for a Japan Market vehicle available to import to New Zealand.',
         isKnown: true,
       };
     }

@@ -1,0 +1,50 @@
+name: Japan Market daily CARAPIS sync
+
+on:
+  schedule:
+    # 02:17 NZST / 03:17 NZDT. GitHub schedules use UTC.
+    - cron: '17 14 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: japan-market-carapis-daily-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the website
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refresh vehicles and photo galleries
+        env:
+          CARAPIS_API_KEY: ${{ secrets.CARAPIS_API_KEY }}
+          CARAPIS_SOURCE: carsensor
+          CARAPIS_PAGE_SIZE: 100
+          CARAPIS_CONCURRENCY: 2
+          CARAPIS_DAILY_REQUEST_BUDGET: 100
+        run: node scripts/sync-carapis-japan-market.mjs
+
+      - name: Commit refreshed market data
+        shell: bash
+        run: |
+          git add public/data/japan-market
+          if git diff --cached --quiet; then
+            echo "CARAPIS returned no data changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: refresh Japan Market inventory"
+          git push

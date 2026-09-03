@@ -1,10 +1,11 @@
 import { useParams } from 'react-router';
+import { isJapanMarketVehicleId } from '../../data/japanMarket';
 import { JapanMarket } from './JapanMarket';
 import { JapanMarketVehicleDetail } from './JapanMarketVehicleDetail';
 
 export function JapanMarketEntry() {
   const { segment = '' } = useParams();
-  return /^JP[\w-]+$/i.test(segment)
+  return isJapanMarketVehicleId(segment)
     ? <JapanMarketVehicleDetail vehicleId={segment} />
     : <JapanMarket initialMakeSlug={segment.toLowerCase()} />;
 }

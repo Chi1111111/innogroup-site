@@ -10,9 +10,11 @@
     "jpauc:oneprice:japan:scrape": "node scripts/jpauc-oneprice-japan-scrape.mjs",
     "jpauc:build:paged": "node scripts/build-jpauc-paged-data.mjs",
     "japan-market:build": "node scripts/build-japan-market-data.mjs",
+    "japan-market:sync:carapis": "node scripts/sync-carapis-japan-market.mjs",
     "japan-market:sync:database": "node scripts/sync-japan-market-supabase.mjs",
-    "japan-market:update": "npm run japan-market:build && npm run japan-market:sync:database",
-    "jpauc:update": "npm run jpauc:scrape && npm run jpauc:oneprice:japan:scrape && npm run jpauc:build:paged && npm run japan-market:update"
+    "japan-market:update": "npm run japan-market:sync:carapis",
+    "japan-market:update:legacy": "npm run japan-market:build && npm run japan-market:sync:database",
+    "jpauc:update": "npm run jpauc:scrape && npm run jpauc:oneprice:japan:scrape && npm run jpauc:build:paged && npm run japan-market:update:legacy"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

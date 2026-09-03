@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, ChevronDown, Clock3, MessageCircle, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router';
 import { JapanMarketEnquiryForm } from '../components/JapanMarketEnquiryForm';
-import { JapanMarketVehicleVisual } from '../components/JapanMarketVehicleCard';
+import { JapanMarketPhotoGallery } from '../components/JapanMarketPhotoGallery';
 import { useLanguage } from '../components/SiteTranslator';
 import {
   formatMileage,
@@ -57,7 +57,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
   useEffect(() => {
     if (!vehicle) return;
     const title = `${vehicleFullName(vehicle)} for Import from Japan | Inno Group NZ`;
-    const description = `View ${vehicleFullName(vehicle)}, auction grade and estimated landed pricing for New Zealand.`;
+    const description = `View ${vehicleFullName(vehicle)}, Carsensor condition information and estimated landed pricing for New Zealand.`;
     document.title = title;
     setHeadMeta('description', description);
     setHeadMeta('og:title', title, 'property');
@@ -65,12 +65,19 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
     setHeadMeta('twitter:title', title);
     setHeadMeta('twitter:description', description);
     setHeadMeta('twitter:card', 'summary');
-    removeHeadMeta('og:image', 'property');
-    removeHeadMeta('og:image:alt', 'property');
+    if (vehicle.imageUrl) {
+      setHeadMeta('og:image', vehicle.imageUrl, 'property');
+      setHeadMeta('og:image:alt', vehicleFullName(vehicle), 'property');
+      setHeadMeta('twitter:image', vehicle.imageUrl);
+      setHeadMeta('twitter:image:alt', vehicleFullName(vehicle));
+    } else {
+      removeHeadMeta('og:image', 'property');
+      removeHeadMeta('og:image:alt', 'property');
+      removeHeadMeta('twitter:image');
+      removeHeadMeta('twitter:image:alt');
+    }
     removeHeadMeta('og:image:width', 'property');
     removeHeadMeta('og:image:height', 'property');
-    removeHeadMeta('twitter:image');
-    removeHeadMeta('twitter:image:alt');
 
     const schema = document.createElement('script');
     schema.id = 'inno-japan-market-vehicle-schema';
@@ -108,10 +115,10 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
     [text({ en: 'Drive Type', zh: '驱动方式' }), formatDriveType(vehicle.driveType, language)],
     [text({ en: 'Colour', zh: '颜色' }), vehicle.colour === 'Not listed' ? text({ en: 'Not listed', zh: '暂无信息' }) : vehicle.colour],
     [text({ en: 'Chassis Code', zh: '底盘编号' }), vehicle.chassisCode === 'Not listed' ? text({ en: 'Not listed', zh: '暂无信息' }) : vehicle.chassisCode],
-    [text({ en: 'Auction Area', zh: '拍卖地区' }), vehicle.location],
+    [text({ en: 'Vehicle Location', zh: '车辆所在地' }), vehicle.location],
   ];
   const costRows = breakdown ? [
-    [text({ en: 'Japan Vehicle Price (NZD equivalent)', zh: '日本车价（纽币换算）' }), breakdown.japanVehiclePriceNzd],
+    [text({ en: 'Japan Vehicle Price (NZD equivalent)', zh: '日本车价（纽币换算）' }), breakdown.vehiclePriceNzd],
     [text({ en: 'Inno Service Fee', zh: 'Inno 服务费' }), breakdown.serviceFeeNzd],
     [text({ en: 'Shipping', zh: '运输费' }), breakdown.shippingNzd],
     ['GST', breakdown.gstNzd],
@@ -119,13 +126,16 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
     [text({ en: 'Registration', zh: '注册费用' }), breakdown.registrationNzd],
     [text({ en: 'Clean Car / Emissions Cost', zh: '清洁车 / 排放费用' }), breakdown.emissionsNzd],
   ] as const : [];
-  const gradeDescription = !vehicle.auctionGrade
-    ? text({ en: 'No auction grade is listed. We will confirm the available inspection information before you proceed.', zh: '该车辆暂未提供拍卖评分，我们会在您继续前确认可用的检查信息。' })
-    : Number(vehicle.auctionGrade) >= 4.5
-      ? text({ en: 'A strong auction grade. Final condition still needs confirmation from the auction information.', zh: '拍卖评分较高，最终车况仍需结合拍卖资料确认。' })
-      : Number(vehicle.auctionGrade) >= 4
-        ? text({ en: 'A solid auction grade. We will confirm condition notes and repair history before purchase.', zh: '拍卖评分良好，购买前会进一步确认车况备注及维修记录。' })
-        : text({ en: 'Condition can vary at this grade. We will review the auction information and explain any concerns before purchase.', zh: '这一评分的实际车况差异可能较大，购买前我们会审核拍卖资料并说明需要注意的问题。' });
+  const conditionTitle = vehicle.hasAccident === false
+    ? text({ en: 'No accident reported', zh: '暂无事故记录' })
+    : vehicle.hasAccident === true
+      ? text({ en: 'Accident history reported', zh: '有事故记录' })
+      : text({ en: 'Condition to confirm', zh: '车况待确认' });
+  const conditionDescription = vehicle.hasAccident === false
+    ? text({ en: 'The source does not currently report accident history. Inno will still arrange a condition check before you commit.', zh: '当前车源资料未报告事故记录。确认购买前，Inno 仍会进一步核对实际车况。' })
+    : vehicle.hasAccident === true
+      ? text({ en: 'The source reports accident history. Ask us to review the available repair and inspection information before considering this vehicle.', zh: '当前车源资料显示有事故记录。考虑该车前，请让我们进一步核对维修与检查资料。' })
+      : text({ en: 'No definitive accident status is available from the source. We will confirm condition and inspection information before you proceed.', zh: '当前车源未提供明确事故状态。继续购买前，我们会确认车况与可用检查资料。' });
   const whatsappHref = `https://wa.me/64272858065?text=${encodeURIComponent(`Hi Inno Group, I'm interested in ${vehicleFullName(vehicle)} (${vehicle.id}).`)}`;
 
   return (
@@ -135,9 +145,9 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
         <div className="section-shell">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <JapanMarketVehicleVisual vehicle={vehicle} className="aspect-[16/10] rounded-3xl" />
+              <JapanMarketPhotoGallery vehicle={vehicle} />
               <div className="mt-8">
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">Japan Market · {vehicle.id}</p>
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">{vehicle.source ?? 'Japan Market'} · {vehicle.id}</p>
                 <h1 className="mt-4 text-4xl sm:text-5xl">{vehicleFullName(vehicle)}</h1>
                 <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 rounded-2xl border border-black/8 bg-white/55 px-5 py-4 text-sm">
                   <span className="inline-flex items-center gap-2 font-bold text-foreground">
@@ -158,7 +168,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
             </div>
 
             <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-              <section className="rounded-3xl border border-black/10 bg-white/65 p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/45">{text({ en: 'Auction Grade', zh: '拍卖评分' })}</p><div className="mt-4 flex items-end justify-between gap-5"><h2 className="!text-2xl">{vehicle.auctionGrade ? `${text({ en: 'Grade', zh: '评分' })} ${vehicle.auctionGrade}` : text({ en: 'Unrated', zh: '暂无评分' })}</h2>{vehicle.auctionGrade ? <span className="rounded-full bg-[#111214] px-3 py-1.5 text-xs font-extrabold text-primary">{vehicle.auctionGrade}</span> : null}</div><p className="mt-4 text-sm leading-7">{gradeDescription}</p>{vehicle.interiorGrade ? <p className="mt-3 text-sm font-bold">{text({ en: `Exterior: ${vehicle.auctionGrade} · Interior: ${vehicle.interiorGrade}`, zh: `外观：${vehicle.auctionGrade} · 内饰：${vehicle.interiorGrade}` })}</p> : null}</section>
+              <section className="rounded-3xl border border-black/10 bg-white/65 p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/45">{text({ en: 'Dealer condition data', zh: '经销商车况资料' })}</p><div className="mt-4 flex items-end justify-between gap-5"><h2 className="!text-2xl">{conditionTitle}</h2><span className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${vehicle.hasAccident === true ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>{vehicle.source ?? 'Carsensor'}</span></div><p className="mt-4 text-sm leading-7">{conditionDescription}</p></section>
 
               <section className="rounded-3xl border border-primary/25 bg-[#111214] p-6 text-white sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">{text({ en: 'Estimated Landed Price', zh: '预计新西兰落地价' })}</p><h2 className="mt-4 text-4xl text-white">{formatNzd(vehicle.estimatedNzdPrice, language)}</h2><p className="mt-4 text-sm leading-7 text-white/62">{text({ en: 'Estimated total cost to import and register this vehicle in New Zealand.', zh: '预计包含车辆进口至新西兰并完成注册的总费用。' })}</p>{breakdown ? <><button type="button" onClick={() => setCostOpen((value) => !value)} className="mt-6 flex w-full items-center justify-between border-y border-white/10 py-4 text-sm font-bold text-white">{text({ en: 'View Cost Breakdown', zh: '查看费用明细' })}<ChevronDown className={`h-4 w-4 transition-transform ${costOpen ? 'rotate-180' : ''}`} /></button>{costOpen ? <div className="space-y-3 border-b border-white/10 py-5">{costRows.map(([label, amount]) => <div key={label} className="flex justify-between gap-5 text-sm"><span className="text-white/55">{label}</span><span className="font-bold text-white">{amount != null ? formatNzd(amount, language) : text({ en: 'Estimate pending', zh: '待确认' })}</span></div>)}</div> : null}</> : null}<p className="mt-5 text-xs leading-6 text-white/45">{text({ en: 'All figures are estimates. Final pricing may vary with exchange rates, shipping, compliance requirements, vehicle condition and other import costs.', zh: '所有金额均为估算，最终价格可能因汇率、运输、合规要求、实际车况及其他进口成本而变化。' })}</p></section>
 

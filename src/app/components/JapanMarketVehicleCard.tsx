@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Images } from 'lucide-react';
 import { Link } from 'react-router';
 import {
   formatMileage,
@@ -18,14 +18,28 @@ export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle:
   const { language } = useLanguage();
   return (
     <div className={`relative overflow-hidden bg-[#17191c] ${className}`}>
+      {vehicle.imageUrl ? (
+        <img
+          src={vehicle.imageUrl}
+          alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
+          onError={(event) => { event.currentTarget.style.display = 'none'; }}
+        />
+      ) : null}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/30" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_46%,rgba(199,162,74,0.18),transparent_29%)]" />
       <div className="absolute -right-12 top-1/2 h-44 w-44 -translate-y-1/2 rounded-full border border-primary/25" />
       <div className="absolute -right-1 top-1/2 h-28 w-28 -translate-y-1/2 rounded-full border border-white/10" />
       <div className="absolute bottom-0 right-0 h-1/2 w-2/3 -skew-x-12 border-l border-t border-white/7 bg-white/[0.025]" />
       <div className="absolute inset-0 flex flex-col justify-between p-5 text-white">
         <div className="relative flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
-          <span>Inno Group</span>
-          <span>{formatBodyType(vehicle.bodyType, language)}</span>
+          <span>{vehicle.source ?? 'Inno Group'}</span>
+          <span className="flex items-center gap-3">
+            {vehicle.photoCount ? <span className="inline-flex items-center gap-1"><Images className="h-3.5 w-3.5" />{vehicle.photoCount}</span> : null}
+            <span>{formatBodyType(vehicle.bodyType, language)}</span>
+          </span>
         </div>
         <div className="relative">
           <div className="mb-4 h-px w-12 bg-primary" />
@@ -41,6 +55,11 @@ export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: 
   const { language, text } = useLanguage();
   const hasPrice = vehicle.estimatedNzdPrice != null;
   const variant = vehicleVariant(vehicle);
+  const condition = vehicle.hasAccident === false
+    ? text({ en: 'No accident reported', zh: '暂无事故记录' })
+    : vehicle.hasAccident === true
+      ? text({ en: 'Accident history', zh: '有事故记录' })
+      : text({ en: 'Condition to confirm', zh: '车况待确认' });
 
   return (
     <Link
@@ -50,13 +69,13 @@ export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: 
       <JapanMarketVehicleVisual vehicle={vehicle} className={compact ? 'aspect-[16/10]' : 'aspect-[4/3]'} />
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-center justify-between gap-3">
-          <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#8b6b1d]">Japan Market</span>
+          <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#8b6b1d]">{vehicle.source ?? 'Japan Market'}</span>
           <span className="text-sm font-bold text-foreground/48">{vehicle.year}</span>
         </div>
         <h3 className="mt-4 line-clamp-2 text-xl leading-snug">{vehicleName(vehicle)}</h3>
         {variant ? <p className="mt-1 line-clamp-1 text-sm text-foreground/48">{variant}</p> : null}
         <div className="mt-5 space-y-2 border-t border-black/7 pt-4 text-sm text-foreground/65">
-          <p className="flex items-center justify-between gap-3"><span>{formatMileage(vehicle.mileage, language)}</span><span className="text-xs font-semibold text-foreground/52">{vehicle.auctionGrade ? `${text({ en: 'Grade', zh: '评分' })} ${vehicle.auctionGrade}` : text({ en: 'Unrated', zh: '暂无评分' })}</span></p>
+          <p className="flex items-center justify-between gap-3"><span>{formatMileage(vehicle.mileage, language)}</span><span className="text-xs font-semibold text-foreground/52">{condition}</span></p>
           <p>{formatFuelType(vehicle.fuelType, language)} · {formatTransmission(vehicle.transmission, language)}</p>
           <p className="text-xs text-foreground/45">{formatVehicleUpdatedAt(vehicle.updatedAt, language)} · {text({ en: 'Availability to confirm', zh: '库存需再次确认' })}</p>
         </div>

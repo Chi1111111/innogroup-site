@@ -1,8 +1,10 @@
-export type JapanMarketFuelType = 'Petrol' | 'Hybrid' | 'PHEV' | 'EV' | 'Diesel';
-export type JapanMarketBodyType = 'Sedan' | 'SUV' | 'Hatchback' | 'Wagon' | 'Coupe' | 'Van / MPV' | 'Sports';
+export type JapanMarketFuelType = 'Petrol' | 'Hybrid' | 'PHEV' | 'EV' | 'Diesel' | 'Other';
+export type JapanMarketBodyType = 'Sedan' | 'SUV' | 'Hatchback' | 'Wagon' | 'Coupe' | 'Van / MPV' | 'Sports' | 'Other';
 
 export interface JapanMarketVehicleSummary {
   id: string;
+  source?: string;
+  sourceCode?: string;
   make: string;
   model: string;
   variant: string;
@@ -13,6 +15,12 @@ export interface JapanMarketVehicleSummary {
   auctionGrade: '3.5' | '4' | '4.5' | '5' | null;
   estimatedNzdPrice: number | null;
   bodyType: JapanMarketBodyType;
+  sourcePriceUsd?: number | null;
+  imageUrl?: string | null;
+  photoCount?: number;
+  hasAccident?: boolean | null;
+  isNewVehicle?: boolean | null;
+  isVerified?: boolean | null;
   updatedAt: string;
 }
 
@@ -23,6 +31,8 @@ export interface JapanMarketVehicle extends JapanMarketVehicleSummary {
   interiorGrade: string | null;
   chassisCode: string;
   japanPrice: number | null;
+  imageUrls?: string[];
+  photoGallerySyncedAt?: string;
   location: string;
   status: 'Available' | 'Unavailable';
   lastSeenAt: string;
@@ -30,6 +40,7 @@ export interface JapanMarketVehicle extends JapanMarketVehicleSummary {
 
 export interface JapanMarketPricing {
   nzdPerJpy: number;
+  nzdPerUsd?: number;
   serviceFeeNzd: number;
   shippingNzd: number;
   complianceNzd: number;
@@ -39,6 +50,7 @@ export interface JapanMarketPricing {
 }
 
 export interface JapanMarketPayload {
+  source?: string;
   count: number;
   refreshedAt: string;
   pricing: JapanMarketPricing;
@@ -46,6 +58,7 @@ export interface JapanMarketPayload {
 }
 
 interface JapanMarketDetailPayload {
+  source?: string;
   refreshedAt: string;
   pricing: JapanMarketPricing;
   vehicles: JapanMarketVehicle[];
@@ -58,7 +71,7 @@ export interface JapanMarketVehicleResult {
 }
 
 export interface JapanMarketCostBreakdown {
-  japanVehiclePriceNzd: number;
+  vehiclePriceNzd: number;
   serviceFeeNzd: number;
   shippingNzd: number;
   gstNzd: number;
@@ -132,6 +145,11 @@ export function japanMarketVehiclePath(vehicle: JapanMarketVehicleSummary) {
   return `/japan-market/${encodeURIComponent(vehicle.id)}`;
 }
 
+export function isJapanMarketVehicleId(value: string) {
+  return /^JP[\w-]+$/i.test(value)
+    || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 export function formatNzd(value: number | null | undefined, language: 'en' | 'zh' = 'en') {
   return value == null
     ? language === 'zh' ? '联系确认价格' : 'Estimate on request'
@@ -156,7 +174,7 @@ export function formatVehicleUpdatedAt(value: string, language: 'en' | 'zh' = 'e
 
 export function formatFuelType(value: JapanMarketFuelType, language: 'en' | 'zh' = 'en') {
   if (language === 'en') return value;
-  return ({ Petrol: '汽油', Hybrid: '混合动力', PHEV: '插电混动', EV: '纯电', Diesel: '柴油' } as const)[value];
+  return ({ Petrol: '汽油', Hybrid: '混合动力', PHEV: '插电混动', EV: '纯电', Diesel: '柴油', Other: '其他' } as const)[value];
 }
 
 export function formatTransmission(value: string, language: 'en' | 'zh' = 'en') {
@@ -166,6 +184,7 @@ export function formatTransmission(value: string, language: 'en' | 'zh' = 'en') 
     Manual: '手动挡',
     CVT: 'CVT 无级变速',
     'Dual-clutch automatic': '双离合自动挡',
+    'Semi-automatic': '半自动变速箱',
     'Not listed': '暂无信息',
   };
   return translations[value] ?? value;
@@ -181,6 +200,7 @@ export function formatBodyType(value: JapanMarketBodyType, language: 'en' | 'zh'
     Coupe: '双门轿跑',
     'Van / MPV': '厢式车 / MPV',
     Sports: '跑车',
+    Other: '其他',
   } as const)[value];
 }
 
@@ -199,11 +219,16 @@ export function slugifyVehicleValue(value: string) {
 }
 
 export function getCostBreakdown(vehicle: JapanMarketVehicle, pricing: JapanMarketPricing): JapanMarketCostBreakdown | null {
-  if (!vehicle.japanPrice || vehicle.estimatedNzdPrice == null) return null;
-  const japanVehiclePriceNzd = Math.round(vehicle.japanPrice * pricing.nzdPerJpy);
-  const gstNzd = Math.round((japanVehiclePriceNzd + pricing.shippingNzd) * pricing.gstRate);
+  if (vehicle.estimatedNzdPrice == null) return null;
+  const vehiclePriceNzd = vehicle.sourcePriceUsd && pricing.nzdPerUsd
+    ? Math.round(vehicle.sourcePriceUsd * pricing.nzdPerUsd)
+    : vehicle.japanPrice
+      ? Math.round(vehicle.japanPrice * pricing.nzdPerJpy)
+      : null;
+  if (vehiclePriceNzd == null) return null;
+  const gstNzd = Math.round((vehiclePriceNzd + pricing.shippingNzd) * pricing.gstRate);
   return {
-    japanVehiclePriceNzd,
+    vehiclePriceNzd,
     serviceFeeNzd: pricing.serviceFeeNzd,
     shippingNzd: pricing.shippingNzd,
     gstNzd,

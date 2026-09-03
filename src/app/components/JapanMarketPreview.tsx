@@ -26,7 +26,7 @@ export function JapanMarketPreview() {
             <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-primary">Japan Market</p>
             <h2 className="mt-5 max-w-3xl text-white">{text({ en: 'Explore Cars from Japan', zh: '浏览日本市场车辆' })}</h2>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-white/62">
-              {text({ en: 'Browse vehicles available for import to New Zealand.', zh: '浏览目前可进口至新西兰的日本车辆。' })}
+              {text({ en: 'Browse Carsensor dealer listings supplied through CARAPIS for import to New Zealand.', zh: '浏览由 CARAPIS 提供的 Carsensor 日本经销商车源。' })}
             </p>
           </div>
           <div className="lg:text-right">
