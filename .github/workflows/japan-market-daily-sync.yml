@@ -1,6 +1,7 @@
 name: Japan Market daily CARAPIS sync
 
 on:
+  workflow_dispatch:
   schedule:
     # 02:17 NZST / 03:17 NZDT. GitHub schedules use UTC.
     - cron: '17 14 * * *'
@@ -28,18 +29,39 @@ jobs:
           node-version: 22
 
       - name: Refresh vehicles and photo galleries
+        id: collector
         env:
           CARAPIS_API_KEY: ${{ secrets.CARAPIS_API_KEY }}
           CARAPIS_SOURCE: carsensor
           CARAPIS_PAGE_SIZE: 100
           CARAPIS_CONCURRENCY: 2
           CARAPIS_DAILY_REQUEST_BUDGET: 100
-        run: node scripts/sync-carapis-japan-market.mjs
+        run: node scripts/run-japan-market-sync.mjs
+
+      - name: Record interrupted collection
+        if: always()
+        env:
+          SYNC_OUTCOME: ${{ steps.collector.outcome }}
+        run: node scripts/run-japan-market-sync.mjs --finalize
+
+      - name: Preserve collection report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: japan-market-sync-${{ github.run_id }}-${{ github.run_attempt }}
+          path: public/data/japan-market/sync-history.json
 
       - name: Commit refreshed market data
+        if: always()
+        env:
+          SYNC_OUTCOME: ${{ steps.collector.outcome }}
         shell: bash
         run: |
-          git add public/data/japan-market
+          if [ "$SYNC_OUTCOME" = "success" ]; then
+            git add public/data/japan-market
+          elif [ -f public/data/japan-market/sync-history.json ]; then
+            git add public/data/japan-market/sync-history.json
+          fi
           if git diff --cached --quiet; then
             echo "CARAPIS returned no data changes."
             exit 0

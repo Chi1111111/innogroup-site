@@ -1,3 +1,5 @@
+import { vehicleQualityIssue } from './japanMarketQuality.mjs';
+
 export type JapanMarketFuelType = 'Petrol' | 'Hybrid' | 'PHEV' | 'EV' | 'Diesel' | 'Other';
 export type JapanMarketBodyType = 'Sedan' | 'SUV' | 'Hatchback' | 'Wagon' | 'Coupe' | 'Van / MPV' | 'Sports' | 'Other';
 
@@ -88,7 +90,10 @@ const detailPromises = new Map<string, Promise<JapanMarketDetailPayload>>();
 async function fetchMarketPayload(path: string) {
   const response = await fetch(path, { headers: { Accept: 'application/json' } });
   if (!response.ok) throw new Error('Japan Market vehicles are temporarily unavailable.');
-  return response.json() as Promise<JapanMarketPayload>;
+  const payload = await response.json() as JapanMarketPayload;
+  if (!Array.isArray(payload.vehicles)) throw new Error('Invalid Japan Market data.');
+  const vehicles = payload.vehicles.filter((vehicle) => !vehicleQualityIssue(vehicle));
+  return { ...payload, vehicles, count: path.endsWith('/index.json') ? vehicles.length : payload.count };
 }
 
 export function loadJapanMarketData() {
@@ -120,7 +125,7 @@ export async function loadJapanMarketVehicle(id: string): Promise<JapanMarketVeh
   }
   const payload = await promise;
   const vehicle = payload.vehicles.find((item) => item.id.toUpperCase() === normalizedId);
-  return vehicle ? { refreshedAt: payload.refreshedAt, pricing: payload.pricing, vehicle } : null;
+  return vehicle && !vehicleQualityIssue(vehicle) ? { refreshedAt: payload.refreshedAt, pricing: payload.pricing, vehicle } : null;
 }
 
 export function vehicleName(vehicle: JapanMarketVehicleSummary) {

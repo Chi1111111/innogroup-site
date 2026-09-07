@@ -1,3 +1,5 @@
+import type { JapanSpecialOrderVehicle } from './japanSpecialOrderTypes';
+
 const jaguarETypeImages = [
   'https://res.cloudinary.com/djupvlz3l/image/upload/v1783475017/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260708121119_57_2_dcvrty.jpg',
   'https://res.cloudinary.com/djupvlz3l/image/upload/v1783475020/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260708121121_58_2_p5gmvi.jpg',
@@ -21,7 +23,6 @@ const jaguarETypeImages = [
   'https://res.cloudinary.com/djupvlz3l/image/upload/v1783475019/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260708121156_76_2_lznycm.jpg',
   'https://res.cloudinary.com/djupvlz3l/image/upload/v1783475019/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260708121158_77_2_o7zfw3.jpg',
 ];
-
 const landRoverSeriesIIAImages = [
   'https://res.cloudinary.com/djupvlz3l/image/upload/v1783475075/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_2026-07-08_123033_753_j3kn6b.jpg',
   'https://res.cloudinary.com/djupvlz3l/image/upload/v1783475076/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_2026-07-08_123036_852_ibngxx.jpg',
@@ -33,7 +34,7 @@ const landRoverSeriesIIAImages = [
 // This snapshot mirrors the current Supabase board so the real vehicles still render
 // while a preview deployment is missing its Supabase environment variables or is offline.
 // When Supabase is available, useJapanSpecialOrders replaces it with the latest payload.
-export const japanSpecialOrderVehicles = [
+export const japanSpecialOrderVehicles: JapanSpecialOrderVehicle[] = [
   {
     slug: 'jdm-icons',
     title: 'Jaguar E-type Series 2 2+2 Coupe',
@@ -70,9 +71,4 @@ export const japanSpecialOrderVehicles = [
     zhSummary:
       '路虎 Series IIA 为日本渠道发来的车源。当前信息显示年份 1965、公里数 To be confirmed、价格 POA；是否仍可锁车、车况、文件和落地成本都需要在订金前再次确认。',
   },
-];
-
-export const japanSpecialOrderHeroImages = [
-  jaguarETypeImages[0],
-  landRoverSeriesIIAImages[0],
 ];

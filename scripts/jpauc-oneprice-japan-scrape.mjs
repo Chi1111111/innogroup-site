@@ -1,10 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import {
+  ensureDir,
+  mergeVehiclesById,
+  normalizeText,
+  nowIso,
+  parseByPrefix,
+  parseMakerModel,
+  parseModelGrade,
+  parsePrice,
+  parseYearOnly,
+  readExistingOutput,
+  runWithConcurrency,
+  sanitizeScrapedValue,
+  toAbsoluteUrl,
+} from './lib/jpauc-utils.mjs';
 
 const ROOT = process.cwd();
 const IMPORT_DIR = path.join(ROOT, 'data', 'imports');
-const PUBLIC_DIR = path.join(ROOT, 'public', 'data');
 const OUTPUT_IMPORT_FILE = path.join(IMPORT_DIR, 'jpauc-oneprice-japan-vehicles.json');
 const DEBUG_DIR = path.join(ROOT, 'tmp', 'jpauc-oneprice-japan-debug');
 
@@ -14,63 +28,6 @@ const DEFAULT_START_PAGE = 1;
 const DEFAULT_MAX_VEHICLES = 0;
 const DEFAULT_DETAIL_CONCURRENCY = 4;
 const DEFAULT_WAIT_MS = 1200;
-const MULTI_WORD_MAKES = ['MERCEDES BENZ', 'LAND ROVER', 'ALFA ROMEO', 'ASTON MARTIN', 'ROLLS ROYCE'];
-
-function ensureDir(target) {
-  if (!fs.existsSync(target)) {
-    fs.mkdirSync(target, { recursive: true });
-  }
-}
-
-function normalizeText(value) {
-  return (value ?? '').replace(/\s+/g, ' ').trim();
-}
-
-function parseMakerModel(value) {
-  const normalized = normalizeText(value);
-  if (!normalized) return { maker: '', model: '' };
-
-  const upper = normalized.toUpperCase();
-  const multiWordMake = MULTI_WORD_MAKES.find(
-    (make) => upper === make || upper.startsWith(`${make} `)
-  );
-
-  if (multiWordMake) {
-    return {
-      maker: multiWordMake,
-      model: normalizeText(normalized.slice(multiWordMake.length)),
-    };
-  }
-
-  const [maker = '', ...modelParts] = normalized.split(' ');
-  const model = normalizeText(modelParts.join(' '));
-  return {
-    maker: normalizeText(maker),
-    model: model.startsWith(`${maker} `) ? normalizeText(model.slice(maker.length)) : model,
-  };
-}
-
-function parsePrice(value) {
-  const match = value.match(/[\u00a5\uffe5]?\s*[\d,]+/);
-  return match ? normalizeText(match[0]) : '';
-}
-
-function parseByPrefix(value, prefix) {
-  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const reg = new RegExp(`${escaped}\\s*:?\\s*([^|]+)`, 'i');
-  const found = value.match(reg);
-  return found ? normalizeText(found[1]) : '';
-}
-
-function parseYearOnly(yearGrade) {
-  const found = yearGrade.match(/\b(19|20)\d{2}\b/);
-  return found ? found[0] : '';
-}
-
-function parseModelGrade(yearGrade) {
-  return normalizeText(yearGrade.replace(/Year:\s*(19|20)\d{2}\s*/i, ''));
-}
-
 function parseColorAndTitle(text) {
   const full = normalizeText(text);
   const match = full.match(/([A-Za-z ]+?)\s*\|\s*Seat\s*:\s*(.*)$/i);
@@ -90,59 +47,6 @@ function parseColorAndTitle(text) {
   }
 
   return { color: '', title: '' };
-}
-
-function toAbsoluteUrl(candidate, baseUrl) {
-  try {
-    return new URL(candidate, baseUrl).toString();
-  } catch {
-    return '';
-  }
-}
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-function readExistingOutput(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return null;
-  }
-
-  try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.vehicles)) {
-      return null;
-    }
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function mergeVehiclesById(existingVehicles, nextVehicles) {
-  const merged = [];
-  const byId = new Map();
-
-  for (const item of existingVehicles) {
-    if (!item?.id) continue;
-    byId.set(item.id, item);
-    merged.push(item);
-  }
-
-  for (const item of nextVehicles) {
-    if (!item?.id) continue;
-    if (byId.has(item.id)) {
-      const index = merged.findIndex((current) => current.id === item.id);
-      if (index >= 0) merged[index] = item;
-    } else {
-      merged.push(item);
-    }
-    byId.set(item.id, item);
-  }
-
-  return merged;
 }
 
 async function openListingPage(page) {
@@ -209,7 +113,7 @@ async function scrapeListingRows(page) {
 }
 
 function mapListingRecord(raw, pageUrl) {
-  const cols = raw.cols ?? [];
+  const cols = (raw.cols ?? []).map(normalizeText);
   const locationLot = normalizeText(cols[2] ?? '');
   const makerModel = normalizeText(cols[3] ?? '');
   const yearGrade = normalizeText(cols[4] ?? '');
@@ -256,7 +160,7 @@ async function scrapeDetail(page, record) {
   await page.goto(record.detailUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(600);
 
-  return page.evaluate((current) => {
+  const detail = await page.evaluate((current) => {
     const output = {
       titleFull: '',
       detailSpecs: {},
@@ -315,22 +219,7 @@ async function scrapeDetail(page, record) {
         : '',
     };
   }, record);
-}
-
-async function runWithConcurrency(items, worker, limit) {
-  const outputs = new Array(items.length);
-  let cursor = 0;
-
-  const runners = Array.from({ length: Math.max(1, limit) }, async () => {
-    while (true) {
-      const index = cursor++;
-      if (index >= items.length) return;
-      outputs[index] = await worker(items[index], index);
-    }
-  });
-
-  await Promise.all(runners);
-  return outputs;
+  return sanitizeScrapedValue(detail);
 }
 
 async function main() {
@@ -346,7 +235,6 @@ async function main() {
   const appendMode = process.env.JPAUC_ONEPRICE_APPEND_MODE !== 'false';
 
   ensureDir(IMPORT_DIR);
-  ensureDir(PUBLIC_DIR);
   ensureDir(DEBUG_DIR);
 
   console.log(

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, MapPin, Newspaper, Search, Ship, Sparkles, TrendingUp, X } from 'lucide-react';
 import { Link } from 'react-router';
 import { getJapanSpecialOrderImages, type JapanSpecialOrderVehicle, type JapanWeeklyReportState, useJapanSpecialOrders } from '../hooks/useJapanSpecialOrders';
@@ -202,17 +202,17 @@ function VehicleDetailModal({
   onClose: () => void;
 }) {
   const { text } = useLanguage();
-  const images = getJapanSpecialOrderImages(vehicle);
+  const images = useMemo(() => getJapanSpecialOrderImages(vehicle), [vehicle]);
   const [activeImage, setActiveImage] = useState(images[0]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const isUnavailable = vehicle.availability === 'sold' || vehicle.availability === 'paused';
   const previewIndex = previewImage ? Math.max(0, images.indexOf(previewImage)) : 0;
 
-  const changePreviewImage = (direction: -1 | 1) => {
+  const changePreviewImage = useCallback((direction: -1 | 1) => {
     const nextIndex = (previewIndex + direction + images.length) % images.length;
     setPreviewImage(images[nextIndex]);
     setActiveImage(images[nextIndex]);
-  };
+  }, [images, previewIndex]);
 
   useEffect(() => {
     if (!previewImage || images.length < 2) return;
@@ -222,7 +222,7 @@ function VehicleDetailModal({
     };
     window.addEventListener('keydown', handleArrowKeys);
     return () => window.removeEventListener('keydown', handleArrowKeys);
-  }, [previewImage, previewIndex, images.length]);
+  }, [changePreviewImage, images.length, previewImage]);
   const details = arrived
     ? [
         [text({ en: 'Year', zh: '年份' }), vehicle.year],

@@ -118,10 +118,9 @@ function BawM8HeroConfigurator({
   onSelect: (id: VersionId) => void;
 }) {
   const { text } = useLanguage();
-  const [selectedColour, setSelectedColour] = useState(bawM8Colours[1]);
+  const [selectedColour, setSelectedColour] = useState<(typeof bawM8Colours)[number]>(bawM8Colours[1]);
   const [slideIndex, setSlideIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const selected = bawM8Versions.find((version) => version.id === selectedId) ?? bawM8Versions[0];
   const carouselPhotos = getCarouselPhotos(selectedId, selectedColour.image);
   const activePhoto = carouselPhotos[slideIndex] ?? carouselPhotos[0];
 

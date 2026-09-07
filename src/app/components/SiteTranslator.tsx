@@ -12,15 +12,17 @@ type LanguageContextValue = {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 const STORAGE_KEY = 'inno-language';
 
-export function SiteTranslatorProvider({ children }: { children?: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en');
+function readStoredLanguage(): Language {
+  if (typeof window === 'undefined') return 'en';
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === 'zh' ? 'zh' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
-  useEffect(() => {
-    const savedLanguage = window.localStorage.getItem(STORAGE_KEY);
-    if (savedLanguage === 'zh') {
-      setLanguageState('zh');
-    }
-  }, []);
+export function SiteTranslatorProvider({ children }: { children?: ReactNode }) {
+  const [language, setLanguageState] = useState<Language>(readStoredLanguage);
 
   useEffect(() => {
     document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en-NZ';
@@ -28,7 +30,11 @@ export function SiteTranslatorProvider({ children }: { children?: ReactNode }) {
 
   const setLanguage = (nextLanguage: Language) => {
     setLanguageState(nextLanguage);
-    window.localStorage.setItem(STORAGE_KEY, nextLanguage);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, nextLanguage);
+    } catch {
+      // Language switching should still work when storage is unavailable.
+    }
   };
 
   const value = useMemo<LanguageContextValue>(

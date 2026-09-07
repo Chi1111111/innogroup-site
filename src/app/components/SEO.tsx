@@ -1,10 +1,23 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useLocation } from 'react-router';
 import { SEO_CONFIG, SEO_ROUTES } from '../../config/seo';
 import { isJapanMarketVehicleId } from '../../data/japanMarket';
 import { getWoxExpansionVehicle } from '../../data/woxExpansionVehicles';
+import { isPathWithin, isWorkflowPath } from '../lib/routePaths';
 
-const routeKeys = Object.keys(SEO_ROUTES) as Array<keyof typeof SEO_ROUTES>;
+const JAPAN_MARKET_DETAIL_PATH = /^\/japan-market\/[^/]+(?:\/[^/]+)?$/;
+const WEEKLY_VEHICLE_PATH = /^\/weekly-report\/[^/]+\/[^/]+$/;
+const UPPERCASE_SLUG_PARTS = new Set(['audi', 'bmw', 'nz']);
+
+function displaySlug(value: string) {
+  return value
+    .split('-')
+    .map((part) => UPPERCASE_SLUG_PARTS.has(part)
+      ? part.toUpperCase()
+      : `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ')
+    .replace('Mercedes Benz', 'Mercedes-Benz');
+}
 
 function setMeta(name: string, content: string, attribute: 'name' | 'property' = 'name') {
   let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${name}"]`);
@@ -52,8 +65,12 @@ function setJsonLd(id: string, data: Record<string, unknown>) {
 }
 
 function getRouteMeta(pathname: string) {
-  if (pathname.startsWith('/japan-market')) {
-    const [, , first = '', second = ''] = pathname.split('/');
+  const fallback = SEO_ROUTES['/'];
+  if (isPathWithin(pathname, '/japan-market')) {
+    if (pathname !== '/japan-market' && !JAPAN_MARKET_DETAIL_PATH.test(pathname)) {
+      return { ...fallback, isKnown: false };
+    }
+    const [first = '', second = ''] = pathname.split('/').filter(Boolean).slice(1);
     if (!first) return { ...SEO_ROUTES['/japan-market'], isKnown: true };
     if (isJapanMarketVehicleId(first)) {
       return {
@@ -62,13 +79,8 @@ function getRouteMeta(pathname: string) {
         isKnown: true,
       };
     }
-    const displayName = (value: string) => value
-      .split('-')
-      .map((part) => ['bmw', 'audi', 'nz'].includes(part) ? part.toUpperCase() : `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-      .join(' ')
-      .replace('Mercedes Benz', 'Mercedes-Benz');
-    const make = displayName(first);
-    const model = second ? displayName(second) : '';
+    const make = displaySlug(first);
+    const model = second ? displaySlug(second) : '';
     const vehicleName = [make, model].filter(Boolean).join(' ');
     return {
       title: `${vehicleName} for Import from Japan | Inno Group NZ`,
@@ -83,22 +95,22 @@ function getRouteMeta(pathname: string) {
     return {
       title: `${expansionVehicle.name} Import NZ | Inno Group`,
       description: `${expansionVehicle.summary.en} Ask Inno Group about New Zealand availability, specification and landed pricing.`,
-      keywords: `${expansionVehicle.name} NZ, ${expansionVehicle.name} import, Cars from China NZ`,
       image: expansionVehicle.image,
       vehicle: expansionVehicle,
       isKnown: true,
     };
   }
-  const routeKey = routeKeys.find((key) => key === pathname) ??
-    (pathname.startsWith('/weekly-report/') ? '/weekly-report' : undefined);
-  const fallback = SEO_ROUTES['/'];
-  return { ...(routeKey ? SEO_ROUTES[routeKey] : fallback), isKnown: Boolean(routeKey) || pathname === '/' };
+  const routeMeta = SEO_ROUTES[pathname as keyof typeof SEO_ROUTES];
+  if (routeMeta) return { ...routeMeta, isKnown: true };
+  if (WEEKLY_VEHICLE_PATH.test(pathname)) {
+    return { ...SEO_ROUTES['/weekly-report'], isKnown: true };
+  }
+  return { ...fallback, isKnown: false };
 }
 
 function getBreadcrumbItems(pathname: string) {
   const segments = pathname.split('/').filter(Boolean).filter((segment) => segment !== 'vehicles');
   const names: Record<string, string> = {
-    vehicles: 'Vehicles',
     'weekly-report': 'Japan Market Weekly',
     'find-my-car': 'Find My Car',
     china: 'Cars from China',
@@ -116,25 +128,25 @@ function getBreadcrumbItems(pathname: string) {
     'wox-zeny': 'WOX Zeny',
   };
 
-  const homeName = 'Home';
-  const items = [
+  const items: Array<{
+    '@type': 'ListItem';
+    position: number;
+    name: string;
+    item: string;
+  }> = [
     {
       '@type': 'ListItem',
       position: 1,
-      name: homeName,
+      name: 'Home',
       item: SEO_CONFIG.siteUrl,
     },
   ];
 
   let currentPath = '';
   segments.forEach((segment) => {
-    currentPath = segment === 'china'
-      ? '/vehicles/china'
-      : segment === 'find-my-car'
-        ? '/vehicles/find-my-car'
-        : currentPath === '/vehicles/china'
-          ? `${currentPath}/${segment}`
-          : `${currentPath}/${segment}`;
+    currentPath = segment === 'china' || segment === 'find-my-car'
+      ? `/vehicles/${segment}`
+      : `${currentPath}/${segment}`;
     items.push({
       '@type': 'ListItem',
       position: items.length + 1,
@@ -152,9 +164,10 @@ export function SEO() {
   useEffect(() => {
     const meta = getRouteMeta(location.pathname);
     const canonicalUrl = `${SEO_CONFIG.siteUrl}${location.pathname === '/' ? '/' : location.pathname}`;
-    const imageUrl = new URL('image' in meta ? meta.image : SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href;
+    const imagePath = 'image' in meta && meta.image ? meta.image : SEO_CONFIG.defaultImage;
+    const imageUrl = new URL(imagePath, SEO_CONFIG.siteUrl).href;
     const lang = 'en-NZ';
-    const isWorkflowRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/sign/') || location.pathname.startsWith('/contract/');
+    const isWorkflowRoute = isWorkflowPath(location.pathname);
     const shouldIndex = meta.isKnown && !isWorkflowRoute && location.pathname !== '/404';
     document.title = meta.title;
     setMeta('description', meta.description);
@@ -188,63 +201,63 @@ export function SEO() {
 
     if (location.pathname === '/' || location.pathname === '/about' || location.pathname === '/contact') {
       setJsonLd('inno-local-business-schema', {
-      '@context': 'https://schema.org',
-      '@type': 'AutoDealer',
-      name: SEO_CONFIG.siteName,
-      url: SEO_CONFIG.siteUrl,
-      image: new URL(SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href,
-      logo: `${SEO_CONFIG.siteUrl}/og-image.png`,
-      telephone: SEO_CONFIG.phone,
-      email: SEO_CONFIG.email,
-      priceRange: SEO_CONFIG.priceRange,
-      openingHours: SEO_CONFIG.openingHours,
-      description: SEO_CONFIG.defaultDescription,
-      address: {
-        '@type': 'PostalAddress',
-        ...SEO_CONFIG.address,
-      },
-      areaServed: SEO_CONFIG.areaServed,
-      knowsAbout: [
-        'Import cars',
-        'Japan car auctions',
-        'Used cars Auckland',
-        'Vehicle finance Auckland',
-        'Imported vehicle compliance New Zealand',
-      ],
-      hasOfferCatalog: {
-        '@type': 'OfferCatalog',
-        name: 'Vehicle services',
-        itemListElement: [
-          {
-            '@type': 'Offer',
-            itemOffered: {
-              '@type': 'Service',
-              name: 'Japanese vehicle sourcing',
-            },
-          },
-          {
-            '@type': 'Offer',
-            itemOffered: {
-              '@type': 'Service',
-              name: 'Import landed cost and compliance guidance',
-            },
-          },
-          {
-            '@type': 'Offer',
-            itemOffered: {
-              '@type': 'Service',
-              name: 'Used and import car finance enquiries',
-            },
-          },
-          {
-            '@type': 'Offer',
-            itemOffered: {
-              '@type': 'Service',
-              name: 'After-sales partner support',
-            },
-          },
+        '@context': 'https://schema.org',
+        '@type': 'AutoDealer',
+        name: SEO_CONFIG.siteName,
+        url: SEO_CONFIG.siteUrl,
+        image: new URL(SEO_CONFIG.defaultImage, SEO_CONFIG.siteUrl).href,
+        logo: `${SEO_CONFIG.siteUrl}/og-image.png`,
+        telephone: SEO_CONFIG.phone,
+        email: SEO_CONFIG.email,
+        priceRange: SEO_CONFIG.priceRange,
+        openingHours: SEO_CONFIG.openingHours,
+        description: SEO_CONFIG.defaultDescription,
+        address: {
+          '@type': 'PostalAddress',
+          ...SEO_CONFIG.address,
+        },
+        areaServed: SEO_CONFIG.areaServed,
+        knowsAbout: [
+          'Import cars',
+          'Japan car auctions',
+          'Used cars Auckland',
+          'Vehicle finance Auckland',
+          'Imported vehicle compliance New Zealand',
         ],
-      },
+        hasOfferCatalog: {
+          '@type': 'OfferCatalog',
+          name: 'Vehicle services',
+          itemListElement: [
+            {
+              '@type': 'Offer',
+              itemOffered: {
+                '@type': 'Service',
+                name: 'Japanese vehicle sourcing',
+              },
+            },
+            {
+              '@type': 'Offer',
+              itemOffered: {
+                '@type': 'Service',
+                name: 'Import landed cost and compliance guidance',
+              },
+            },
+            {
+              '@type': 'Offer',
+              itemOffered: {
+                '@type': 'Service',
+                name: 'Used and import car finance enquiries',
+              },
+            },
+            {
+              '@type': 'Offer',
+              itemOffered: {
+                '@type': 'Service',
+                name: 'After-sales partner support',
+              },
+            },
+          ],
+        },
       });
     } else {
       removeJsonLd('inno-local-business-schema');
@@ -262,7 +275,7 @@ export function SEO() {
       removeJsonLd('inno-website-schema');
     }
 
-    if (location.pathname === '/') {
+    if (!shouldIndex || location.pathname === '/') {
       removeJsonLd('inno-breadcrumb-schema');
     } else {
       setJsonLd('inno-breadcrumb-schema', {

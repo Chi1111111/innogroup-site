@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { normalizeText } from './lib/jpauc-utils.mjs';
 
 const ROOT = process.cwd();
 const SOURCE_FILES = [
@@ -43,10 +44,6 @@ const SUV_MODELS = /\b(SUV|HARRIER|LAND CRUISER|PRADO|RAV4|BZ4X|C-HR|COROLLA CRO
 const WAGON_MODELS = /\b(WAGON|TOURING|SHOOTING BRAKE|LEVORG|OUTBACK|AVANTE|ESTATE|FIELDER|SHUTTLE)\b/i;
 const COUPE_MODELS = /\b(COUPE|CABRIO|CONVERTIBLE)\b/i;
 const HATCH_MODELS = /\b(HATCH|SPORTBACK|AQUA|FIT|NOTE|DEMIO|MAZDA2|SWIFT|YARIS|VITZ|MARCH|LEAF|PRIUS|COROLLA SPORT|CUBE|N BOX|DAYZ|ROOX|TANTO|MOVE|MIRA|TAFT|HUSTLER|SPACIA|WAGON R)\b/i;
-
-function normalizeText(value) {
-  return String(value ?? '').replace(/\s+/g, ' ').trim();
-}
 
 function titleCase(value) {
   return normalizeText(value).toLowerCase().replace(/(^|[\s/-])([a-z])/g, (_, boundary, letter) => `${boundary}${letter.toUpperCase()}`);

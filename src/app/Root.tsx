@@ -5,13 +5,11 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { StickyCTA } from './components/StickyCTA';
 import { SEO } from './components/SEO';
 import { SiteTranslatorProvider } from './components/SiteTranslator';
+import { isWorkflowPath } from './lib/routePaths';
 
 export function Root() {
   const location = useLocation();
-  const isWorkflowRoute =
-    location.pathname.startsWith('/admin') ||
-    location.pathname.startsWith('/sign/') ||
-    location.pathname.startsWith('/contract/');
+  const isWorkflowRoute = isWorkflowPath(location.pathname);
 
   return (
     <SiteTranslatorProvider>

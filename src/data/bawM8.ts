@@ -1,8 +1,3 @@
-export const bawM8SpecSheet = {
-  title: 'BAW M8 EV Specification - LHD General Version 202511',
-  href: '/specs/baw-m8-ev-specification-lhd-general-version-202511.xlsx',
-} as const;
-
 export const bawM8Images = {
   hero: '/images/baw-m8/baw-m8-hero-left-75.jpg',
   overhead: '/images/baw-m8/baw-m8-overhead-grey.jpg',
@@ -31,21 +26,6 @@ export const bawM8Colours = [
   { name: 'Cyan', image: '/images/baw-m8/baw-m8-color-cyan.jpg' },
   { name: 'Silver / Cyan', image: '/images/baw-m8/baw-m8-color-silver-cyan.jpg' },
   { name: 'Silver / Green', image: '/images/baw-m8/baw-m8-color-silver-green.jpg' },
-] as const;
-
-export const bawM8TechnicalSpecs = [
-  { label: 'Source specification', value: 'M8 EV 505km Left-hand Drive - General Version' },
-  { label: 'Body format', value: 'Full-size MPV' },
-  { label: 'Dimensions', value: '5317 x 1870 x 1955 mm' },
-  { label: 'Wheelbase', value: '3200 mm' },
-  { label: 'Seating', value: '7 seats 2+2+3 / 9-seat light passenger 2+2+2+3' },
-  { label: 'Battery', value: '81 kWh lithium iron phosphate, EVE supplier' },
-  { label: 'Pure electric range', value: '505 km CLTC' },
-  { label: 'Charging method', value: 'European Standard, AC slow charging and DC fast charging listed' },
-  { label: 'Motor', value: '70 kW rated power, 310 Nm torque' },
-  { label: 'Maximum speed', value: '150 km/h' },
-  { label: 'Suspension', value: 'Macpherson front, multi-link independent rear' },
-  { label: 'Tyres', value: '225/55 R18' },
 ] as const;
 
 export const bawM8Versions = [
@@ -132,33 +112,5 @@ export const bawM8Versions = [
       'Adaptive cruise and driver assistance features listed in source file',
     ],
     status: 'Higher-spec enquiry option, subject to final availability and landed quote.',
-  },
-] as const;
-
-export const bawM8Highlights = [
-  {
-    title: '7/9-Seater Layout',
-    description: 'Spacious seating options for family, business and shuttle use.',
-  },
-  {
-    title: 'New-Energy Powertrain',
-    description: 'EV specification confirmed from the supplied file; REEV options depend on final market availability.',
-  },
-  {
-    title: 'Full-Size MPV Space',
-    description: '5317 mm length and 3200 mm wheelbase support multi-passenger comfort and practical luggage needs.',
-  },
-  {
-    title: 'Direct Import Support',
-    description: 'From sourcing and export to shipping, compliance guidance and delivery in New Zealand.',
-  },
-  {
-    title: 'Business Ready',
-    description: 'Suitable for airport transfer, hotel shuttle, tourism and fleet enquiries.',
-  },
-  {
-    title: 'Indicative Low-$60k Landed Cost',
-    description:
-      'Final price depends on specification, exchange rate, shipping, GST, compliance and registration.',
   },
 ] as const;

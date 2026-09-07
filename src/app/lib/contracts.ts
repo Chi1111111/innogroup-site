@@ -177,7 +177,9 @@ async function contractSigningRequest<T>(action: 'view' | 'sign', payload: Recor
     return result.data as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('The signing request timed out. Please check your connection and try again.');
+      throw new Error('The signing request timed out. Please check your connection and try again.', {
+        cause: error,
+      });
     }
     throw error;
   } finally {

@@ -120,6 +120,16 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
     loadJapanMarketData().then((data) => {
       if (!active) return;
       setPayload(data);
+      const requestedMake = searchParams.get('make') ?? '';
+      const requestedModel = searchParams.get('model') ?? '';
+      const validMake = requestedMake === 'Other' || data.vehicles.some((vehicle) => vehicle.make === requestedMake);
+      if (requestedMake && !validMake) {
+        setMake('');
+        setModel('');
+      } else if (requestedModel && !data.vehicles.some((vehicle) =>
+        vehicle.model === requestedModel && (!requestedMake || requestedMake === 'Other' || vehicle.make === requestedMake))) {
+        setModel('');
+      }
       const pathMake = [...new Set(data.vehicles.map((vehicle) => vehicle.make))].find((item) => slugifyVehicleValue(item) === initialMakeSlug);
       if (pathMake && !hadMakeParam) {
         setMake(pathMake);

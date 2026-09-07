@@ -15,15 +15,9 @@ export function StickyCTA() {
   const calculatorHref = '#calculator';
 
   useEffect(() => {
-    const handleScroll = () => {
-      // Show sticky CTA after scrolling 500px
-      if (window.scrollY > 500) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
-      }
-    };
+    const handleScroll = () => setIsVisible(window.scrollY > 500);
 
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);

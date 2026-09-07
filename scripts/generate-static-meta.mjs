@@ -4,14 +4,18 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const distRoot = join(projectRoot, 'dist');
-const siteUrl = 'https://www.innogroup.co.nz';
-const defaultImage = `${siteUrl}/og-social-2026.png`;
+const seoData = JSON.parse(await readFile(join(projectRoot, 'src', 'config', 'seoData.json'), 'utf8'));
+const seoConfig = seoData.config;
+const siteUrl = seoConfig.siteUrl;
+const defaultImage = `${siteUrl}${seoConfig.defaultImage}`;
+const routes = Object.fromEntries(
+  Object.entries(seoData.routes).map(([route, meta]) => [
+    route,
+    [meta.title, meta.description, meta.image],
+  ])
+);
 
-const routes = {
-  '/': ['Import Cars NZ | Vehicle Sourcing | Inno Group Ltd', 'Inno Group helps New Zealand customers and dealers source vehicles through suitable overseas channels, including Japan and China.'],
-  '/weekly-report': ['Japan Market Weekly | Vehicle Opportunities for New Zealand', 'Read Inno Group’s weekly Japan market observations and selected vehicle opportunities for New Zealand buyers.'],
-  '/selected-vehicles': ['Selected Vehicles NZ | Inno Group Weekly Finds', 'Browse selected Japan-market vehicle opportunities reviewed by Inno Group for New Zealand buyers.'],
-  '/japan-market': ['Japan Market Cars for Import | Inno Group NZ', 'Browse vehicles currently available from Japan, filter by make, model, year, price, mileage and auction grade, and view estimated landed pricing for New Zealand.'],
+Object.assign(routes, {
   '/japan-market/toyota': ['Toyota for Import from Japan | Inno Group NZ', 'Browse Toyota vehicles available from Japan and view estimated landed pricing for New Zealand.'],
   '/japan-market/toyota/crown': ['Toyota Crown for Import from Japan | Inno Group NZ', 'Browse Toyota Crown vehicles available from Japan and view estimated landed pricing for New Zealand.'],
   '/japan-market/toyota/alphard': ['Toyota Alphard for Import from Japan | Inno Group NZ', 'Browse Toyota Alphard vehicles available from Japan and view estimated landed pricing for New Zealand.'],
@@ -20,19 +24,7 @@ const routes = {
   '/japan-market/honda': ['Honda for Import from Japan | Inno Group NZ', 'Browse Honda vehicles available from Japan and view estimated landed pricing for New Zealand.'],
   '/japan-market/mazda': ['Mazda for Import from Japan | Inno Group NZ', 'Browse Mazda vehicles available from Japan and view estimated landed pricing for New Zealand.'],
   '/japan-market/subaru': ['Subaru for Import from Japan | Inno Group NZ', 'Browse Subaru vehicles available from Japan and view estimated landed pricing for New Zealand.'],
-  '/vehicles/find-my-car': ['Find My Car NZ | Custom Vehicle Sourcing', 'Tell Inno Group the model, budget and specification you need. We search suitable overseas channels and explain landed cost and delivery.'],
-  '/vehicles/china': ['Cars from China NZ | Factory-Backed Vehicle Sourcing', 'Explore selected Chinese EVs, MPVs, SUVs and commercial models available for New Zealand sourcing enquiries.'],
-  '/vehicles/china/baw-m8': ['BAW M8 EV / REEV MPV Import NZ | 7/9-Seater Electric MPV', 'Explore the BAW M8 new-energy MPV and ask about New Zealand availability, specifications and landed pricing.', '/images/baw-m8/baw-m8-hero-left-75.jpg'],
-  '/vehicles/china/wox-air': ['WOX AIR Import NZ | Electric Sedan from China', 'Explore WOX AIR versions, battery options, range and specification details for New Zealand sourcing enquiries.', '/images/wox-air/air-front-car.jpg'],
-  '/vehicles/china/wox-nebula': ['WOX Nebula Import NZ | Electric SUV from China', 'Explore WOX Nebula SUV information, battery, range and specification details for New Zealand sourcing enquiries.', '/images/wox-nebula/nebula-front-car.jpg'],
-  '/vehicles/china/wox-shera': ['WOX Shera Taxi Edition Import NZ | RHD Electric Taxi', 'Explore the WOX Shera Taxi Edition for fleet and taxi sourcing enquiries in New Zealand.', '/images/wox-shera/shera-front.jpg'],
-  '/vehicles/china/wox-zeny': ['WOX Zeny Import NZ | Solar Assisted Electric City Car', 'Explore the WOX Zeny compact solar-assisted electric city car for New Zealand sourcing enquiries.', '/images/wox-zeny/zeny-front.jpg'],
-  '/services': ['Vehicle Import Service Auckland | Inno Group Ltd', 'Vehicle sourcing and ownership support in Auckland, including landed cost, compliance, repairs and parts guidance.'],
-  '/finance': ['Vehicle Finance Auckland | Used Car & Import Car Loans', 'Estimate repayments and start a vehicle finance enquiry for local and imported vehicles in Auckland.'],
-  '/about': ['About Inno Group Ltd | Auckland Vehicle Sourcing', 'Learn about Inno Group Ltd, an Auckland vehicle sourcing company helping buyers access trusted overseas channels.'],
-  '/contact': ['Vehicle Sourcing Quote Auckland | Contact Inno Group Ltd', 'Contact Inno Group in Albany for vehicle sourcing, import quotes, finance enquiries and tailored recommendations.'],
-  '/privacy': ['Privacy Statement | Inno Group Ltd', 'How Inno Group Ltd collects, uses, stores and protects information submitted through this website.'],
-};
+});
 
 const expansionSource = await readFile(join(projectRoot, 'src', 'data', 'woxExpansionVehicles.ts'), 'utf8');
 const expansionVehicles = [...expansionSource.matchAll(/slug:\s*'([^']+)'[\s\S]*?name:\s*'([^']+)'[\s\S]*?image:\s*'([^']+)'/g)]
@@ -71,30 +63,26 @@ function breadcrumbSchema(route, title) {
 function localBusinessSchema() {
   return {
     '@type': 'AutoDealer',
-    name: 'Inno Group Ltd',
+    name: seoConfig.siteName,
     url: `${siteUrl}/`,
     image: defaultImage,
     logo: `${siteUrl}/og-image.png`,
-    telephone: '+64272858065',
-    email: 'innogroup.shawn@gmail.com',
-    priceRange: '$$',
-    openingHours: ['Mo-Fr 10:00-17:00'],
+    telephone: seoConfig.phone,
+    email: seoConfig.email,
+    priceRange: seoConfig.priceRange,
+    openingHours: seoConfig.openingHours,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'Unit 1A, 331 Rosedale Road',
-      addressLocality: 'Albany',
-      addressRegion: 'Auckland',
-      postalCode: '0632',
-      addressCountry: 'NZ',
+      ...seoConfig.address,
     },
-    areaServed: ['Auckland', 'North Shore', 'New Zealand'],
+    areaServed: seoConfig.areaServed,
   };
 }
 
 function injectStructuredData(html, route, title, description, image) {
   const graph = [];
   if (route === '/' || route === '/about' || route === '/contact') graph.push(localBusinessSchema());
-  if (route === '/') graph.push({ '@type': 'WebSite', name: 'Inno Group Ltd', url: `${siteUrl}/`, inLanguage: 'en-NZ' });
+  if (route === '/') graph.push({ '@type': 'WebSite', name: seoConfig.siteName, url: `${siteUrl}/`, inLanguage: 'en-NZ' });
   if (route !== '/') graph.push(breadcrumbSchema(route, title));
   if (route.startsWith('/vehicles/china/') && image) {
     graph.push({

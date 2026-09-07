@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { normalizeText, parseMakerModel, sanitizeScrapedValue } from './lib/jpauc-utils.mjs';
 
 const ROOT = process.cwd();
 const IMPORT_DIR = path.join(ROOT, 'data', 'imports');
@@ -27,48 +28,19 @@ const feeds = [
   },
 ];
 
-const MULTI_WORD_MAKES = ['MERCEDES BENZ', 'LAND ROVER', 'ALFA ROMEO', 'ASTON MARTIN', 'ROLLS ROYCE'];
-
-function normalizeText(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
-}
-
 function uniq(items) {
   return Array.from(new Set(items.map(normalizeText).filter(Boolean))).sort((a, b) =>
     a.localeCompare(b)
   );
 }
 
-function parseMakerModel(value) {
-  const normalized = normalizeText(value);
-  if (!normalized) return { maker: '', model: '' };
-
-  const upper = normalized.toUpperCase();
-  const multiWordMake = MULTI_WORD_MAKES.find(
-    (make) => upper === make || upper.startsWith(`${make} `)
-  );
-
-  if (multiWordMake) {
-    return {
-      maker: multiWordMake,
-      model: normalizeText(normalized.slice(multiWordMake.length)),
-    };
-  }
-
-  const [maker = '', ...modelParts] = normalized.split(' ');
-  const model = normalizeText(modelParts.join(' '));
-  return {
-    maker: normalizeText(maker),
-    model: model.startsWith(`${maker} `) ? normalizeText(model.slice(maker.length)) : model,
-  };
-}
-
 function normalizeVehicle(vehicle, makerModelColumn) {
-  const parsed = parseMakerModel(vehicle.rawColumns?.[makerModelColumn] || `${vehicle.maker || ''} ${vehicle.model || ''}`);
+  const sanitizedVehicle = sanitizeScrapedValue(vehicle);
+  const parsed = parseMakerModel(sanitizedVehicle.rawColumns?.[makerModelColumn] || `${sanitizedVehicle.maker || ''} ${sanitizedVehicle.model || ''}`);
   return {
-    ...vehicle,
-    maker: parsed.maker || vehicle.maker || '',
-    model: parsed.model || vehicle.model || '',
+    ...sanitizedVehicle,
+    maker: parsed.maker || sanitizedVehicle.maker || '',
+    model: parsed.model || sanitizedVehicle.model || '',
   };
 }
 

@@ -1,4 +1,4 @@
-﻿import aboutAuctionYardImage from './about-auction-yard.jpg';
+import aboutAuctionYardImage from './about-auction-yard.jpg';
 import heroAuctionYardImage from './hero-auction-yard.jpg';
 import heroHondaCivicTypeRImage from './hero-honda-civic-type-r.jpg';
 import heroMazdaRx7Image from './hero-mazda-rx7.jpg';
@@ -13,7 +13,6 @@ import partnerJhMotorsImage from './partner-jh-motors.png';
 import partnerNichiboImage from './partner-nichibo.png';
 import partnerPekemaImage from './partner-pekema.png';
 import partnerVipWheelTyreImage from './partner-vip-wheel-tyre.jpg';
-import pekemaCertificateImage from './pekema-registered-supplier-certificate.png';
 import partnerUssImage from './partner-uss.png';
 
 export const heroGalleryImages = [
@@ -42,7 +41,6 @@ export {
   partnerNichiboImage,
   partnerPekemaImage,
   partnerVipWheelTyreImage,
-  pekemaCertificateImage,
   partnerUssImage,
 };
 

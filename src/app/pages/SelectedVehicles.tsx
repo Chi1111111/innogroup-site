@@ -25,7 +25,7 @@ function collectionType(vehicle: JapanSpecialOrderVehicle): Exclude<CollectionFi
 
 export function SelectedVehicles() {
   const { reports, isLoadingCloudVehicles } = useJapanSpecialOrders();
-  const { text, language } = useLanguage();
+  const { text } = useLanguage();
   const [filter, setFilter] = useState<CollectionFilter>('all');
   const [search, setSearch] = useState('');
   const [availableOnly, setAvailableOnly] = useState(false);

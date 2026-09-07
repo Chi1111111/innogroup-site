@@ -19,7 +19,6 @@ import { sendInvoiceEmail } from '../lib/invoiceEmail';
 import { signOutAdmin } from '../lib/adminAuth';
 import { createInvoicePdfAttachment, downloadInvoicePdf } from '../lib/invoicePdf';
 import {
-  COMPANY_DETAILS,
   createEmptyInvoice,
   createInvoiceLineItem,
   deleteInvoice,

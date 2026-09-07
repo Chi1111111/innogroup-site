@@ -478,7 +478,7 @@ function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: Wo
 
 export function WoxVehiclePage({ slug }: { slug: WoxSlug }) {
   const vehicle = getWoxVehicle(slug);
-  const [selectedId, setSelectedId] = useState(vehicle.versions[0].id);
+  const [selectedId, setSelectedId] = useState<string>(vehicle.versions[0].id);
   const selected = vehicle.versions.find((version) => version.id === selectedId) ?? vehicle.versions[0];
 
   useEffect(() => {

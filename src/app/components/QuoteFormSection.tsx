@@ -484,10 +484,10 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
 
                         {uploadedImages.length > 0 && (
                           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                            {uploadedImages.map((image, index) => (
+                            {imagePreviews.map((preview, index) => (
                               <div key={index} className="group relative">
                                 <img
-                                  src={imagePreviews[index]}
+                                  src={preview}
                                   alt={`Vehicle ${index + 1}`}
                                   loading="lazy"
                                   decoding="async"

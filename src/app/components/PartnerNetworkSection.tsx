@@ -1,5 +1,5 @@
 import { ExternalLink, Mail, MapPin, Phone, Clock3 } from 'lucide-react';
-import { partnerPlaceholders } from '../../data';
+import { partnerPlaceholders } from '../../data/services';
 
 export function PartnerNetworkSection() {
   return (

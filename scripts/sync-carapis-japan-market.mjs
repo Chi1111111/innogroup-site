@@ -1,7 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { vehicleQualityIssue } from '../src/data/japanMarketQuality.mjs';
 
 const ROOT = process.cwd();
+const metrics = {
+  stage: 'configuration', pagesExpected: null, pagesFetched: 0, received: 0,
+  accepted: 0, rejected: 0, rejectionReasons: {}, detailRequested: 0,
+  detailSucceeded: 0, detailFailed: 0, requests: 0, added: 0, removed: 0,
+  published: false,
+};
+// The runner owns this private temporary file; never serialize API responses or keys.
+if (process.env.JAPAN_MARKET_METRICS_FILE) {
+  process.on('exit', () => {
+    fs.writeFileSync(process.env.JAPAN_MARKET_METRICS_FILE, JSON.stringify(metrics));
+  });
+}
 const OUTPUT_DIR = path.join(ROOT, 'public', 'data', 'japan-market');
 const DETAIL_SHARD_COUNT = 128;
 const API_URL = 'https://api.carapis.com/apix/catalog_api/vehicles/';
@@ -55,6 +68,7 @@ async function fetchJson(url, label) {
     let shouldRetry = true;
     try {
       apiRequestCount += 1;
+      metrics.requests = apiRequestCount;
       const response = await fetch(url, {
         headers: {
           Accept: 'application/json',
@@ -87,7 +101,11 @@ async function fetchPage(page) {
   url.searchParams.set('ordering', '-last_seen_at');
   url.searchParams.set('page', String(page));
   url.searchParams.set('page_size', String(PAGE_SIZE));
-  return fetchJson(url, `CARAPIS page ${page}`);
+  const payload = await fetchJson(url, `CARAPIS page ${page}`);
+  if (!Array.isArray(payload.results)) throw new Error('Invalid catalog page: results array missing.');
+  metrics.pagesFetched += 1;
+  metrics.received += payload.results.length;
+  return payload;
 }
 
 async function fetchVehicleDetail(id) {
@@ -180,12 +198,22 @@ function landedEstimate(priceUsd) {
 }
 
 function normalizeVehicle(raw, refreshedAt, existingVehicle, detailResult) {
+  if (!raw || typeof raw !== 'object') {
+    metrics.rejected += 1;
+    metrics.rejectionReasons.invalid_record = (metrics.rejectionReasons.invalid_record ?? 0) + 1;
+    return null;
+  }
   const id = cleanText(raw.id);
   const make = cleanText(raw.brand_name);
   const model = cleanText(raw.model_name);
   const year = Number(raw.year);
   const mileage = Number(raw.mileage);
-  if (!id || !make || !model || !Number.isFinite(year) || !Number.isFinite(mileage)) return null;
+  const issue = vehicleQualityIssue({ id, make, model, year, mileage });
+  if (issue) {
+    metrics.rejected += 1;
+    metrics.rejectionReasons[issue] = (metrics.rejectionReasons[issue] ?? 0) + 1;
+    return null;
+  }
 
   const detailPhotos = detailResult ? collectPhotoUrls(detailResult) : [];
   const existingPhotos = Array.isArray(existingVehicle?.imageUrls) ? existingVehicle.imageUrls : [];
@@ -329,14 +357,19 @@ function selectFeatured(vehicles) {
 }
 
 const existingVehicles = loadExistingVehicles();
+metrics.stage = 'listing';
 let rawVehicles = [];
 if (inputFilePath) {
   const inputPayload = JSON.parse(fs.readFileSync(path.resolve(inputFilePath), 'utf8'));
   rawVehicles = Array.isArray(inputPayload) ? inputPayload : Array.isArray(inputPayload.results) ? inputPayload.results : [];
+  metrics.received = rawVehicles.length;
   console.log(`CARAPIS ${SOURCE}: building from ${rawVehicles.length.toLocaleString()} captured vehicles.`);
 } else {
   const firstPage = await fetchPage(1);
   const totalPages = Number(firstPage.pages ?? Math.ceil(Number(firstPage.count ?? 0) / PAGE_SIZE));
+  if (!Number.isInteger(totalPages) || totalPages < 1) throw new Error('Invalid or empty catalog pagination. Existing inventory preserved.');
+  metrics.pagesExpected = totalPages;
+  if (totalPages > DAILY_REQUEST_BUDGET) throw new Error('Catalog exceeds request budget. Existing inventory preserved.');
   rawVehicles = [...(Array.isArray(firstPage.results) ? firstPage.results : [])];
 
   console.log(`CARAPIS ${SOURCE}: ${Number(firstPage.count ?? 0).toLocaleString()} vehicles across ${totalPages} pages.`);
@@ -354,11 +387,13 @@ if (inputFilePath) {
 }
 
 const refreshedAt = new Date().toISOString();
+metrics.stage = 'details';
 const detailResults = new Map();
 if (!inputFilePath && apiKey) {
   const detailCandidates = rawVehicles.filter((raw) => {
+    if (!raw || typeof raw !== 'object') return false;
     const id = cleanText(raw.id);
-    if (!id) return false;
+    if (vehicleQualityIssue({ id, make: cleanText(raw.brand_name), model: cleanText(raw.model_name), year: Number(raw.year), mileage: Number(raw.mileage) })) return false;
     const existing = existingVehicles.get(id);
     if (!existing?.photoGallerySyncedAt) return true;
     const listingUpdatedAt = Date.parse(cleanText(raw.last_seen_at));
@@ -371,23 +406,37 @@ if (!inputFilePath && apiKey) {
 
   for (let index = 0; index < detailLimit; index += CONCURRENCY) {
     const batch = detailCandidates.slice(index, Math.min(index + CONCURRENCY, detailLimit));
+    metrics.detailRequested += batch.length;
     const results = await Promise.allSettled(batch.map((raw) => fetchVehicleDetail(cleanText(raw.id))));
     results.forEach((result, resultIndex) => {
       const id = cleanText(batch[resultIndex].id);
-      if (result.status === 'fulfilled') detailResults.set(id, result.value);
-      else console.warn(`Photo gallery fetch skipped for ${id}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+      if (result.status === 'fulfilled') {
+        detailResults.set(id, result.value);
+        metrics.detailSucceeded += 1;
+      } else {
+        metrics.detailFailed += 1;
+        console.warn(`Photo gallery fetch skipped for ${id}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
+      }
     });
   }
 }
 
 const vehicleMap = new Map();
 for (const raw of rawVehicles) {
-  const id = cleanText(raw.id);
+  const id = cleanText(raw?.id);
   const vehicle = normalizeVehicle(raw, refreshedAt, existingVehicles.get(id), detailResults.get(id));
   if (vehicle) vehicleMap.set(vehicle.id, vehicle);
 }
 
 const vehicles = diversifyRecommended([...vehicleMap.values()]);
+metrics.stage = 'validation';
+metrics.accepted = vehicles.length;
+metrics.added = vehicles.filter((vehicle) => !existingVehicles.has(vehicle.id)).length;
+metrics.removed = [...existingVehicles.keys()].filter((id) => !vehicleMap.has(id)).length;
+if (!vehicles.length || metrics.rejected > rawVehicles.length * 0.2) {
+  throw new Error('Catalog quality check failed. Existing inventory preserved.');
+}
+metrics.stage = 'publish';
 const featured = selectFeatured(vehicles);
 const detailShards = new Map();
 for (const vehicle of vehicles) {
@@ -435,3 +484,5 @@ fs.writeFileSync(path.join(OUTPUT_DIR, 'manifest.json'), JSON.stringify({
 }));
 
 console.log(`Japan Market updated from CARAPIS: ${vehicles.length} vehicles, ${featured.length} featured, ${DETAIL_SHARD_COUNT} detail shards, ${apiRequestCount} API requests.`);
+metrics.published = true;
+metrics.stage = 'complete';
