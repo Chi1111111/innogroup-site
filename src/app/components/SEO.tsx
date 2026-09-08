@@ -75,7 +75,7 @@ function getRouteMeta(pathname: string) {
     if (isJapanMarketVehicleId(first)) {
       return {
         title: 'Japan Market Vehicle for Import | Inno Group NZ',
-        description: 'View Carsensor vehicle information, condition details and estimated landed pricing for a Japan Market vehicle available to import to New Zealand.',
+        description: 'View vehicle information, condition details and estimated landed pricing for a Japan Market vehicle available to import to New Zealand.',
         isKnown: true,
       };
     }

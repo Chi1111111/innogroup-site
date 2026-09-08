@@ -57,7 +57,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
   useEffect(() => {
     if (!vehicle) return;
     const title = `${vehicleFullName(vehicle)} for Import from Japan | Inno Group NZ`;
-    const description = `View ${vehicleFullName(vehicle)}, Carsensor condition information and estimated landed pricing for New Zealand.`;
+    const description = `View ${vehicleFullName(vehicle)}, condition information and estimated landed pricing for New Zealand.`;
     document.title = title;
     setHeadMeta('description', description);
     setHeadMeta('og:title', title, 'property');
@@ -147,7 +147,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
             <div>
               <JapanMarketPhotoGallery vehicle={vehicle} />
               <div className="mt-8">
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">{vehicle.source ?? 'Japan Market'} · {vehicle.id}</p>
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">{vehicle.id}</p>
                 <h1 className="mt-4 text-4xl sm:text-5xl">{vehicleFullName(vehicle)}</h1>
                 <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 rounded-2xl border border-black/8 bg-white/55 px-5 py-4 text-sm">
                   <span className="inline-flex items-center gap-2 font-bold text-foreground">
@@ -168,7 +168,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
             </div>
 
             <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-              <section className="rounded-3xl border border-black/10 bg-white/65 p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/45">{text({ en: 'Dealer condition data', zh: '经销商车况资料' })}</p><div className="mt-4 flex items-end justify-between gap-5"><h2 className="!text-2xl">{conditionTitle}</h2><span className={`rounded-full px-3 py-1.5 text-xs font-extrabold ${vehicle.hasAccident === true ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>{vehicle.source ?? 'Carsensor'}</span></div><p className="mt-4 text-sm leading-7">{conditionDescription}</p></section>
+              <section className="rounded-3xl border border-black/10 bg-white/65 p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/45">{text({ en: 'Vehicle condition', zh: '车辆车况' })}</p><h2 className="mt-4 !text-2xl">{conditionTitle}</h2><p className="mt-4 text-sm leading-7">{conditionDescription}</p></section>
 
               <section className="rounded-3xl border border-primary/25 bg-[#111214] p-6 text-white sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">{text({ en: 'Estimated Landed Price', zh: '预计新西兰落地价' })}</p><h2 className="mt-4 text-4xl text-white">{formatNzd(vehicle.estimatedNzdPrice, language)}</h2><p className="mt-4 text-sm leading-7 text-white/62">{text({ en: 'Estimated total cost to import and register this vehicle in New Zealand.', zh: '预计包含车辆进口至新西兰并完成注册的总费用。' })}</p>{breakdown ? <><button type="button" onClick={() => setCostOpen((value) => !value)} className="mt-6 flex w-full items-center justify-between border-y border-white/10 py-4 text-sm font-bold text-white">{text({ en: 'View Cost Breakdown', zh: '查看费用明细' })}<ChevronDown className={`h-4 w-4 transition-transform ${costOpen ? 'rotate-180' : ''}`} /></button>{costOpen ? <div className="space-y-3 border-b border-white/10 py-5">{costRows.map(([label, amount]) => <div key={label} className="flex justify-between gap-5 text-sm"><span className="text-white/55">{label}</span><span className="font-bold text-white">{amount != null ? formatNzd(amount, language) : text({ en: 'Estimate pending', zh: '待确认' })}</span></div>)}</div> : null}</> : null}<p className="mt-5 text-xs leading-6 text-white/45">{text({ en: 'All figures are estimates. Final pricing may vary with exchange rates, shipping, compliance requirements, vehicle condition and other import costs.', zh: '所有金额均为估算，最终价格可能因汇率、运输、合规要求、实际车况及其他进口成本而变化。' })}</p></section>
 

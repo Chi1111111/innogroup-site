@@ -23,7 +23,7 @@ export function JapanMarketListingCard({ vehicle: v, priority = false }: { vehic
         <div><dt>{text({ en: 'Fuel', zh: '燃料' })}</dt><dd>{formatFuelType(v.fuelType, language)}</dd></div>
         <div><dt>{text({ en: 'Gearbox', zh: '变速箱' })}</dt><dd>{formatTransmission(v.transmission, language)}</dd></div>
       </dl>
-      <div className="jm-car-meta"><span><MapPin size={14} />{text({ en: 'Japan', zh: '日本' })} · {v.source || 'Carsensor'}</span>
+      <div className="jm-car-meta"><span><MapPin size={14} />{text({ en: 'Japan', zh: '日本' })}</span>
         <span className={v.hasAccident === true ? 'jm-condition-warning' : ''}>{v.hasAccident === false ? text({ en: 'No accident reported', zh: '暂无事故记录' }) : v.hasAccident === true ? text({ en: 'Accident history', zh: '有事故记录' }) : text({ en: 'Condition to confirm', zh: '车况待确认' })}</span>
       </div>
     </div>

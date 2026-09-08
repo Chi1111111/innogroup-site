@@ -34,8 +34,7 @@ export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle:
       <div className="absolute -right-1 top-1/2 h-28 w-28 -translate-y-1/2 rounded-full border border-white/10" />
       <div className="absolute bottom-0 right-0 h-1/2 w-2/3 -skew-x-12 border-l border-t border-white/7 bg-white/[0.025]" />
       <div className="absolute inset-0 flex flex-col justify-between p-5 text-white">
-        <div className="relative flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
-          <span>{vehicle.source ?? 'Inno Group'}</span>
+        <div className="relative flex items-center justify-end text-[10px] font-bold uppercase tracking-[0.2em] text-white/45">
           <span className="flex items-center gap-3">
             {vehicle.photoCount ? <span className="inline-flex items-center gap-1"><Images className="h-3.5 w-3.5" />{vehicle.photoCount}</span> : null}
             <span>{formatBodyType(vehicle.bodyType, language)}</span>
@@ -68,10 +67,7 @@ export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: 
     >
       <JapanMarketVehicleVisual vehicle={vehicle} className={compact ? 'aspect-[16/10]' : 'aspect-[4/3]'} />
       <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-center justify-between gap-3">
-          <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#8b6b1d]">{vehicle.source ?? 'Japan Market'}</span>
-          <span className="text-sm font-bold text-foreground/48">{vehicle.year}</span>
-        </div>
+        <p className="text-sm font-bold text-foreground/48">{vehicle.year}</p>
         <h3 className="mt-4 line-clamp-2 text-xl leading-snug">{vehicleName(vehicle)}</h3>
         {variant ? <p className="mt-1 line-clamp-1 text-sm text-foreground/48">{variant}</p> : null}
         <div className="mt-5 space-y-2 border-t border-black/7 pt-4 text-sm text-foreground/65">
