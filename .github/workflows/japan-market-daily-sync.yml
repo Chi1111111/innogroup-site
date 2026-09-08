@@ -36,6 +36,9 @@ jobs:
           CARAPIS_PAGE_SIZE: 100
           CARAPIS_CONCURRENCY: 2
           CARAPIS_DAILY_REQUEST_BUDGET: 100
+          # Stop cleanly before the 30-minute job limit so reports and old inventory are preserved.
+          CARAPIS_COLLECTION_TIMEOUT_MS: 1200000
+          CARAPIS_REQUEST_TIMEOUT_MS: 20000
         run: node scripts/run-japan-market-sync.mjs
 
       - name: Record interrupted collection

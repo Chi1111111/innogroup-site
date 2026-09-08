@@ -4,7 +4,7 @@ import { loadCollectionReport, type CollectionReport, type CollectionRun } from 
 
 const statuses = {
   success: { label: '成功', style: 'bg-emerald-50 text-emerald-800' },
-  partial: { label: '部分成功（详情有失败）', style: 'bg-amber-50 text-amber-800' },
+  partial: { label: '部分成功（详情未完全更新）', style: 'bg-amber-50 text-amber-800' },
   failed: { label: '失败', style: 'bg-red-50 text-red-800' },
   cancelled: { label: '已取消', style: 'bg-slate-100 text-slate-700' },
 };
@@ -27,6 +27,7 @@ function RunDetails({ run }: { run: CollectionRun }) {
     ['收到记录', m.received], ['有效车源', m.accepted], ['剔除异常', m.rejected],
     ['新增车源', m.added], ['不再出现', m.removed], ['API 请求（含重试）', m.requests],
     ['详情请求', m.detailRequested], ['详情成功', m.detailSucceeded], ['详情失败', m.detailFailed],
+    ['超时跳过详情', m.detailSkipped],
   ] as const;
   return <details className="rounded-2xl border border-slate-200 bg-white p-5" open={run.status !== 'success'}>
     <summary className="flex cursor-pointer flex-wrap items-center gap-3 text-sm">
@@ -36,12 +37,14 @@ function RunDetails({ run }: { run: CollectionRun }) {
       <span className="ml-auto text-slate-500">展开详情</span>
     </summary>
     {run.error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{run.error}</p>}
+    {m.timedOut && <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">采集达到内部时间上限；列表阶段超时会保留旧快照，详情阶段超时会发布列表并沿用已有照片。</p>}
     <dl className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
       {counts.map(([label, value]) => <div key={label}><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 text-lg font-semibold">{number(value)}</dd></div>)}
     </dl>
     <div className="mt-5 space-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
       <p>来源：{run.source} · 触发：{run.trigger === 'schedule' ? '每日定时' : run.trigger === 'workflow_dispatch' ? '手动执行' : run.trigger}</p>
       <p>分页：{number(m.pagesFetched)} / {number(m.pagesExpected)} · 耗时：{number(run.durationSeconds)} 秒</p>
+      {m.lastProgressAt && <p>最后进度：{date(m.lastProgressAt)}{m.activeRequests?.length ? ` · 当时正在请求：${m.activeRequests.join('、')}` : ''}</p>}
       <p>结束时间：{date(run.finishedAt)} · 车源文件：{m.published ? '已生成' : '未确认生成'}</p>
       {Object.entries(m.rejectionReasons ?? {}).map(([reason, count]) => <p key={reason}>剔除原因：{reasonLabels[reason] ?? reason} × {number(count)}</p>)}
       <p>“新增／不再出现”与上次快照对比，不等于成交数量。详情失败时可能沿用旧照片；请求预算用完的未尝试详情不计为失败。</p>

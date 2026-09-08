@@ -6,22 +6,38 @@ const ROOT = process.cwd();
 const metrics = {
   stage: 'configuration', pagesExpected: null, pagesFetched: 0, received: 0,
   accepted: 0, rejected: 0, rejectionReasons: {}, detailRequested: 0,
-  detailSucceeded: 0, detailFailed: 0, requests: 0, added: 0, removed: 0,
-  published: false,
+  detailSucceeded: 0, detailFailed: 0, detailSkipped: 0, requests: 0,
+  added: 0, removed: 0, published: false, timedOut: false,
+  lastProgressAt: new Date().toISOString(), activeRequests: [],
 };
 // The runner owns this private temporary file; never serialize API responses or keys.
-if (process.env.JAPAN_MARKET_METRICS_FILE) {
-  process.on('exit', () => {
-    fs.writeFileSync(process.env.JAPAN_MARKET_METRICS_FILE, JSON.stringify(metrics));
+function persistMetrics() {
+  if (!process.env.JAPAN_MARKET_METRICS_FILE) return;
+  try {
+    fs.writeFileSync(process.env.JAPAN_MARKET_METRICS_FILE, JSON.stringify({
+      startedAt: process.env.JAPAN_MARKET_STARTED_AT || null,
+      metrics,
+    }));
+  } catch (error) {
+    console.warn(`Could not save collection checkpoint: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+process.on('exit', persistMetrics);
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.once(signal, () => {
+    persistMetrics();
+    process.exit(signal === 'SIGINT' ? 130 : 143);
   });
 }
 const OUTPUT_DIR = path.join(ROOT, 'public', 'data', 'japan-market');
 const DETAIL_SHARD_COUNT = 128;
-const API_URL = 'https://api.carapis.com/apix/catalog_api/vehicles/';
+const API_URL = process.env.CARAPIS_API_URL || 'https://api.carapis.com/apix/catalog_api/vehicles/';
 const SOURCE = String(process.env.CARAPIS_SOURCE ?? 'carsensor').trim().toLowerCase();
 const PAGE_SIZE = Math.min(100, Math.max(10, Number(process.env.CARAPIS_PAGE_SIZE ?? 100)));
-const MAX_RETRIES = 3;
-const REQUEST_TIMEOUT_MS = Math.max(5_000, Number(process.env.CARAPIS_REQUEST_TIMEOUT_MS ?? 20_000));
+const MAX_RETRIES = Math.min(5, Math.max(1, Number(process.env.CARAPIS_MAX_RETRIES) || 3));
+const REQUEST_TIMEOUT_MS = Math.max(1_000, Number(process.env.CARAPIS_REQUEST_TIMEOUT_MS) || 20_000);
+const COLLECTION_TIMEOUT_MS = Math.max(60_000, Number(process.env.CARAPIS_COLLECTION_TIMEOUT_MS) || 20 * 60_000);
+const collectionDeadline = Date.now() + COLLECTION_TIMEOUT_MS;
 const CONCURRENCY = Math.min(5, Math.max(1, Number(process.env.CARAPIS_CONCURRENCY ?? 3)));
 const DAILY_REQUEST_BUDGET = Math.min(100, Math.max(1, Number(process.env.CARAPIS_DAILY_REQUEST_BUDGET ?? 90)));
 const configuredDetailBudget = String(process.env.CARAPIS_DETAIL_REQUEST_BUDGET ?? '').trim();
@@ -57,41 +73,83 @@ function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+const activeRequests = new Set();
+function checkpoint(progress = false) {
+  if (progress) metrics.lastProgressAt = new Date().toISOString();
+  metrics.activeRequests = [...activeRequests];
+  persistMetrics();
+}
+
+function remainingCollectionTime() {
+  return collectionDeadline - Date.now();
+}
+
+function collectionTimeoutError(label) {
+  metrics.timedOut = true;
+  checkpoint();
+  return new Error(`Collection deadline reached while waiting for ${label} after ${Math.round(COLLECTION_TIMEOUT_MS / 1_000)} seconds.`);
+}
+
 let apiRequestCount = 0;
 async function fetchJson(url, label) {
   let lastError;
+  let attempts = 0;
+  const checkpointLabel = label.startsWith('CARAPIS vehicle ') ? 'CARAPIS vehicle detail' : label;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
+    const remainingMs = remainingCollectionTime();
+    if (remainingMs <= 0) throw collectionTimeoutError(checkpointLabel);
     if (apiRequestCount >= DAILY_REQUEST_BUDGET) {
       throw new Error(`CARAPIS daily safety budget reached (${DAILY_REQUEST_BUDGET} requests). No more requests were sent.`);
     }
+    attempts = attempt;
     let retryAfterSeconds = 0;
     let shouldRetry = true;
+    const requestTimeoutMs = Math.min(REQUEST_TIMEOUT_MS, remainingMs);
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort(new Error(`${checkpointLabel} timed out after ${Math.round(requestTimeoutMs / 1_000)} seconds.`));
+    }, requestTimeoutMs);
+    activeRequests.add(checkpointLabel);
     try {
       apiRequestCount += 1;
       metrics.requests = apiRequestCount;
+      checkpoint();
       const response = await fetch(url, {
         headers: {
           Accept: 'application/json',
           'X-API-Key': apiKey,
         },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        signal: controller.signal,
       });
 
-      if (response.ok) return response.json();
-
       const body = await response.text();
+      if (response.ok) {
+        const payload = JSON.parse(body);
+        checkpoint(true);
+        return payload;
+      }
+
       retryAfterSeconds = Number(response.headers.get('retry-after'));
       lastError = new Error(`${label} failed (${response.status}): ${body.slice(0, 300)}`);
       shouldRetry = [429, 500, 502, 503, 504].includes(response.status);
     } catch (error) {
       lastError = error;
+      if (remainingCollectionTime() <= 0) metrics.timedOut = true;
+    } finally {
+      clearTimeout(timer);
+      activeRequests.delete(checkpointLabel);
+      checkpoint();
     }
 
     if (!shouldRetry || attempt === MAX_RETRIES) break;
-    await sleep(Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1_000 : attempt * 1_500);
+    const retryDelayMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+      ? Math.min(retryAfterSeconds * 1_000, 30_000)
+      : attempt * 1_500;
+    if (remainingCollectionTime() <= retryDelayMs) throw collectionTimeoutError(checkpointLabel);
+    await sleep(retryDelayMs);
   }
 
-  throw new Error(`${label} failed after ${MAX_RETRIES} attempts: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
+  throw new Error(`${label} failed after ${attempts} attempts: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
 }
 
 async function fetchPage(page) {
@@ -105,6 +163,7 @@ async function fetchPage(page) {
   if (!Array.isArray(payload.results)) throw new Error('Invalid catalog page: results array missing.');
   metrics.pagesFetched += 1;
   metrics.received += payload.results.length;
+  checkpoint(true);
   return payload;
 }
 
@@ -358,6 +417,7 @@ function selectFeatured(vehicles) {
 
 const existingVehicles = loadExistingVehicles();
 metrics.stage = 'listing';
+checkpoint(true);
 let rawVehicles = [];
 if (inputFilePath) {
   const inputPayload = JSON.parse(fs.readFileSync(path.resolve(inputFilePath), 'utf8'));
@@ -382,12 +442,13 @@ if (inputFilePath) {
     const payloads = await Promise.all(pageNumbers.map(fetchPage));
     for (const payload of payloads) rawVehicles.push(...(Array.isArray(payload.results) ? payload.results : []));
     const completedPage = pageNumbers.at(-1);
-    if (completedPage === totalPages || completedPage % 10 < CONCURRENCY) console.log(`Fetched page ${completedPage}/${totalPages}.`);
+    console.log(`Fetched page ${completedPage}/${totalPages}.`);
   }
 }
 
 const refreshedAt = new Date().toISOString();
 metrics.stage = 'details';
+checkpoint(true);
 const detailResults = new Map();
 if (!inputFilePath && apiKey) {
   const detailCandidates = rawVehicles.filter((raw) => {
@@ -405,8 +466,16 @@ if (!inputFilePath && apiKey) {
   if (detailLimit > 0) console.log(`Fetching full photo galleries for ${detailLimit} vehicles within the ${DAILY_REQUEST_BUDGET}-request safety budget.`);
 
   for (let index = 0; index < detailLimit; index += CONCURRENCY) {
+    if (remainingCollectionTime() <= 0) {
+      metrics.timedOut = true;
+      metrics.detailSkipped += detailLimit - index;
+      checkpoint();
+      console.warn(`Collection deadline reached; skipped ${detailLimit - index} remaining photo galleries and will publish the vehicle listing.`);
+      break;
+    }
     const batch = detailCandidates.slice(index, Math.min(index + CONCURRENCY, detailLimit));
     metrics.detailRequested += batch.length;
+    checkpoint();
     const results = await Promise.allSettled(batch.map((raw) => fetchVehicleDetail(cleanText(raw.id))));
     results.forEach((result, resultIndex) => {
       const id = cleanText(batch[resultIndex].id);
@@ -418,6 +487,11 @@ if (!inputFilePath && apiKey) {
         console.warn(`Photo gallery fetch skipped for ${id}: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
       }
     });
+    checkpoint(true);
+    const completedDetails = Math.min(index + batch.length, detailLimit);
+    if (completedDetails === detailLimit || completedDetails % 10 < CONCURRENCY) {
+      console.log(`Fetched photo details ${completedDetails}/${detailLimit}.`);
+    }
   }
 }
 
@@ -433,10 +507,12 @@ metrics.stage = 'validation';
 metrics.accepted = vehicles.length;
 metrics.added = vehicles.filter((vehicle) => !existingVehicles.has(vehicle.id)).length;
 metrics.removed = [...existingVehicles.keys()].filter((id) => !vehicleMap.has(id)).length;
+checkpoint(true);
 if (!vehicles.length || metrics.rejected > rawVehicles.length * 0.2) {
   throw new Error('Catalog quality check failed. Existing inventory preserved.');
 }
 metrics.stage = 'publish';
+checkpoint(true);
 const featured = selectFeatured(vehicles);
 const detailShards = new Map();
 for (const vehicle of vehicles) {
@@ -486,3 +562,4 @@ fs.writeFileSync(path.join(OUTPUT_DIR, 'manifest.json'), JSON.stringify({
 console.log(`Japan Market updated from CARAPIS: ${vehicles.length} vehicles, ${featured.length} featured, ${DETAIL_SHARD_COUNT} detail shards, ${apiRequestCount} API requests.`);
 metrics.published = true;
 metrics.stage = 'complete';
+checkpoint(true);

@@ -8,9 +8,12 @@ export interface CollectionRun {
   status: 'success' | 'partial' | 'failed' | 'cancelled';
   error: string | null;
   workflowUrl: string | null;
-  metrics: Partial<Record<'pagesExpected' | 'pagesFetched' | 'received' | 'accepted' | 'rejected' | 'detailRequested' | 'detailSucceeded' | 'detailFailed' | 'requests' | 'added' | 'removed', number | null>> & {
+  metrics: Partial<Record<'pagesExpected' | 'pagesFetched' | 'received' | 'accepted' | 'rejected' | 'detailRequested' | 'detailSucceeded' | 'detailFailed' | 'detailSkipped' | 'requests' | 'added' | 'removed', number | null>> & {
     stage?: string;
     published?: boolean;
+    timedOut?: boolean;
+    lastProgressAt?: string;
+    activeRequests?: string[];
     rejectionReasons?: Record<string, number>;
   };
 }
