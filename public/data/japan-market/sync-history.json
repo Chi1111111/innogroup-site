@@ -2,6 +2,39 @@
   "version": 1,
   "runs": [
     {
+      "id": "34290843213-1",
+      "source": "CARAPIS · Carsensor",
+      "trigger": "workflow_dispatch",
+      "startedAt": "2026-09-08T23:29:14.328Z",
+      "finishedAt": "2026-09-08T23:30:21.210Z",
+      "durationSeconds": 67,
+      "status": "failed",
+      "metrics": {
+        "stage": "listing",
+        "pagesExpected": 41,
+        "pagesFetched": 9,
+        "received": 900,
+        "accepted": 0,
+        "rejected": 0,
+        "rejectionReasons": {},
+        "detailRequested": 0,
+        "detailSucceeded": 0,
+        "detailFailed": 0,
+        "detailSkipped": 0,
+        "requests": 15,
+        "added": 0,
+        "removed": 0,
+        "published": false,
+        "timedOut": false,
+        "lastProgressAt": "2026-09-08T23:29:20.683Z",
+        "activeRequests": [
+          "CARAPIS page 10"
+        ]
+      },
+      "error": "列表请求或分页校验失败，保留上次车源。",
+      "workflowUrl": "https://github.com/Chi1111111/innogroup-site/actions/runs/34290843213"
+    },
+    {
       "id": "34259925794-1",
       "source": "CARAPIS · Carsensor",
       "trigger": "schedule",
