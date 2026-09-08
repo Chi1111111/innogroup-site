@@ -2,6 +2,18 @@
   "version": 1,
   "runs": [
     {
+      "id": "34259925794-1",
+      "source": "CARAPIS · Carsensor",
+      "trigger": "schedule",
+      "startedAt": null,
+      "finishedAt": "2026-09-08T18:25:11.487Z",
+      "durationSeconds": null,
+      "status": "cancelled",
+      "metrics": {},
+      "error": "任务被取消，未确认采集完成。",
+      "workflowUrl": "https://github.com/Chi1111111/innogroup-site/actions/runs/34259925794"
+    },
+    {
       "id": "34152788610-1",
       "source": "CARAPIS · Carsensor",
       "trigger": "schedule",
