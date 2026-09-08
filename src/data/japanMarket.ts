@@ -97,7 +97,10 @@ async function fetchMarketPayload(path: string) {
 }
 
 export function loadJapanMarketData() {
-  marketPromise ??= fetchMarketPayload('/data/japan-market/index.json');
+  marketPromise ??= fetchMarketPayload('/data/japan-market/index.json').catch((error: unknown) => {
+    marketPromise = null;
+    throw error;
+  });
   return marketPromise;
 }
 

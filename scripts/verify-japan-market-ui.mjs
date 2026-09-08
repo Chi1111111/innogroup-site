@@ -12,7 +12,7 @@ const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 const snapshot = JSON.parse(fs.readFileSync('public/data/japan-market/index.json', 'utf8'));
 const validCount = snapshot.vehicles.filter((vehicle) => !vehicleQualityIssue(vehicle)).length;
-const showingLabel = `Showing ${Math.min(24, validCount).toLocaleString('en-NZ')} of ${validCount.toLocaleString('en-NZ')}`;
+const showingLabel = `Showing 1–${Math.min(24, validCount)} of ${validCount.toLocaleString('en-NZ')}`;
 const badMake = '不是我 /*不足完全无限想象好用运用父母完成成功劳动自我无限人类数学力学不断存在';
 const polluted = { ...snapshot.vehicles[0], id: 'invalid-car', make: badMake };
 let historyMode = 'records';

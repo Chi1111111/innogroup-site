@@ -16,6 +16,16 @@ describe('Japan Market quality boundary', () => {
 });
 
 afterEach(() => vi.unstubAllGlobals());
+it('allows a real retry after a failed listing request', async () => {
+  vi.resetModules();
+  const fetcher = vi.fn().mockRejectedValueOnce(new Error('offline'))
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ count: 1, vehicles: [valid] }) });
+  vi.stubGlobal('fetch', fetcher);
+  const { loadJapanMarketData } = await import('./japanMarket');
+  await expect(loadJapanMarketData()).rejects.toThrow('offline');
+  await expect(loadJapanMarketData()).resolves.toMatchObject({ count: 1 });
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
 it('filters legacy polluted snapshots and fixes the displayed count', async () => {
   vi.resetModules();
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ count: 2, vehicles: [valid, { ...valid, id: 'bad', make: '<invalid>' }] }) }));
