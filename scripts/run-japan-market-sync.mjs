@@ -72,7 +72,9 @@ const run = {
   startedAt, finishedAt,
   durationSeconds: startedAt ? Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000) : null,
   status, metrics,
-  error: status === 'failed' ? errors[metrics.stage] || '任务未完成，请查看执行日志。'
+  error: status === 'failed' && metrics.rateLimited
+    ? `CARAPIS 请求额度暂时用完${metrics.rateLimitRetryAt ? `，预计 ${metrics.rateLimitRetryAt} 后恢复` : ''}；已保留上次车源。`
+    : status === 'failed' ? errors[metrics.stage] || '任务未完成，请查看执行日志。'
     : status === 'cancelled' ? '任务被取消，未确认采集完成。' : null,
   workflowUrl: process.env.GITHUB_RUN_ID && process.env.GITHUB_REPOSITORY
     ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` : null,

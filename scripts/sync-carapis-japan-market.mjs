@@ -8,6 +8,7 @@ const metrics = {
   accepted: 0, rejected: 0, rejectionReasons: {}, detailRequested: 0,
   detailSucceeded: 0, detailFailed: 0, detailSkipped: 0, requests: 0,
   added: 0, removed: 0, published: false, timedOut: false,
+  rateLimited: false, rateLimitRetryAt: null,
   lastProgressAt: new Date().toISOString(), activeRequests: [],
 };
 // The runner owns this private temporary file; never serialize API responses or keys.
@@ -132,6 +133,13 @@ async function fetchJson(url, label) {
       retryAfterSeconds = Number(response.headers.get('retry-after'));
       lastError = new Error(`${label} failed (${response.status}): ${body.slice(0, 300)}`);
       shouldRetry = [429, 500, 502, 503, 504].includes(response.status);
+      if (response.status === 429) {
+        metrics.rateLimited = true;
+        if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+          metrics.rateLimitRetryAt = new Date(Date.now() + retryAfterSeconds * 1_000).toISOString();
+          if (retryAfterSeconds > 30) shouldRetry = false;
+        }
+      }
     } catch (error) {
       lastError = error;
       if (remainingCollectionTime() <= 0) metrics.timedOut = true;

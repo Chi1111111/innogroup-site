@@ -38,6 +38,7 @@ function RunDetails({ run }: { run: CollectionRun }) {
     </summary>
     {run.error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{run.error}</p>}
     {m.timedOut && <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">采集达到内部时间上限；列表阶段超时会保留旧快照，详情阶段超时会发布列表并沿用已有照片。</p>}
+    {m.rateLimited && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">CARAPIS 滚动请求额度已用完{m.rateLimitRetryAt ? `，预计 ${date(m.rateLimitRetryAt)} 后恢复` : ''}。</p>}
     <dl className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
       {counts.map(([label, value]) => <div key={label}><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 text-lg font-semibold">{number(value)}</dd></div>)}
     </dl>

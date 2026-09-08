@@ -35,7 +35,10 @@ jobs:
           CARAPIS_SOURCE: carsensor
           CARAPIS_PAGE_SIZE: 100
           CARAPIS_CONCURRENCY: 2
-          CARAPIS_DAILY_REQUEST_BUDGET: 100
+          # The API allows about 110 requests per rolling day. Keeping each run at 55
+          # lets two slightly-overlapping daily runs complete despite schedule jitter.
+          CARAPIS_DAILY_REQUEST_BUDGET: 55
+          CARAPIS_DETAIL_REQUEST_BUDGET: 14
           # Stop cleanly before the 30-minute job limit so reports and old inventory are preserved.
           CARAPIS_COLLECTION_TIMEOUT_MS: 1200000
           CARAPIS_REQUEST_TIMEOUT_MS: 20000
@@ -52,7 +55,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: japan-market-sync-${{ github.run_id }}-${{ github.run_attempt }}
-          path: public/data/japan-market/sync-history.json
+          path: public/data/japan-market
+          retention-days: 7
 
       - name: Commit refreshed market data
         if: always()

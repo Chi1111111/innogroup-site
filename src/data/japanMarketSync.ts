@@ -12,6 +12,8 @@ export interface CollectionRun {
     stage?: string;
     published?: boolean;
     timedOut?: boolean;
+    rateLimited?: boolean;
+    rateLimitRetryAt?: string | null;
     lastProgressAt?: string;
     activeRequests?: string[];
     rejectionReasons?: Record<string, number>;
