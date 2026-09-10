@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, BatteryCharging, Check, ChevronDown, Mail, X } f
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
 import { bawM8Colours, bawM8Images, bawM8Versions } from '../../data/bawM8';
 import { useLanguage } from '../components/SiteTranslator';
+import { trackLeadSubmitted } from '../lib/leadTracking';
 
 type VersionId = (typeof bawM8Versions)[number]['id'];
 
@@ -478,6 +479,7 @@ function BawM8QuoteForm({ selectedId }: { selectedId: VersionId }) {
         EMAILJS_CONFIG.publicKey
       );
 
+      trackLeadSubmitted('baw_m8', 'china');
       alert(text({
         en: "Thank you for your BAW M8 enquiry. We'll be in touch within 24 hours.",
         zh: '感谢咨询 BAW M8。我们会在 24 小时内联系你。',

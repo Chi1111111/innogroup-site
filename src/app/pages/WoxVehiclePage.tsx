@@ -12,6 +12,7 @@ import {
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
 import { getWoxVehicle, type WoxVehicle } from '../../data/woxVehicles';
 import { useLanguage } from '../components/SiteTranslator';
+import { trackLeadSubmitted } from '../lib/leadTracking';
 
 type WoxSlug = WoxVehicle['slug'];
 type WoxVersion = WoxVehicle['versions'][number];
@@ -360,6 +361,7 @@ function WoxQuoteForm({ vehicle, selected }: { vehicle: WoxVehicle; selected: Wo
         EMAILJS_CONFIG.publicKey
       );
 
+      trackLeadSubmitted('wox', 'china');
       alert(text({
         en: `Thank you for your ${vehicle.name} enquiry. We'll be in touch within 24 hours.`,
         zh: `感谢咨询 ${vehicle.name}。我们会在 24 小时内联系你。`,

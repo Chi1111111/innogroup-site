@@ -6,6 +6,7 @@ import { EMAILJS_CONFIG } from '../../config/emailConfig';
 import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 import { tradeMeMakes, tradeMeVehicleCatalog } from '../../data/tradeMeVehicleCatalog';
 import { useLanguage } from './SiteTranslator';
+import { trackLeadSubmitted } from '../lib/leadTracking';
 
 const carBrands = [...tradeMeMakes];
 const carModels = tradeMeVehicleCatalog;
@@ -170,6 +171,13 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
         templateParams,
         EMAILJS_CONFIG.publicKey
       );
+
+      const enquiryType = new URLSearchParams(window.location.search).get('type');
+      trackLeadSubmitted('quote', formData.inquiryType === 'sell' ? 'sell'
+        : enquiryType === 'support' ? 'support'
+        : enquiryType === 'finance' ? 'finance'
+        : formData.sourceType === 'china' ? 'china'
+        : formData.sourceType === 'japan' ? 'japan' : 'local');
 
       alert(text({
         en: "Thank you. Your enquiry has been sent to Inno Group. We'll usually reply within one business day.",

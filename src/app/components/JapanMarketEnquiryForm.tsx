@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { formatNzd, type JapanMarketVehicle, vehicleFullName } from '../../data/japanMarket';
 import { submitJapanMarketLead } from '../lib/japanMarketLead';
 import { useLanguage } from './SiteTranslator';
+import { trackLeadSubmitted } from '../lib/leadTracking';
 
 const fieldClass = 'w-full rounded-xl border border-black/12 bg-white px-4 py-3 text-base text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15';
 
@@ -59,6 +60,7 @@ export function JapanMarketEnquiryForm({ vehicle, open, onClose }: { vehicle: Ja
         estimatedPrice: vehicle.estimatedNzdPrice ?? undefined,
         sourcePage: window.location.href,
       });
+      trackLeadSubmitted('japan_market', 'japan');
       setSent(true);
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : text({ en: 'Unable to send enquiry.', zh: '暂时无法发送咨询。' }));
