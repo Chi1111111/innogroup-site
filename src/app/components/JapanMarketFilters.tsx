@@ -22,9 +22,9 @@ export function JapanMarketFilters({ filters: f, vehicles, update }: Props) {
       </select></label>
     </div>
     <div className="jm-filter-section">
-      <label>{text({ en: 'Landed budget (NZD)', zh: '落地预算（纽币）' })}<select value={f.price} onChange={(e) => update({ price: e.target.value })}>
+      <label>{text({ en: 'FOB budget (NZD)', zh: 'FOB 预算（纽币）' })}<select value={f.price} onChange={(e) => update({ price: e.target.value })}>
         <option value="">{text({ en: 'Any budget', zh: '不限预算' })}</option>{PRICE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{text(option)}</option>)}
-      </select></label><p className="jm-field-note">{text({ en: 'Estimated NZ landed cost, not the Japan sale price.', zh: '预计新西兰落地费用，并非日本售价。' })}</p>
+      </select></label><p className="jm-field-note">{text({ en: 'Freight and New Zealand import costs are additional.', zh: '运费和新西兰进口费用另计。' })}</p>
     </div>
     <div className="jm-filter-section">
       <fieldset><legend>{text({ en: 'Year', zh: '年份' })}</legend><div className="jm-range">

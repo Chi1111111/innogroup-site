@@ -52,7 +52,7 @@ export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle:
 
 export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: JapanMarketVehicleSummary; compact?: boolean }) {
   const { language, text } = useLanguage();
-  const hasPrice = vehicle.estimatedNzdPrice != null;
+  const hasPrice = vehicle.fobPriceNzd != null;
   const variant = vehicleVariant(vehicle);
   const condition = vehicle.hasAccident === false
     ? text({ en: 'No accident reported', zh: '暂无事故记录' })
@@ -76,8 +76,8 @@ export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: 
           <p className="text-xs text-foreground/45">{formatVehicleUpdatedAt(vehicle.updatedAt, language)} · {text({ en: 'Availability to confirm', zh: '库存需再次确认' })}</p>
         </div>
         <div className="mt-auto pt-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground/42">{text({ en: 'Estimated landed price', zh: '预计新西兰落地价' })}</p>
-          <p className="mt-1 text-xl font-extrabold text-foreground">{formatNzd(vehicle.estimatedNzdPrice, language)} {hasPrice ? <span className="text-xs font-semibold text-foreground/45">{text({ en: 'landed', zh: '落地' })}</span> : null}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground/42">{text({ en: 'FOB price (NZD)', zh: 'FOB 离岸价（NZD）' })}</p>
+          <p className="mt-1 text-xl font-extrabold text-foreground">{formatNzd(vehicle.fobPriceNzd, language)} {hasPrice ? <span className="text-xs font-semibold text-foreground/45">{text({ en: 'NZD', zh: '纽币' })}</span> : null}</p>
           <span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-foreground">
             {text({ en: 'View Details', zh: '查看详情' })} <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
           </span>

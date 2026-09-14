@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, ChevronDown, Clock3, MessageCircle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock3, MessageCircle, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router';
 import { JapanMarketEnquiryForm } from '../components/JapanMarketEnquiryForm';
 import { JapanMarketPhotoGallery } from '../components/JapanMarketPhotoGallery';
@@ -11,7 +11,6 @@ import {
   formatFuelType,
   formatTransmission,
   formatVehicleUpdatedAt,
-  getCostBreakdown,
   loadJapanMarketVehicle,
   type JapanMarketPricing,
   type JapanMarketVehicle,
@@ -40,7 +39,6 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
   const [vehicle, setVehicle] = useState<JapanMarketVehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [enquiryOpen, setEnquiryOpen] = useState(false);
-  const [costOpen, setCostOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -57,7 +55,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
   useEffect(() => {
     if (!vehicle) return;
     const title = `${vehicleFullName(vehicle)} for Import from Japan | Inno Group NZ`;
-    const description = `View ${vehicleFullName(vehicle)}, condition information and estimated landed pricing for New Zealand.`;
+    const description = `View ${vehicleFullName(vehicle)}, condition information and FOB pricing in NZD.`;
     document.title = title;
     setHeadMeta('description', description);
     setHeadMeta('og:title', title, 'property');
@@ -102,7 +100,6 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
   if (loading) return <main className="min-h-[70vh] pt-20"><div className="section-shell px-4 py-20"><div className="h-96 animate-pulse rounded-3xl bg-black/5" /></div></main>;
   if (!vehicle || !pricing) return <main className="min-h-[70vh] pt-20"><div className="section-shell px-4 py-24 text-center"><p className="section-kicker">Japan Market</p><h1 className="mt-6">{text({ en: 'Vehicle unavailable', zh: '暂时无法查看该车辆' })}</h1><p className="mx-auto mt-4 max-w-xl">{text({ en: 'Browse other Japan Market vehicles or ask us to source something similar.', zh: '您可以继续浏览其他日本车源，或让我们寻找相似车辆。' })}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link to="/japan-market" className="button-primary">{text({ en: 'Browse Japan Market', zh: '浏览日本市场' })}</Link><Link to="/vehicles/find-my-car" className="button-secondary">{text({ en: 'Request a Vehicle', zh: '提交找车需求' })}</Link></div></div></main>;
 
-  const breakdown = getCostBreakdown(vehicle, pricing);
   const specs = [
     [text({ en: 'Year', zh: '年份' }), vehicle.year],
     [text({ en: 'Make', zh: '品牌' }), vehicle.make],
@@ -117,15 +114,6 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
     [text({ en: 'Chassis Code', zh: '底盘编号' }), vehicle.chassisCode === 'Not listed' ? text({ en: 'Not listed', zh: '暂无信息' }) : vehicle.chassisCode],
     [text({ en: 'Vehicle Location', zh: '车辆所在地' }), vehicle.location],
   ];
-  const costRows = breakdown ? [
-    [text({ en: 'Japan Vehicle Price (NZD equivalent)', zh: '日本车价（纽币换算）' }), breakdown.vehiclePriceNzd],
-    [text({ en: 'Inno Service Fee', zh: 'Inno 服务费' }), breakdown.serviceFeeNzd],
-    [text({ en: 'Shipping', zh: '运输费' }), breakdown.shippingNzd],
-    ['GST', breakdown.gstNzd],
-    [text({ en: 'Compliance', zh: '合规费用' }), breakdown.complianceNzd],
-    [text({ en: 'Registration', zh: '注册费用' }), breakdown.registrationNzd],
-    [text({ en: 'Clean Car / Emissions Cost', zh: '清洁车 / 排放费用' }), breakdown.emissionsNzd],
-  ] as const : [];
   const conditionTitle = vehicle.hasAccident === false
     ? text({ en: 'No accident reported', zh: '暂无事故记录' })
     : vehicle.hasAccident === true
@@ -170,7 +158,13 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
             <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
               <section className="rounded-3xl border border-black/10 bg-white/65 p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/45">{text({ en: 'Vehicle condition', zh: '车辆车况' })}</p><h2 className="mt-4 !text-2xl">{conditionTitle}</h2><p className="mt-4 text-sm leading-7">{conditionDescription}</p></section>
 
-              <section className="rounded-3xl border border-primary/25 bg-[#111214] p-6 text-white sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">{text({ en: 'Estimated Landed Price', zh: '预计新西兰落地价' })}</p><h2 className="mt-4 text-4xl text-white">{formatNzd(vehicle.estimatedNzdPrice, language)}</h2><p className="mt-4 text-sm leading-7 text-white/62">{text({ en: 'Estimated total cost to import and register this vehicle in New Zealand.', zh: '预计包含车辆进口至新西兰并完成注册的总费用。' })}</p>{breakdown ? <><button type="button" onClick={() => setCostOpen((value) => !value)} className="mt-6 flex w-full items-center justify-between border-y border-white/10 py-4 text-sm font-bold text-white">{text({ en: 'View Cost Breakdown', zh: '查看费用明细' })}<ChevronDown className={`h-4 w-4 transition-transform ${costOpen ? 'rotate-180' : ''}`} /></button>{costOpen ? <div className="space-y-3 border-b border-white/10 py-5">{costRows.map(([label, amount]) => <div key={label} className="flex justify-between gap-5 text-sm"><span className="text-white/55">{label}</span><span className="font-bold text-white">{amount != null ? formatNzd(amount, language) : text({ en: 'Estimate pending', zh: '待确认' })}</span></div>)}</div> : null}</> : null}<p className="mt-5 text-xs leading-6 text-white/45">{text({ en: 'All figures are estimates. Final pricing may vary with exchange rates, shipping, compliance requirements, vehicle condition and other import costs.', zh: '所有金额均为估算，最终价格可能因汇率、运输、合规要求、实际车况及其他进口成本而变化。' })}</p></section>
+              <section className="rounded-3xl border border-primary/25 bg-[#111214] p-6 text-white sm:p-8">
+                <p className="text-sm font-bold uppercase tracking-[0.12em] text-primary">{text({ en: 'FOB price · NZD', zh: 'FOB 离岸价 · 纽币' })}</p>
+                <h2 className="mt-4 text-4xl text-white">{formatNzd(vehicle.fobPriceNzd, language)}</h2>
+                <p className="mt-4 text-sm leading-7 text-white/75">{text({ en: 'Vehicle export price from Japan. Freight, insurance, New Zealand taxes, compliance, registration and Inno services are quoted separately.', zh: '车辆从日本出口的离岸报价。运费、保险、新西兰税费、合规、注册和 Inno 服务费另计。' })}</p>
+                <p className="mt-5 border-t border-white/15 pt-4 text-sm leading-6 text-white/60">{text({ en: 'Source: Japan Cars. Prices and availability are reconfirmed before purchase.', zh: '报价来源：Japan Cars。购买前会再次核实价格和库存。' })}</p>
+                {vehicle.priceCheckedAt && <p className="mt-2 text-sm text-white/60">{formatVehicleUpdatedAt(vehicle.priceCheckedAt, language)}</p>}
+              </section>
 
               <section className="rounded-3xl border border-black/10 bg-white/65 p-6 sm:p-8"><h2 className="text-2xl">{text({ en: 'Interested in this car?', zh: '想了解这辆车？' })}</h2><p className="mt-3 text-sm">{text({ en: 'Ask about condition, pricing and the next steps to import this vehicle.', zh: '咨询车况、价格和进口下一步流程。' })}</p><button type="button" onClick={() => setEnquiryOpen(true)} className="button-primary mt-6 w-full">{text({ en: 'Enquire About This Vehicle', zh: '咨询这辆车' })}<ArrowRight className="h-5 w-5" /></button><div className="mt-5 flex gap-3 border-t border-black/8 pt-5 text-xs leading-6 text-foreground/50"><ShieldCheck className="mt-0.5 h-5 w-5 flex-none text-primary" /><p>{text({ en: 'We usually reply within one business day. Condition and final landed cost are confirmed before you commit.', zh: '我们通常在一个工作日内回复。确认购买前，会先核实车况和最终落地费用。' })}</p></div></section>
             </aside>

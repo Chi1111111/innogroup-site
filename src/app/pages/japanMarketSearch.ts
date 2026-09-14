@@ -69,16 +69,16 @@ export function filterMarketVehicles(vehicles: JapanMarketVehicleSummary[], filt
     if (tokens.length && !tokens.every((token) => `${v.year} ${v.make} ${v.model} ${v.variant}`.toLowerCase().includes(token))) return false;
     if (filters.yearFrom && v.year < Number(filters.yearFrom)) return false;
     if (filters.yearTo && v.year > Number(filters.yearTo)) return false;
-    if (price && (v.estimatedNzdPrice == null || v.estimatedNzdPrice < price.min || v.estimatedNzdPrice >= price.max)) return false;
+    if (price && (v.fobPriceNzd == null || v.fobPriceNzd < price.min || v.fobPriceNzd >= price.max)) return false;
     if (filters.mileage && v.mileage >= Number(filters.mileage)) return false;
     if (filters.fuels.length && !filters.fuels.includes(v.fuelType)) return false;
     return !filters.bodies.length || filters.bodies.includes(v.bodyType);
   });
   return matches.sort((a, b) => {
     if (filters.sort === 'price-asc' || filters.sort === 'price-desc') {
-      if (a.estimatedNzdPrice == null) return b.estimatedNzdPrice == null ? 0 : 1;
-      if (b.estimatedNzdPrice == null) return -1;
-      return (a.estimatedNzdPrice - b.estimatedNzdPrice) * (filters.sort === 'price-asc' ? 1 : -1);
+      if (a.fobPriceNzd == null) return b.fobPriceNzd == null ? 0 : 1;
+      if (b.fobPriceNzd == null) return -1;
+      return (a.fobPriceNzd - b.fobPriceNzd) * (filters.sort === 'price-asc' ? 1 : -1);
     }
     if (filters.sort === 'year') return b.year - a.year;
     if (filters.sort === 'mileage') return a.mileage - b.mileage;

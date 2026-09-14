@@ -27,7 +27,7 @@ export function JapanMarketListingCard({ vehicle: v, priority = false }: { vehic
         <span className={v.hasAccident === true ? 'jm-condition-warning' : ''}>{v.hasAccident === false ? text({ en: 'No accident reported', zh: '暂无事故记录' }) : v.hasAccident === true ? text({ en: 'Accident history', zh: '有事故记录' }) : text({ en: 'Condition to confirm', zh: '车况待确认' })}</span>
       </div>
     </div>
-    <div className="jm-car-price"><span className="jm-price-label">{text({ en: 'Est. NZ landed price', zh: '预计新西兰落地价' })}</span><strong>{formatNzd(v.estimatedNzdPrice, language)}</strong><span className="jm-price-note">{text({ en: 'Availability & final cost to confirm', zh: '库存及最终费用需确认' })}</span>
+    <div className="jm-car-price"><span className="jm-price-label">{text({ en: 'FOB price (NZD)', zh: 'FOB 离岸价（NZD）' })}</span><strong>{formatNzd(v.fobPriceNzd, language)}</strong><span className="jm-price-note">{text({ en: 'Availability & final cost to confirm', zh: '库存及最终费用需确认' })}</span>
       <Link to={japanMarketVehiclePath(v)} className="jm-details-link">{text({ en: 'View vehicle', zh: '查看车辆' })}<ArrowUpRight size={18} /></Link>
     </div>
   </article>;

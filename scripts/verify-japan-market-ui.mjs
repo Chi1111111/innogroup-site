@@ -25,6 +25,7 @@ const runs = ['success', 'partial', 'failed', 'cancelled'].map((status, index) =
 }));
 await page.route('**/*', async (route) => {
   const url = new URL(route.request().url());
+  if (url.pathname.endsWith('/functions/v1/japan-market-scan')) return route.fulfill({ json: { data: { started: true, message: '扫描任务已提交。', workflowUrl: 'https://github.com/Chi1111111/innogroup-site/actions/workflows/japan-market-daily-sync.yml' } } });
   if (url.pathname.endsWith('/functions/v1/admin-api')) return route.fulfill({ json: { data: { valid: true } } });
   if (url.origin !== origin) return route.abort();
   if (url.pathname === '/data/japan-market/index.json') return route.fulfill({ json: { ...snapshot, count: snapshot.count + 1, vehicles: [...snapshot.vehicles, polluted] } });
@@ -51,7 +52,10 @@ try {
   await page.getByRole('heading', { name: '统一密码登录' }).waitFor();
   await page.evaluate(() => sessionStorage.setItem('inno:admin-session:v1', 'local-test-only'));
   await page.reload();
-  await page.getByRole('heading', { name: '每日 Japan Market 采集' }).waitFor();
+  await page.getByRole('heading', { name: 'Japan Market 采集中心' }).waitFor();
+  await page.getByRole('button', { name: '手动扫描', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: '扫描任务已提交。' }).waitFor();
+  await page.getByRole('button', { name: '运行记录', exact: true }).click();
   await page.locator('details').first().waitFor();
   assert.equal(await page.locator('details').count(), 4);
   await page.locator('summary').first().click();

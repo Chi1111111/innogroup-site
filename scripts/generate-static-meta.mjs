@@ -16,14 +16,14 @@ const routes = Object.fromEntries(
 );
 
 Object.assign(routes, {
-  '/japan-market/toyota': ['Toyota for Import from Japan | Inno Group NZ', 'Browse Toyota vehicles available from Japan and view estimated landed pricing for New Zealand.'],
-  '/japan-market/toyota/crown': ['Toyota Crown for Import from Japan | Inno Group NZ', 'Browse Toyota Crown vehicles available from Japan and view estimated landed pricing for New Zealand.'],
-  '/japan-market/toyota/alphard': ['Toyota Alphard for Import from Japan | Inno Group NZ', 'Browse Toyota Alphard vehicles available from Japan and view estimated landed pricing for New Zealand.'],
-  '/japan-market/lexus': ['Lexus for Import from Japan | Inno Group NZ', 'Browse Lexus vehicles available from Japan and view estimated landed pricing for New Zealand.'],
-  '/japan-market/nissan': ['Nissan for Import from Japan | Inno Group NZ', 'Browse Nissan vehicles available from Japan and view estimated landed pricing for New Zealand.'],
-  '/japan-market/honda': ['Honda for Import from Japan | Inno Group NZ', 'Browse Honda vehicles available from Japan and view estimated landed pricing for New Zealand.'],
-  '/japan-market/mazda': ['Mazda for Import from Japan | Inno Group NZ', 'Browse Mazda vehicles available from Japan and view estimated landed pricing for New Zealand.'],
-  '/japan-market/subaru': ['Subaru for Import from Japan | Inno Group NZ', 'Browse Subaru vehicles available from Japan and view estimated landed pricing for New Zealand.'],
+  '/japan-market/toyota': ['Toyota for Import from Japan | Inno Group NZ', 'Browse Toyota vehicles available from Japan and view FOB pricing in NZD.'],
+  '/japan-market/toyota/crown': ['Toyota Crown for Import from Japan | Inno Group NZ', 'Browse Toyota Crown vehicles available from Japan and view FOB pricing in NZD.'],
+  '/japan-market/toyota/alphard': ['Toyota Alphard for Import from Japan | Inno Group NZ', 'Browse Toyota Alphard vehicles available from Japan and view FOB pricing in NZD.'],
+  '/japan-market/lexus': ['Lexus for Import from Japan | Inno Group NZ', 'Browse Lexus vehicles available from Japan and view FOB pricing in NZD.'],
+  '/japan-market/nissan': ['Nissan for Import from Japan | Inno Group NZ', 'Browse Nissan vehicles available from Japan and view FOB pricing in NZD.'],
+  '/japan-market/honda': ['Honda for Import from Japan | Inno Group NZ', 'Browse Honda vehicles available from Japan and view FOB pricing in NZD.'],
+  '/japan-market/mazda': ['Mazda for Import from Japan | Inno Group NZ', 'Browse Mazda vehicles available from Japan and view FOB pricing in NZD.'],
+  '/japan-market/subaru': ['Subaru for Import from Japan | Inno Group NZ', 'Browse Subaru vehicles available from Japan and view FOB pricing in NZD.'],
 });
 
 const expansionSource = await readFile(join(projectRoot, 'src', 'data', 'woxExpansionVehicles.ts'), 'utf8');

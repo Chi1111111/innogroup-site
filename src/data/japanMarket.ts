@@ -15,7 +15,14 @@ export interface JapanMarketVehicleSummary {
   fuelType: JapanMarketFuelType;
   transmission: string;
   auctionGrade: '3.5' | '4' | '4.5' | '5' | null;
-  estimatedNzdPrice: number | null;
+  estimatedNzdPrice?: number | null;
+  fobPriceNzd?: number | null;
+  priceBasis?: 'FOB';
+  priceCurrency?: 'NZD';
+  priceCheckedAt?: string;
+  sourceUrl?: string;
+  stockNumber?: string;
+  sourcePriceType?: string;
   bodyType: JapanMarketBodyType;
   sourcePriceUsd?: number | null;
   imageUrl?: string | null;
@@ -96,7 +103,8 @@ async function fetchMarketPayload(path: string) {
   return { ...payload, vehicles, count: path.endsWith('/index.json') ? vehicles.length : payload.count };
 }
 
-export function loadJapanMarketData() {
+export function loadJapanMarketData(refresh = false) {
+  if (refresh) marketPromise = null;
   marketPromise ??= fetchMarketPayload('/data/japan-market/index.json').catch((error: unknown) => {
     marketPromise = null;
     throw error;
@@ -160,7 +168,7 @@ export function isJapanMarketVehicleId(value: string) {
 
 export function formatNzd(value: number | null | undefined, language: 'en' | 'zh' = 'en') {
   return value == null
-    ? language === 'zh' ? '联系确认价格' : 'Estimate on request'
+    ? language === 'zh' ? '联系确认 FOB 价格' : 'FOB price on request'
     : new Intl.NumberFormat('en-NZ', { style: 'currency', currency: 'NZD', maximumFractionDigits: 0 }).format(value);
 }
 

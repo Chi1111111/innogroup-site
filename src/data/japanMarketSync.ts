@@ -8,9 +8,10 @@ export interface CollectionRun {
   status: 'success' | 'partial' | 'failed' | 'cancelled';
   error: string | null;
   workflowUrl: string | null;
-  metrics: Partial<Record<'pagesExpected' | 'pagesFetched' | 'received' | 'accepted' | 'rejected' | 'detailRequested' | 'detailSucceeded' | 'detailFailed' | 'detailSkipped' | 'requests' | 'added' | 'removed', number | null>> & {
+  metrics: Partial<Record<'pagesExpected' | 'pagesFetched' | 'received' | 'accepted' | 'rejected' | 'detailRequested' | 'detailSucceeded' | 'detailFailed' | 'detailSkipped' | 'requests' | 'added' | 'updated' | 'retained' | 'removed' | 'target' | 'withFobPrice' | 'withoutFobPrice' | 'withPhotos' | 'photoCount' | 'cachedDetails' | 'duplicates', number | null>> & {
     stage?: string;
     published?: boolean;
+    sourceAccessBlocked?: boolean;
     timedOut?: boolean;
     rateLimited?: boolean;
     rateLimitRetryAt?: string | null;
@@ -21,6 +22,12 @@ export interface CollectionRun {
 }
 
 export interface CollectionReport {
+  source?: string;
+  target?: number;
+  withFobPrice?: number;
+  withPhotos?: number;
+  photoCount?: number;
+  priceBasis?: string;
   count: number;
   refreshedAt: string;
   runs: CollectionRun[];

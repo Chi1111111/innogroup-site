@@ -14,6 +14,8 @@ const checkpointDirectory = process.env.RUNNER_TEMP ? path.resolve(process.env.R
 const checkpointPath = path.join(checkpointDirectory, `japan-market-sync-${safeId}.json`);
 const previous = fs.existsSync(historyPath) ? JSON.parse(fs.readFileSync(historyPath, 'utf8')) : { runs: [] };
 const finalizeOnly = process.argv.includes('--finalize');
+const japanCars = process.argv.includes('--japancars') || process.env.JAPAN_MARKET_COLLECTOR === 'japancars';
+const source = japanCars ? 'Japan Cars' : 'CARAPIS · Carsensor';
 if (finalizeOnly && previous.runs.some((run) => run.id === id)) process.exit(0);
 
 function readCheckpoint() {
@@ -35,7 +37,7 @@ let metrics = {};
 let status = process.env.SYNC_OUTCOME === 'cancelled' ? 'cancelled' : 'failed';
 if (!finalizeOnly) {
   fs.writeFileSync(checkpointPath, JSON.stringify({ startedAt, metrics }));
-  const result = spawnSync(process.execPath, [fileURLToPath(new URL('./sync-carapis-japan-market.mjs', import.meta.url)), ...process.argv.slice(2)], {
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL(japanCars ? './sync-japancars-japan-market.mjs' : './sync-carapis-japan-market.mjs', import.meta.url)), ...process.argv.slice(2).filter((arg) => arg !== '--japancars')], {
     stdio: 'inherit',
     env: {
       ...process.env,
@@ -49,7 +51,7 @@ if (!finalizeOnly) {
     metrics = checkpoint.metrics;
   }
   status = result.status === 0 && metrics.published
-    ? metrics.detailFailed > 0 || metrics.detailSkipped > 0 ? 'partial' : 'success'
+    ? metrics.detailFailed > 0 || metrics.detailSkipped > 0 || (metrics.target && metrics.accepted < metrics.target) ? 'partial' : 'success'
     : 'failed';
 } else {
   const checkpoint = readCheckpoint();
@@ -60,20 +62,21 @@ if (!finalizeOnly) {
 }
 const finishedAt = new Date().toISOString();
 const errors = {
+  access: '来源站要求进一步验证或批量访问权限，已停止采集并保留上次库存。请配置获准持续访问的来源账号或接口。',
   configuration: '采集配置不完整，请查看任务日志。',
   listing: '列表请求或分页校验失败，保留上次车源。',
   details: '详情请求失败，请查看任务日志。',
-  validation: '车源为空或异常比例超过 20%，保留上次车源。',
+  validation: '有效车源不足目标的 90% 或异常比例过高，保留上次车源。',
   publish: '文件输出未完成，请查看任务日志。',
 };
 const run = {
-  id, source: 'CARAPIS · Carsensor',
+  id, source,
   trigger: process.env.GITHUB_EVENT_NAME || 'local',
   startedAt, finishedAt,
   durationSeconds: startedAt ? Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000) : null,
   status, metrics,
-  error: status === 'failed' && metrics.rateLimited
-    ? `CARAPIS 请求额度暂时用完${metrics.rateLimitRetryAt ? `，预计 ${metrics.rateLimitRetryAt} 后恢复` : ''}；已保留上次车源。`
+  error: metrics.sourceAccessBlocked ? '来源访问受限，扫描已暂停；已验证的新车合并入库，原库存保留。' : status === 'failed' && metrics.rateLimited
+    ? `${source} 暂时限制请求${metrics.rateLimitRetryAt ? `，预计 ${metrics.rateLimitRetryAt} 后恢复` : ''}；已保留上次车源。`
     : status === 'failed' ? errors[metrics.stage] || '任务未完成，请查看执行日志。'
     : status === 'cancelled' ? '任务被取消，未确认采集完成。' : null,
   workflowUrl: process.env.GITHUB_RUN_ID && process.env.GITHUB_REPOSITORY

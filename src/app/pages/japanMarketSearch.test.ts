@@ -5,11 +5,11 @@ import { EMPTY_FILTERS, filterMarketVehicles, marketPage, marketSearchParams, re
 const toyota: JapanMarketVehicleSummary = {
   id: 'toyota-1', make: 'Toyota', model: 'Alphard', variant: '2.5 Hybrid', year: 2024,
   mileage: 12000, fuelType: 'Hybrid', transmission: 'Automatic', auctionGrade: null,
-  estimatedNzdPrice: 45000, bodyType: 'Van / MPV', updatedAt: '2026-09-07T12:00:00Z',
+  fobPriceNzd: 45000, bodyType: 'Van / MPV', updatedAt: '2026-09-07T12:00:00Z',
 };
 const vehicles: JapanMarketVehicleSummary[] = [toyota,
-  { ...toyota, id: 'suzuki-1', make: 'Suzuki', model: 'Jimny', variant: '', year: 2020, mileage: 55000, estimatedNzdPrice: 28000, fuelType: 'Petrol', bodyType: 'SUV' },
-  { ...toyota, id: 'unknown-price', estimatedNzdPrice: null },
+  { ...toyota, id: 'suzuki-1', make: 'Suzuki', model: 'Jimny', variant: '', year: 2020, mileage: 55000, fobPriceNzd: 28000, fuelType: 'Petrol', bodyType: 'SUV' },
+  { ...toyota, id: 'unknown-price', fobPriceNzd: null },
 ];
 describe('market search URL state', () => {
   it('supports make/model landing routes and explicit URL overrides', () => {

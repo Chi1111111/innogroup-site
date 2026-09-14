@@ -16,7 +16,8 @@
     "japan-market:build": "node scripts/build-japan-market-data.mjs",
     "japan-market:sync:carapis": "node scripts/run-japan-market-sync.mjs",
     "japan-market:sync:database": "node scripts/sync-japan-market-supabase.mjs",
-    "japan-market:update": "npm run japan-market:sync:carapis",
+    "japan-market:sync:japancars": "node scripts/run-japan-market-sync.mjs --japancars",
+    "japan-market:update": "npm run japan-market:sync:japancars",
     "japan-market:update:legacy": "npm run japan-market:build && npm run japan-market:sync:database",
     "jpauc:update": "npm run jpauc:scrape && npm run jpauc:oneprice:japan:scrape && npm run jpauc:build:paged && npm run japan-market:update:legacy"
   },
@@ -38,6 +39,7 @@
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "4.7.0",
+    "cheerio": "^1.2.0",
     "eslint": "^10.9.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "playwright": "^1.54.2",

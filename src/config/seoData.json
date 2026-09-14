@@ -34,7 +34,7 @@
     },
     "/japan-market": {
       "title": "Japan Market Cars for Import | Inno Group NZ",
-      "description": "Browse vehicles currently available from Japan, filter by make, model, year, price, mileage and auction grade, and view estimated landed pricing for New Zealand."
+      "description": "Browse vehicles currently available from Japan, filter by make, model, year, price, mileage and auction grade, and view FOB pricing in NZD."
     },
     "/selected-vehicles": {
       "title": "Selected Vehicles NZ | Inno Group Weekly Finds",
