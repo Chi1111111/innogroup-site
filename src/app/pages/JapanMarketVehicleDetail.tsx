@@ -159,7 +159,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
               <section className="rounded-3xl border border-black/10 bg-white/65 p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/45">{text({ en: 'Vehicle condition', zh: '车辆车况' })}</p><h2 className="mt-4 !text-2xl">{conditionTitle}</h2><p className="mt-4 text-sm leading-7">{conditionDescription}</p></section>
 
               <section className="rounded-3xl border border-primary/25 bg-[#111214] p-6 text-white sm:p-8">
-                <p className="text-sm font-bold uppercase tracking-[0.12em] text-primary">{text({ en: 'FOB price · NZD', zh: 'FOB 离岸价 · 纽币' })}</p>
+                <p className="text-sm font-bold uppercase tracking-[0.12em] text-primary">{vehicle.fobPriceEstimated ? text({ en: 'Estimated FOB (NZD)', zh: 'FOB 参考价（NZD）' }) : text({ en: 'FOB price · NZD', zh: 'FOB 离岸价 · 纽币' })}</p>
                 <h2 className="mt-4 text-4xl text-white">{formatNzd(vehicle.fobPriceNzd, language)}</h2>
                 <p className="mt-4 text-sm leading-7 text-white/75">{text({ en: 'Vehicle export price from Japan. Freight, insurance, New Zealand taxes, compliance, registration and Inno services are quoted separately.', zh: '车辆从日本出口的离岸报价。运费、保险、新西兰税费、合规、注册和 Inno 服务费另计。' })}</p>
                 <p className="mt-5 border-t border-white/15 pt-4 text-sm leading-6 text-white/60">{text({ en: 'Source: Japan Cars. Prices and availability are reconfirmed before purchase.', zh: '报价来源：Japan Cars。购买前会再次核实价格和库存。' })}</p>

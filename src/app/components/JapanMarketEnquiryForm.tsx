@@ -76,7 +76,7 @@ export function JapanMarketEnquiryForm({ vehicle, open, onClose }: { vehicle: Ja
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Japan Market · {vehicle.id}</p>
             <h2 id="vehicle-enquiry-title" className="mt-3 text-3xl">{text({ en: 'Interested in this car?', zh: '想了解这辆车？' })}</h2>
-            <p className="mt-2 text-sm">{vehicleFullName(vehicle)} · {formatNzd(vehicle.fobPriceNzd, language)} {text({ en: 'FOB · NZD', zh: 'FOB · 纽币' })}</p>
+            <p className="mt-2 text-sm">{vehicleFullName(vehicle)} · {formatNzd(vehicle.fobPriceNzd, language)} {vehicle.fobPriceEstimated ? text({ en: 'Estimated FOB (NZD)', zh: 'FOB 参考价（NZD）' }) : text({ en: 'FOB · NZD', zh: 'FOB · 纽币' })}</p>
           </div>
           <button type="button" onClick={onClose} aria-label={text({ en: 'Close enquiry form', zh: '关闭咨询表单' })} className="rounded-full border border-black/10 bg-white p-2.5 hover:border-primary"><X className="h-5 w-5" /></button>
         </div>

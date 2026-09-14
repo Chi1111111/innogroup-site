@@ -17,6 +17,7 @@ export interface JapanMarketVehicleSummary {
   auctionGrade: '3.5' | '4' | '4.5' | '5' | null;
   estimatedNzdPrice?: number | null;
   fobPriceNzd?: number | null;
+  fobPriceEstimated?: boolean;
   priceBasis?: 'FOB';
   priceCurrency?: 'NZD';
   priceCheckedAt?: string;
