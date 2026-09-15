@@ -43,7 +43,7 @@ export function LocalJapanMarketRunner() {
   const n = (key: string) => typeof m?.[key] === 'number' ? m[key] as number : 0;
   const count = (key: string) => n(key).toLocaleString('en-NZ');
   const seconds = progress?.startedAt ? Math.max(0, Math.floor(((progress.finishedAt ? Date.parse(progress.finishedAt) : now) - Date.parse(progress.startedAt)) / 1000)) : 0;
-  const stats = [['发现车源', 'received'], ['已读取详情', 'detailSucceeded'], ['有效车源', 'accepted'], ['FOB 报价', 'withFobPrice'], ['照片链接', 'photoCount'], ['跳过近期核对', 'detailSkipped'], ['过滤车源', 'rejected'], ['详情失败', 'detailFailed'], ['读取列表页', 'pagesFetched'], ['来源请求', 'requests']];
+  const stats = [['发现车源', 'received'], ['已读取详情', 'detailSucceeded'], ['有效车源', 'accepted'], ['FOB 报价', 'withFobPrice'], ['照片链接', 'photoCount'], ['跳过已有车源', 'detailSkipped'], ['过滤车源', 'rejected'], ['详情失败', 'detailFailed'], ['读取列表页', 'pagesFetched'], ['来源请求', 'requests']];
   return <div>
     <button type="button" className="ajm-button" aria-expanded={open} onClick={() => setOpen(!open)}>本地运行</button>
     {open && <section className="ajm-panel ajm-local-panel">

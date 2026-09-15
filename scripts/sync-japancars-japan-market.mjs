@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { openCloudInventory } from './lib/japan-market-cloud.mjs';
 import { vehicleChanges } from './lib/japan-market-changes.mjs';
+import { createVehicleIdentitySet } from './lib/japan-market-seen.mjs';
 import { load } from 'cheerio';
 import { ORIGIN, SOURCE, readListing, readDetail, readRates, summary, shardFor, applyResponseCookies } from './lib/japancars.mjs';
 
@@ -204,10 +205,10 @@ try {
   if (!currency.success) throw new Error('Could not select source NZD pricing.');
   // Keep one source session; concurrent reads, when enabled, share its access limits.
   metrics.stage = 'listing';
-  const collected = pending; const seen = new Set();
+  const collected = pending; const seen = createVehicleIdentitySet();
   const existingPath = path.join(output, 'index.json');
   const existing = remote ? cloud.index.vehicles : fs.existsSync(existingPath) ? JSON.parse(fs.readFileSync(existingPath, 'utf8')).vehicles : [];
-  const recent = new Set(existing.filter(v => Date.now() - Date.parse(v.priceCheckedAt) < 7 * 86400000).map(v => v.id));
+  const known = createVehicleIdentitySet(existing);
   let consecutiveDetailFailures = 0;
   const maxPages = Math.ceil(target / 10 * 1.5) + 10;
   metrics.pagesExpected = Math.ceil(target / 10);
@@ -220,11 +221,11 @@ try {
     let fresh = 0;
     const eligible = [];
     for (const row of rows) {
-      if (seen.has(row.stockNumber)) { metrics.duplicates++; continue; }
-      seen.add(row.stockNumber); fresh++; metrics.received++;
+      if (seen.has(row)) { metrics.duplicates++; continue; }
+      seen.add(row); fresh++; metrics.received++;
       if (row.location !== 'Japan') { reject('outside_japan'); continue; }
       if (/sold|reserved|pending|unavailable|on order/i.test(row.status)) { reject('unavailable'); continue; }
-      if (recent.has('JPJC-' + row.stockNumber.toUpperCase())) { metrics.detailSkipped++; continue; }
+      if (known.has(row)) { metrics.detailSkipped++; continue; }
       eligible.push(row);
     }
     if (!fresh) throw new Error('Pagination repeated an earlier page; previous inventory preserved.');
