@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 type Progress = { status: string; message: string; startedAt?: string; finishedAt?: string; metrics?: Record<string, number | string | boolean | null>; logs?: { at: string; level: string; text: string }[] };
-const stages: Record<string, string> = { configuration: '连接云端库存', listing: '读取车辆列表', details: '读取车辆详情', validation: '核对并合并库存', publish: '上传云端', complete: '已上传，等待网站发布', access: '来源访问受限' };
+const stages: Record<string, string> = { cooldown: '详情暂不可用，自动等待恢复', configuration: '连接云端库存', listing: '读取车辆列表', details: '读取车辆详情', validation: '核对并合并库存', publish: '上传云端', complete: '已上传，等待网站发布', access: '来源访问受限' };
 async function localRequest(token: string, endpoint: string, method = 'GET'): Promise<Progress> {
   const response = await fetch(`http://127.0.0.1:17831/${endpoint}`, { method, headers: { Authorization: `Bearer ${token.trim()}` }, signal: AbortSignal.timeout(10000), cache: 'no-store' });
   const data = await response.json();
@@ -60,6 +60,7 @@ export function LocalJapanMarketRunner() {
         {m ? <>
           <strong>{progress.status === 'failed' ? '运行失败' : stages[String(m.stage)] ?? '等待采集进度'}</strong>
           <p>已用时 {Math.floor(seconds / 60)} 分 {seconds % 60} 秒 · 每 2 秒刷新</p>
+          {m.stage === 'cooldown' && m.resumeAt && <p role="status">正在等待，约 {Math.max(0, Math.ceil((Date.parse(String(m.resumeAt)) - now) / 60000))} 分钟后自动检查恢复（第 {count('recoveryAttempts')} / 3 次）。保持程序开启，已采集结果暂存在内存中。</p>}
           <label>本批有效车源：{count('accepted')} / 上限 {(n('target') || 5000).toLocaleString('en-NZ')}
             <progress aria-label="本批有效车源进度" value={n('accepted')} max={n('target') || 5000} />
           </label>

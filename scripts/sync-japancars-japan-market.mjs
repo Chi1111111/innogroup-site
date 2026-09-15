@@ -4,6 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { openCloudInventory } from './lib/japan-market-cloud.mjs';
 import { vehicleChanges } from './lib/japan-market-changes.mjs';
 import { createVehicleIdentitySet } from './lib/japan-market-seen.mjs';
+import { createDetailRecovery } from './lib/japan-market-recovery.mjs';
 import { load } from 'cheerio';
 import { ORIGIN, SOURCE, readListing, readDetail, readRates, summary, shardFor, applyResponseCookies } from './lib/japancars.mjs';
 
@@ -17,7 +18,7 @@ const remote = Object.hasOwn(args, 'remote');
 let cloud;
 const runId = process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT || '1'}` : randomUUID();
 const target = integer(args.target ?? process.env.JAPANCARS_TARGET, 5000, 1, 5000);
-const concurrency = integer(process.env.JAPANCARS_CONCURRENCY, 1, 1, 3);
+const concurrency = integer(process.env.JAPANCARS_CONCURRENCY, 1, 1, 1);
 const requestGap = integer(process.env.JAPANCARS_REQUEST_GAP_MS, 3000, 200, 10000);
 const timeoutMs = integer(process.env.JAPANCARS_TIMEOUT_MS, remote ? 21600000 : 6600000, 60000, 28800000);
 const output = path.resolve(args.output || 'public/data/japan-market');
@@ -219,6 +220,15 @@ try {
   const existing = remote ? cloud.index.vehicles : fs.existsSync(existingPath) ? JSON.parse(fs.readFileSync(existingPath, 'utf8')).vehicles : [];
   const known = createVehicleIdentitySet(existing);
   let consecutiveDetailFailures = 0;
+  const recoverDetail = createDetailRecovery({ deadline,
+    onPause: ({ delay, attempt, resumeAt }) => {
+      metrics.stage = 'cooldown'; metrics.recoveryAttempts = attempt;
+      metrics.resumeAt = new Date(resumeAt).toISOString();
+      console.warn(`Detail content missing. Paused ${delay / 60000} minutes; automatic recovery ${attempt}/3 at ${metrics.resumeAt}. Same source session retained.`);
+      checkpoint();
+    },
+    onResume: () => { metrics.stage = 'details'; metrics.resumeAt = null; checkpoint(); console.log('Checking whether vehicle details have recovered.'); },
+  });
   const maxPages = Math.ceil(target / 10 * 1.5) + 10;
   metrics.pagesExpected = Math.ceil(target / 10);
   for (let page = 1; page <= maxPages && collected.length < target; page++) {
@@ -240,9 +250,10 @@ try {
     if (!fresh) throw new Error('Pagination repeated an earlier page; previous inventory preserved.');
     metrics.stage = 'details'; checkpoint();
     for (let i = 0; i < eligible.length && collected.length < target; i += concurrency) {
-      const results = await Promise.allSettled(eligible.slice(i, i+concurrency).map((row) => detail(row, cookies)));
+      const results = await Promise.allSettled(eligible.slice(i, i+concurrency).map((row) => recoverDetail(() => detail(row, cookies))));
       for (const result of results) {
         if (result.status === 'rejected') {
+          if (result.reason?.code === 'DETAIL_RECOVERY_EXHAUSTED') throw result.reason;
           metrics.detailFailed++;
           consecutiveDetailFailures++;
           if (metrics.detailFailed <= 5) console.warn(`Detail: ${result.reason instanceof Error ? result.reason.message : 'failed'}`);
