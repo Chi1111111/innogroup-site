@@ -14,8 +14,8 @@ it('publishes memory payloads without force-pushing, and rejects concurrent clou
     const endpoint=url.split('/innogroup-site/')[1];let body={};
     if(options.method!=='GET'){writes.push({endpoint,body:JSON.parse(options.body)});body={sha:'next'};}
     else if(endpoint==='git/ref/heads/main')body={object:{sha:head}};
-    else if(endpoint==='git/commits/initial')body={tree:{sha:'tree'}};
-    else if(endpoint.startsWith('git/trees/'))body={tree:[{path:'public/data/japan-market/index.json',sha:'index'},{path:'public/data/japan-market/details/000.json',sha:'detail'}]};
+    else if(endpoint.startsWith('git/commits/'))body={tree:{sha:head==='initial'?'tree':head}};
+    else if(endpoint.startsWith('git/trees/'))body={tree:[{path:'src/code.ts',sha:head},{path:'public/data/japan-market/index.json',sha:head==='someone-else'?'changed-index':'index'},{path:'public/data/japan-market/details/000.json',sha:'detail'}]};
     else body={content:Buffer.from(JSON.stringify({vehicles:[{id:'a'}]})).toString('base64')};
     return {ok:true,json:async()=>body};
   };
@@ -23,6 +23,10 @@ it('publishes memory payloads without force-pushing, and rejects concurrent clou
   expect(await cloud.details()).toEqual([{id:'a'}]);
   await cloud.publish(new Map([['index.json',{vehicles:[{id:'a'}]}]]));
   expect(writes.at(-1)).toMatchObject({endpoint:'git/refs/heads/main',body:{force:false}});
+  head='code-only';
+  await cloud.publish(new Map([['index.json',{vehicles:[{id:'a'}]}]]));
+  expect(writes.at(-3)).toMatchObject({endpoint:'git/trees',body:{base_tree:'code-only'}});
+  expect(writes.at(-2)).toMatchObject({endpoint:'git/commits',body:{parents:['code-only']}});
   const count=writes.length;head='someone-else';
   await expect(cloud.publish(new Map())).rejects.toThrow('changed during scan');
   expect(writes.length).toBe(count);

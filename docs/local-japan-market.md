@@ -6,7 +6,7 @@ Run `npm run japan-market:local` to collect up to 5,000 additional/refreshed veh
 
 This mode does not use the disk-writing reporting wrapper. Existing repository data and past local test files are not removed. This is application-level no-disk storage, not a guarantee about OS paging or crash dumps.
 
-Source challenges stop collection. Verified records can still be uploaded when available. Closing the process before upload discards the in-memory batch; published records remain in the cloud. If the cloud branch changes during scanning, the upload fails closed instead of overwriting newer work. Run again to resume from cloud inventory; there is no durable local retry file.
+Source challenges stop collection. Verified records can still be uploaded when available. Closing the process before upload discards the in-memory batch; published records remain in the cloud. If only website code changes during scanning, uploads use the latest commit and preserve those code changes. If inventory or collection history changes, the upload fails closed instead of overwriting newer data. Run again to resume from cloud inventory; there is no durable local retry file.
 
 Admin's run detail button shows per-vehicle added/updated fields and photo additions/removals. Timestamp-only checks are not counted as content updates. Older runs without detailed snapshots say that details were not recorded. The 25-vehicle run from 15 September has been reconstructed from its exact Git commit; it is marked as reconstructed.
 
