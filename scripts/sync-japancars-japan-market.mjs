@@ -33,8 +33,10 @@ const metrics = {
 };
 function checkpoint() {
   metrics.lastProgressAt = new Date().toISOString();
+  if (process.connected && process.send) process.send({ type: 'progress', metrics: { ...metrics } }, () => {});
   if (!remote && process.env.JAPAN_MARKET_METRICS_FILE) fs.writeFileSync(process.env.JAPAN_MARKET_METRICS_FILE, JSON.stringify({ startedAt, metrics }));
 }
+if (process.send) setInterval(checkpoint, 1000).unref();
 process.on('exit', checkpoint);
 for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, () => { checkpoint(); process.exit(130); });
 const cookies = new Map();
@@ -240,7 +242,13 @@ try {
         if (result.value.issue) { reject(result.value.issue); continue; }
         const v = result.value.vehicle;
         if (!v.photoCount) { reject('missing_photos'); continue; }
-        if (collected.length < target) collected.push(v);
+        if (collected.length < target) {
+          collected.push(v);
+          metrics.photoCount += v.photoCount;
+          metrics.withPhotos++;
+          if (v.fobPriceNzd != null) metrics.withFobPrice++;
+          else metrics.withoutFobPrice++;
+        }
       }
       metrics.accepted = collected.length; checkpoint();
       if (consecutiveDetailFailures >= 9) throw new Error('Nine consecutive detail failures; stopped to preserve the previous inventory.');
@@ -266,3 +274,5 @@ try {
   }
   checkpoint();
 }
+checkpoint();
+if (process.connected) process.disconnect();

@@ -139,8 +139,9 @@ export function AdminJapanMarket() {
     </aside>
     <div className="ajm-main">
       <header className="ajm-header"><div><p className="ajm-eyebrow">INVENTORY OPERATIONS</p><h1>{tab==='overview'?'Japan Market 采集中心':tab==='inventory'?'车源与 FOB 报价':'采集运行记录'}</h1><p>增量采集 · 每次最多 {number(target)} 辆 · 保留现有库存</p></div>
-        <div className="ajm-actions"><LocalJapanMarketRunner/><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}><RefreshCw size={16} className={loading?'ajm-spin':''}/>{loading?'读取中…':'刷新记录'}</button><button className="ajm-button primary" type="button" disabled={scanning} onClick={()=>void scan()}><RefreshCw size={16} className={scanning?'ajm-spin':''}/>{scanning?'正在提交…':'手动扫描'}</button></div>
+        <div className="ajm-actions"><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}><RefreshCw size={16} className={loading?'ajm-spin':''}/>{loading?'读取中…':'刷新记录'}</button><button className="ajm-button primary" type="button" disabled={scanning} onClick={()=>void scan()}><RefreshCw size={16} className={scanning?'ajm-spin':''}/>{scanning?'正在提交…':'手动扫描'}</button></div>
       </header>
+      <LocalJapanMarketRunner/>
       {scanMessage && <p role="status" className="ajm-alert warning">{scanMessage} <a href={scanUrl} target="_blank" rel="noreferrer">查看任务进度</a></p>}
       {error && <p role="alert" className="ajm-alert danger">{error}{report ? ' 当前仍显示上次读取的数据。' : ''}</p>}
       {loading && !report && <div role="status" className="ajm-empty">正在读取车源和采集记录…</div>}

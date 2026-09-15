@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 export function createLocalService({ token = randomBytes(24).toString('hex'), launch = () => spawn(process.execPath,
   [fileURLToPath(new URL('./sync-japancars-japan-market.mjs', import.meta.url)), '--remote', '--target=5000'],
-  { env: { ...process.env, JAPANCARS_REQUEST_GAP_MS: '3000', JAPANCARS_CONCURRENCY: '1', JAPANCARS_TIMEOUT_MS: '21600000' }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }) } = {}) {
+  { env: { ...process.env, JAPANCARS_REQUEST_GAP_MS: '3000', JAPANCARS_CONCURRENCY: '1', JAPANCARS_TIMEOUT_MS: '21600000' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true }) } = {}) {
   let child;
   let state = { status: 'idle', startedAt: null, finishedAt: null, message: '本地程序已连接，可以开始扫描。' };
   const origins = new Set(['https://www.innogroup.co.nz', 'https://innogroup.co.nz']);
@@ -26,11 +26,18 @@ export function createLocalService({ token = randomBytes(24).toString('hex'), la
     if (req.method === 'GET' && req.url === '/status') return reply(200, state);
     if (req.method !== 'POST' || req.url !== '/scan') return reply(404, { message: '接口不存在' });
     if (child) return reply(409, { message: '这台电脑已有扫描正在运行。' });
-    state = { status: 'running', startedAt: new Date().toISOString(), finishedAt: null, message: '扫描中：最多 5,000 辆，间隔 3 秒。详细进度见本地程序窗口。' };
+    state = { status: 'running', startedAt: new Date().toISOString(), finishedAt: null, message: '扫描中：最多 5,000 辆，间隔 3 秒。', metrics: { stage: 'configuration', target: 5000 }, logs: [] };
     try {
       child = launch();
-      child.stdout?.on('data', chunk => process.stdout.write(chunk));
-      child.stderr?.on('data', chunk => process.stderr.write(chunk));
+      child.on('message', data => {
+        if (data?.type === 'progress' && data.metrics && typeof data.metrics === 'object') state = { ...state, metrics: data.metrics };
+      });
+      const log = (chunk, level) => {
+        const text = String(chunk).replace(/\x1b\[[0-9;]*m/g, '').slice(0, 2000).trim();
+        if (text) state = { ...state, logs: [...state.logs, { at: new Date().toISOString(), level, text }].slice(-50) };
+      };
+      child.stdout?.on('data', chunk => { process.stdout.write(chunk); log(chunk, 'info'); });
+      child.stderr?.on('data', chunk => { process.stderr.write(chunk); log(chunk, 'error'); });
       const finish = (ok) => {
         child = undefined;
         state = { ...state, status: ok ? 'finished' : 'failed', finishedAt: new Date().toISOString(), message: ok ? '采集已结束。请待云端发布完成后刷新运行记录，查看实际采集数量与变更。' : '扫描或上传失败，请查看本地窗口。已有云端库存保留。' };
