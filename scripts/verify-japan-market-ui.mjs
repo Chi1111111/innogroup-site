@@ -29,6 +29,7 @@ await page.route('**/*', async (route) => {
   if (url.pathname.endsWith('/functions/v1/japan-market-scan')) return route.fulfill({ json: { data: { started: true, message: '扫描任务已提交。', workflowUrl: 'https://github.com/Chi1111111/innogroup-site/actions/workflows/japan-market-daily-sync.yml' } } });
   if (url.pathname.endsWith('/functions/v1/admin-api')) return route.fulfill({ json: { data: { valid: true } } });
   if (url.pathname === '/data/japan-market/changes/test-0.json') return route.fulfill({json:{changes:[{id:'test-car',name:'Toyota Test',stockNumber:'TEST',kind:'updated',changes:[{field:'fobPriceNzd',before:100,after:200}],addedPhotos:[],removedPhotos:[]}]}});
+  if (url.origin === 'http://127.0.0.1:17831') return route.fulfill({json:{status:'finished',message:'本地测试任务已完成'},headers:{'Access-Control-Allow-Origin':origin}});
   if (url.origin !== origin) return route.abort();
   if (url.pathname === '/data/japan-market/index.json') return route.fulfill({ json: { ...snapshot, count: snapshot.count + 1, vehicles: [...snapshot.vehicles, polluted] } });
   if (url.pathname === '/data/japan-market/sync-history.json') {
@@ -55,6 +56,12 @@ try {
   await page.evaluate(() => sessionStorage.setItem('inno:admin-session:v1', 'local-test-only'));
   await page.reload();
   await page.getByRole('heading', { name: 'Japan Market 采集中心' }).waitFor();
+  await page.getByRole('button', { name: '本地运行', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: '开始本地扫描', exact: true }).isDisabled(), true);
+  await page.getByLabel('本地程序配对码').fill('test-pairing');
+  await page.getByRole('button', { name: '开始本地扫描', exact: true }).click();
+  await page.getByText('本地测试任务已完成', {exact:true}).waitFor();
+  await page.getByRole('button', { name: '本地运行', exact: true }).click();
   await page.getByRole('button', { name: '手动扫描', exact: true }).click();
   await page.getByRole('status').filter({ hasText: '扫描任务已提交。' }).waitFor();
   await page.getByRole('button', { name: /车源与报价/ }).click();

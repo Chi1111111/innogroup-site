@@ -20,8 +20,9 @@
     "japan-market:update": "npm run japan-market:sync:japancars",
     "japan-market:update:legacy": "npm run japan-market:build && npm run japan-market:sync:database",
     "jpauc:update": "npm run jpauc:scrape && npm run jpauc:oneprice:japan:scrape && npm run jpauc:build:paged && npm run japan-market:update:legacy",
-    "japan-market:local": "node scripts/sync-japancars-japan-market.mjs --remote --target=25",
-    "japan-market:local:check": "node scripts/sync-japancars-japan-market.mjs --remote --check"
+    "japan-market:local": "node scripts/sync-japancars-japan-market.mjs --remote --target=5000",
+    "japan-market:local:check": "node scripts/sync-japancars-japan-market.mjs --remote --check",
+    "japan-market:local:service": "node scripts/japan-market-local-service.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

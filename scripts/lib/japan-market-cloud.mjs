@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 
 // Vehicle payloads and credentials stay in memory. No git checkout or temporary data files.
 export async function openCloudInventory({token,request=fetch}={}) {
-  token ||= process.env.GH_TOKEN || process.env.GITHUB_TOKEN || execFileSync(process.platform==='win32'?'C:/Program Files/GitHub CLI/gh.exe':'gh',['auth','token'],{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
+  token ||= process.env.GH_TOKEN || process.env.GITHUB_TOKEN || execFileSync('gh',['auth','token'],{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
   const api=async (endpoint,method='GET',body)=>{
     const r=await request(`https://api.github.com/repos/Chi1111111/innogroup-site/${endpoint}`,{method,
       headers:{Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'},

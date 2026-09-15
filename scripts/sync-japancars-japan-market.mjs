@@ -15,10 +15,10 @@ function integer(value, fallback, min, max) {
 const remote = Object.hasOwn(args, 'remote');
 let cloud;
 const runId = process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT || '1'}` : randomUUID();
-const target = integer(args.target ?? process.env.JAPANCARS_TARGET, remote ? 25 : 5000, 1, 10000);
+const target = integer(args.target ?? process.env.JAPANCARS_TARGET, 5000, 1, 5000);
 const concurrency = integer(process.env.JAPANCARS_CONCURRENCY, 1, 1, 3);
-const requestGap = integer(process.env.JAPANCARS_REQUEST_GAP_MS, 2000, 200, 10000);
-const timeoutMs = integer(process.env.JAPANCARS_TIMEOUT_MS, 6600000, 60000, 18000000);
+const requestGap = integer(process.env.JAPANCARS_REQUEST_GAP_MS, 3000, 200, 10000);
+const timeoutMs = integer(process.env.JAPANCARS_TIMEOUT_MS, remote ? 21600000 : 6600000, 60000, 28800000);
 const output = path.resolve(args.output || 'public/data/japan-market');
 const cache = path.resolve('tmp/japancars-cache');
 if (!remote) fs.mkdirSync(cache, { recursive: true });
