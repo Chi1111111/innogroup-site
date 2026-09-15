@@ -12,7 +12,7 @@ function integer(value, fallback, min, max) {
 }
 const target = integer(args.target ?? process.env.JAPANCARS_TARGET, 5000, 1, 10000);
 const concurrency = integer(process.env.JAPANCARS_CONCURRENCY, 1, 1, 3);
-const requestGap = integer(process.env.JAPANCARS_REQUEST_GAP_MS, 350, 200, 10000);
+const requestGap = integer(process.env.JAPANCARS_REQUEST_GAP_MS, 2000, 200, 10000);
 const timeoutMs = integer(process.env.JAPANCARS_TIMEOUT_MS, 6600000, 60000, 18000000);
 const output = path.resolve(args.output || 'public/data/japan-market');
 const cache = path.resolve('tmp/japancars-cache');
