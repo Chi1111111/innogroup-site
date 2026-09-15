@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 type Progress = { status: string; message: string; startedAt?: string; finishedAt?: string; metrics?: Record<string, number | string | boolean | null>; logs?: { at: string; level: string; text: string }[] };
-const stages: Record<string, string> = { cooldown: '详情暂不可用，自动等待恢复', configuration: '连接云端库存', listing: '读取车辆列表', details: '读取车辆详情', validation: '核对并合并库存', publish: '上传云端', complete: '已上传，等待网站发布', access: '来源访问受限' };
+const stages: Record<string, string> = { between_batches: '本批已上传，等待下一批', cooldown: '详情暂不可用，自动等待恢复', configuration: '连接云端库存', listing: '读取车辆列表', details: '读取车辆详情', validation: '核对并合并库存', publish: '上传云端', complete: '已上传，等待网站发布', access: '来源访问受限' };
 async function localRequest(token: string, endpoint: string, method = 'GET'): Promise<Progress> {
   const response = await fetch(`http://127.0.0.1:17831/${endpoint}`, { method, headers: { Authorization: `Bearer ${token.trim()}` }, signal: AbortSignal.timeout(10000), cache: 'no-store' });
   const data = await response.json();
@@ -23,6 +23,12 @@ export function LocalJapanMarketRunner() {
       setProgress(start && current.status !== 'running' ? await localRequest(token, 'scan', 'POST') : current);
       setNow(Date.now());
     } catch (e) { setError(e instanceof TypeError || (e instanceof Error && e.name === 'TimeoutError') ? '无法连接本地程序。请先启动服务，允许浏览器访问本地网络，再重试。' : e instanceof Error ? e.message : '连接失败'); }
+    finally { setBusy(false); }
+  };
+  const stopNext = async () => {
+    setBusy(true);
+    try { setProgress(await localRequest(token, 'stop-after-batch', 'POST')); setError(''); }
+    catch { setError('未能提交停止请求，请重试；不要直接关闭正在上传的程序。'); }
     finally { setBusy(false); }
   };
   useEffect(() => {
@@ -47,17 +53,20 @@ export function LocalJapanMarketRunner() {
   return <div>
     <button type="button" className="ajm-button" aria-expanded={open} onClick={() => setOpen(!open)}>本地运行</button>
     {open && <section className="ajm-panel ajm-local-panel">
-      <strong>用这台电脑扫描 · 最多 5,000 辆 · 间隔 3 秒</strong>
+      <strong>自动分批扫描 · 累计最多 5,000 辆 · 间隔 3 秒</strong>
       <p><a href="/downloads/japan-market-local.zip" download>下载最新版本地程序</a>，解压后按 README 启动服务。更新程序请等当前批次结束后重启。</p>
       <label>配对码 <input aria-label="本地程序配对码" type="password" autoComplete="off" value={token} disabled={running} onChange={e => { setToken(e.target.value); setProgress(null); }} /></label>
       <div className="ajm-actions">
         <button type="button" className="ajm-button" disabled={busy || !token.trim()} onClick={() => void connect(false)}>连接并查看进度</button>
         <button type="button" className="ajm-button primary" disabled={busy || running || !token.trim()} onClick={() => void connect(true)}>{busy ? '连接中…' : running ? '本地扫描中…' : '开始本地扫描'}</button>
+        {running && <button type="button" className="ajm-button" disabled={busy || !!progress?.metrics?.stopAfterBatch} onClick={() => void stopNext()}>本批结束后停止</button>}
       </div>
       {error && <p role="alert">{error}</p>}
       {progress && <div className="ajm-local-progress">
         <p role="status">{progress.message}</p>
         {m ? <>
+          {!!m.batchNumber && <p>第 {count('batchNumber')} 批 · 累计已上传新增 {count('totalAdded')} / 5,000 辆</p>}
+          {m.stage === 'between_batches' && m.resumeAt && <p>约 {Math.max(0, Math.ceil((Date.parse(String(m.resumeAt)) - now) / 1000))} 秒后自动启动下一批。当前批次已经保存到云端。</p>}
           <strong>{progress.status === 'failed' ? '运行失败' : stages[String(m.stage)] ?? '等待采集进度'}</strong>
           <p>已用时 {Math.floor(seconds / 60)} 分 {seconds % 60} 秒 · 每 2 秒刷新</p>
           {m.stage === 'cooldown' && m.resumeAt && <p role="status">正在等待，约 {Math.max(0, Math.ceil((Date.parse(String(m.resumeAt)) - now) / 60000))} 分钟后自动检查恢复（第 {count('recoveryAttempts')} / 3 次）。保持程序开启，已采集结果暂存在内存中。</p>}

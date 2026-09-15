@@ -220,6 +220,7 @@ try {
   const existing = remote ? cloud.index.vehicles : fs.existsSync(existingPath) ? JSON.parse(fs.readFileSync(existingPath, 'utf8')).vehicles : [];
   const known = createVehicleIdentitySet(existing);
   let consecutiveDetailFailures = 0;
+  let consecutiveMissingDetails = 0;
   const recoverDetail = createDetailRecovery({ deadline,
     onPause: ({ delay, attempt, resumeAt }) => {
       metrics.stage = 'cooldown'; metrics.recoveryAttempts = attempt;
@@ -250,16 +251,20 @@ try {
     if (!fresh) throw new Error('Pagination repeated an earlier page; previous inventory preserved.');
     metrics.stage = 'details'; checkpoint();
     for (let i = 0; i < eligible.length && collected.length < target; i += concurrency) {
-      const results = await Promise.allSettled(eligible.slice(i, i+concurrency).map((row) => recoverDetail(() => detail(row, cookies))));
+      const results = await Promise.allSettled(eligible.slice(i, i+concurrency).map((row) => process.env.JAPANCARS_AUTO_BATCH === '1' ? detail(row, cookies) : recoverDetail(() => detail(row, cookies))));
       for (const result of results) {
         if (result.status === 'rejected') {
           if (result.reason?.code === 'DETAIL_RECOVERY_EXHAUSTED') throw result.reason;
           metrics.detailFailed++;
           consecutiveDetailFailures++;
+          consecutiveMissingDetails = result.reason?.code === 'VEHICLE_IDENTITY_MISMATCH' && result.reason?.receivedStock === 'Not listed' ? consecutiveMissingDetails + 1 : 0;
+          if (process.env.JAPANCARS_AUTO_BATCH === '1' && consecutiveMissingDetails >= 3 && result.reason?.code === 'VEHICLE_IDENTITY_MISMATCH' && result.reason?.receivedStock === 'Not listed') {
+            throw Object.assign(new Error('Detail content missing repeatedly; ending this batch and uploading validated vehicles.'), { code: 'BATCH_CONTENT_MISSING' });
+          }
           if (metrics.detailFailed <= 5) console.warn(`Detail: ${result.reason instanceof Error ? result.reason.message : 'failed'}`);
           continue;
         }
-        consecutiveDetailFailures = 0;
+        consecutiveDetailFailures = 0; consecutiveMissingDetails = 0;
         if (result.value.issue) { reject(result.value.issue); continue; }
         const v = result.value.vehicle;
         if (!v.photoCount) { reject('missing_photos'); continue; }
@@ -281,6 +286,7 @@ try {
   await publish(collected, rates);
   }
 } catch (error) {
+  metrics.stopCode = error?.code || null;
   metrics.stopReason = error instanceof Error ? error.message : String(error);
   console.error(error instanceof Error ? error.message : String(error));
   if (pending.length && activeRates && metrics.stage !== 'publish' && metrics.stage !== 'validation') {

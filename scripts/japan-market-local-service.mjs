@@ -3,11 +3,58 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-export function createLocalService({ token = randomBytes(24).toString('hex'), launch = () => spawn(process.execPath,
-  [fileURLToPath(new URL('./sync-japancars-japan-market.mjs', import.meta.url)), '--remote', '--target=5000'],
-  { env: { ...process.env, JAPANCARS_REQUEST_GAP_MS: '3000', JAPANCARS_CONCURRENCY: '1', JAPANCARS_TIMEOUT_MS: '21600000' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true }) } = {}) {
+export function createLocalService({ token = randomBytes(24).toString('hex'), schedule = setTimeout, cancel = clearTimeout, now = Date.now, launch = ({ target, timeoutMs }) => spawn(process.execPath,
+  [fileURLToPath(new URL('./sync-japancars-japan-market.mjs', import.meta.url)), '--remote', `--target=${target}`],
+  { env: { ...process.env, JAPANCARS_AUTO_BATCH: '1', JAPANCARS_REQUEST_GAP_MS: '3000', JAPANCARS_CONCURRENCY: '1', JAPANCARS_TIMEOUT_MS: String(timeoutMs) }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true }) } = {}) {
   let child;
+  let nextBatch;
+  let totalAdded = 0;
+  let batchNumber = 0;
+  let stopAfterBatch = false;
+  let deadline = 0;
   let state = { status: 'idle', startedAt: null, finishedAt: null, message: '本地程序已连接，可以开始扫描。' };
+  const decorate = metrics => ({ ...metrics, totalAdded, batchNumber, cumulativeTarget: 5000, stopAfterBatch });
+  const log = (chunk, level = 'info') => {
+    const text = String(chunk).replace(/\x1b\[[0-9;]*m/g, '').slice(0, 2000).trim();
+    if (text) state = { ...state, logs: [...(state.logs || []), { at: new Date(now()).toISOString(), level, text }].slice(-50) };
+  };
+  const finish = (ok, message) => {
+    state = { ...state, status: ok ? 'finished' : 'failed', finishedAt: new Date(now()).toISOString(), message, metrics: decorate(state.metrics) };
+  };
+  const startBatch = () => {
+    nextBatch = undefined;
+    const remaining = 5000 - totalAdded;
+    const timeoutMs = Math.floor(deadline - now());
+    if (stopAfterBatch || remaining <= 0 || timeoutMs < 60000 || batchNumber >= 40) return finish(true, `自动批次已结束，累计上传新增 ${totalAdded} 辆。`);
+    batchNumber++;
+    state = { ...state, message: `第 ${batchNumber} 批采集中；上传成功后自动继续，累计上限 5,000 辆。`, metrics: decorate({ stage: 'configuration', target: remaining }) };
+    let current;
+    try { current = launch({ target: remaining, timeoutMs }); child = current; }
+    catch { return finish(false, '无法启动采集。已上传库存保留，未自动重启。'); }
+    let launchFailed = false;
+    current.on('message', data => {
+      if (child === current && data?.type === 'progress' && data.metrics && typeof data.metrics === 'object') state = { ...state, metrics: decorate(data.metrics) };
+    });
+    current.stdout?.on('data', chunk => { process.stdout.write(chunk); log(chunk); });
+    current.stderr?.on('data', chunk => { process.stderr.write(chunk); log(chunk, 'error'); });
+    current.once('error', () => { launchFailed = true; });
+    current.once('close', code => {
+      if (child !== current) return;
+      child = undefined;
+      const m = state.metrics || {};
+      const uploaded = m.published === true && Number.isInteger(m.added) && m.added >= 0;
+      if (uploaded) totalAdded += m.added;
+      const ok = !launchFailed && code === 0 && uploaded;
+      const continueBatch = ok && uploaded && m.added > 0 && m.stopCode === 'BATCH_CONTENT_MISSING'
+        && !m.sourceAccessBlocked && !stopAfterBatch && totalAdded < 5000 && batchNumber < 40 && deadline - now() >= 90000;
+      state = { ...state, metrics: decorate(m) };
+      if (!continueBatch) return finish(ok, ok ? `采集结束，累计上传新增 ${totalAdded} 辆。${m.sourceAccessBlocked ? '来源访问受限，已停止自动批次。' : '请刷新云端运行记录。'}` : '扫描或上传失败，已停止自动批次。已有云端库存保留，请查看日志。');
+      const resumeAt = new Date(now() + 30000).toISOString();
+      state = { ...state, message: `本批已上传，累计新增 ${totalAdded} 辆；30 秒后自动启动下一批。`, metrics: decorate({ ...m, stage: 'between_batches', resumeAt }) };
+      log(`Batch ${batchNumber} uploaded. ${totalAdded}/5000 new vehicles saved; next batch in 30 seconds.`);
+      nextBatch = schedule(startBatch, 30000);
+    });
+  };
   const origins = new Set(['https://www.innogroup.co.nz', 'https://innogroup.co.nz']);
   const server = createServer((req, res) => {
     const reply = (code, data) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(data)); };
@@ -24,29 +71,21 @@ export function createLocalService({ token = randomBytes(24).toString('hex'), la
     const expected = Buffer.from(`Bearer ${token}`);
     if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return reply(401, { message: '配对码错误，请复制本地程序窗口中的配对码。' });
     if (req.method === 'GET' && req.url === '/status') return reply(200, state);
+    if (req.method === 'POST' && req.url === '/stop-after-batch') {
+      stopAfterBatch = true;
+      if (nextBatch) { cancel(nextBatch); nextBatch = undefined; finish(true, `自动继续已停止，累计上传新增 ${totalAdded} 辆。`); }
+      else state = { ...state, message: child ? '将在当前批次结束并尝试上传后停止，不再启动下一批。' : state.message, metrics: decorate(state.metrics) };
+      return reply(200, state);
+    }
     if (req.method !== 'POST' || req.url !== '/scan') return reply(404, { message: '接口不存在' });
-    if (child) return reply(409, { message: '这台电脑已有扫描正在运行。' });
+    if (state.status === 'running') return reply(409, { message: '这台电脑已有扫描或批次等待正在运行。' });
     state = { status: 'running', startedAt: new Date().toISOString(), finishedAt: null, message: '扫描中：最多 5,000 辆，间隔 3 秒。', metrics: { stage: 'configuration', target: 5000 }, logs: [] };
-    try {
-      child = launch();
-      child.on('message', data => {
-        if (data?.type === 'progress' && data.metrics && typeof data.metrics === 'object') state = { ...state, metrics: data.metrics };
-      });
-      const log = (chunk, level) => {
-        const text = String(chunk).replace(/\x1b\[[0-9;]*m/g, '').slice(0, 2000).trim();
-        if (text) state = { ...state, logs: [...state.logs, { at: new Date().toISOString(), level, text }].slice(-50) };
-      };
-      child.stdout?.on('data', chunk => { process.stdout.write(chunk); log(chunk, 'info'); });
-      child.stderr?.on('data', chunk => { process.stderr.write(chunk); log(chunk, 'error'); });
-      const finish = (ok) => {
-        child = undefined;
-        state = { ...state, status: ok ? 'finished' : 'failed', finishedAt: new Date().toISOString(), message: ok ? '采集已结束。请待云端发布完成后刷新运行记录，查看实际采集数量与变更。' : '扫描或上传失败，请查看本地窗口。已有云端库存保留。' };
-      };
-      child.once('error', () => finish(false));
-      child.once('close', code => finish(code === 0));
-      reply(202, state);
-    } catch { child = undefined; state = { ...state, status: 'failed', message: '无法启动本地扫描。' }; reply(500, state); }
+    totalAdded = 0; batchNumber = 0; stopAfterBatch = false; deadline = now() + 21600000;
+    startBatch();
+    reply(state.status === 'failed' ? 500 : 202, state);
+
   });
+  server.on('close', () => { if (nextBatch) cancel(nextBatch); stopAfterBatch = true; });
   return { server, token };
 }
 
