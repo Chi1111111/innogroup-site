@@ -95,12 +95,23 @@ let marketPromise: Promise<JapanMarketPayload> | null = null;
 let featuredPromise: Promise<JapanMarketPayload> | null = null;
 const detailPromises = new Map<string, Promise<JapanMarketDetailPayload>>();
 
+// Imported dealer estimates are not confirmed FOB quotes. Apply at the shared
+// read boundary so cards, detail pages, enquiries, filters and Admin exports agree.
+export function publicJapanMarketPrice<T extends JapanMarketVehicleSummary>(vehicle: T): T {
+  const confirmed = vehicle.sourcePriceType?.trim().toUpperCase() === 'FOB'
+    && vehicle.priceBasis === 'FOB' && vehicle.priceCurrency === 'NZD'
+    && vehicle.fobPriceEstimated !== true
+    && typeof vehicle.fobPriceNzd === 'number' && Number.isFinite(vehicle.fobPriceNzd) && vehicle.fobPriceNzd > 0;
+  return { ...vehicle, fobPriceNzd: confirmed ? vehicle.fobPriceNzd : null,
+    fobPriceEstimated: false, estimatedNzdPrice: null };
+}
+
 async function fetchMarketPayload(path: string) {
   const response = await fetch(path, { headers: { Accept: 'application/json' } });
   if (!response.ok) throw new Error('Japan Market vehicles are temporarily unavailable.');
   const payload = await response.json() as JapanMarketPayload;
   if (!Array.isArray(payload.vehicles)) throw new Error('Invalid Japan Market data.');
-  const vehicles = payload.vehicles.filter((vehicle) => !vehicleQualityIssue(vehicle));
+  const vehicles = payload.vehicles.filter((vehicle) => !vehicleQualityIssue(vehicle)).map(publicJapanMarketPrice);
   return { ...payload, vehicles, count: path.endsWith('/index.json') ? vehicles.length : payload.count };
 }
 
@@ -137,7 +148,7 @@ export async function loadJapanMarketVehicle(id: string): Promise<JapanMarketVeh
   }
   const payload = await promise;
   const vehicle = payload.vehicles.find((item) => item.id.toUpperCase() === normalizedId);
-  return vehicle && !vehicleQualityIssue(vehicle) ? { refreshedAt: payload.refreshedAt, pricing: payload.pricing, vehicle } : null;
+  return vehicle && !vehicleQualityIssue(vehicle) ? { refreshedAt: payload.refreshedAt, pricing: payload.pricing, vehicle: publicJapanMarketPrice(vehicle) } : null;
 }
 
 export function vehicleName(vehicle: JapanMarketVehicleSummary) {

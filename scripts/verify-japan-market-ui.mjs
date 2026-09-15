@@ -57,6 +57,12 @@ try {
   await page.getByText(showingLabel, { exact: false }).waitFor();
   console.log('PASS polluted URL recovery, hidden corrupt card, and navigation');
 
+  for(const id of ['578d08c4-4834-4410-90b7-062dcbfde665','420e1cde-498e-4447-ac87-db28cf430a50']) {
+    await page.goto(`${origin}/japan-market/${id}`);
+    await page.getByText('FOB price on request',{exact:true}).first().waitFor();
+    assert.equal(/\$(200,600|593,300|239,000|690,600)/.test(await page.locator('body').innerText()),false);
+  }
+  console.log('PASS abnormal legacy prices withheld on both vehicle detail pages');
   await page.goto(`${origin}/admin/japan-market`);
   await page.getByRole('heading', { name: '统一密码登录' }).waitFor();
   await page.evaluate(() => sessionStorage.setItem('inno:admin-session:v1', 'local-test-only'));
