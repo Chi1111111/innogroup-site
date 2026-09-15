@@ -81,7 +81,13 @@ export function readDetail(html, row, refreshedAt) {
   $('li:has(.stockdetailInfo)').each((_, li) => { specs[clean($(li).find('strong').text()).toLowerCase()] = clean($(li).find('.stockdetailInfo').text()); });
   const value = (...keys) => keys.map((key) => specs[key]).find((v) => !missing(v)) || 'Not listed';
   const stockNumber = value('stock no.', 'stock no');
-  if (stockNumber !== row.stockNumber) throw new Error('Vehicle identity mismatch.');
+  if (stockNumber.trim().toUpperCase() !== String(row.stockNumber).trim().toUpperCase()) {
+    const error = new Error(`Vehicle identity mismatch. Requested ${String(row.stockNumber).slice(0,80)}; received ${stockNumber.slice(0,80)}; page ${clean($('title').text()).slice(0,120)}.`);
+    error.code = 'VEHICLE_IDENTITY_MISMATCH';
+    error.expectedStock = String(row.stockNumber).slice(0,80);
+    error.receivedStock = stockNumber.slice(0,80);
+    throw error;
+  }
   const yearText = value('reg. year/m', 'mfg. year/m');
   const year = Number(yearText.match(/\b(19|20)\d{2}\b/)?.[0]);
   const fuel = value('fuel');

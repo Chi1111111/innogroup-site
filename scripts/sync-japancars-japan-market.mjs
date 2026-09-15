@@ -109,7 +109,16 @@ async function detail(row, jar) {
   } catch { /* Invalid checkpoint is fetched again. */ }
   metrics.detailRequested++;
   const html = await request(row.sourceUrl, {}, 0, jar);
-  const result = readDetail(html, row, new Date().toISOString());
+  let result;
+  try { result = readDetail(html, row, new Date().toISOString()); }
+  catch (error) {
+    if(error.code === 'VEHICLE_IDENTITY_MISMATCH') {
+      metrics.identityMismatchCount = (metrics.identityMismatchCount || 0) + 1;
+      metrics.firstIdentityMismatchAt ??= metrics.detailRequested;
+      metrics.lastIdentityMismatch = { requested: error.expectedStock, received: error.receivedStock };
+    }
+    throw error;
+  }
   metrics.detailSucceeded++;
   if (!remote) fs.writeFileSync(filename, JSON.stringify({ schema: 2, ...result }));
   return result;
@@ -168,7 +177,7 @@ async function publish(vehicles, rates) {
   if (remote) {
     const history=await cloud.read('sync-history.json');
     const finishedAt=new Date().toISOString();
-    const run={id:runId,source:SOURCE,trigger:'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:metrics.sourceAccessBlocked || metrics.detailFailed || metrics.accepted<target?'partial':'success',metrics:{...metrics,published:true,stage:'complete'},error:metrics.sourceAccessBlocked?'来源访问受限，已保留本次验证成功的车辆。':null,workflowUrl:null};
+    const run={id:runId,source:SOURCE,trigger:'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:metrics.sourceAccessBlocked || metrics.detailFailed || metrics.accepted<target?'partial':'success',metrics:{...metrics,published:true,stage:'complete'},error:metrics.sourceAccessBlocked?'来源访问受限，已保留本次验证成功的车辆。':metrics.stopReason || null,workflowUrl:null};
     write('sync-history.json',{version:1,runs:[run,...history.runs].slice(0,90)});
     const sha=await cloud.publish(files);
     metrics.published=true;metrics.stage='complete';
@@ -261,6 +270,7 @@ try {
   await publish(collected, rates);
   }
 } catch (error) {
+  metrics.stopReason = error instanceof Error ? error.message : String(error);
   console.error(error instanceof Error ? error.message : String(error));
   if (pending.length && activeRates && metrics.stage !== 'publish' && metrics.stage !== 'validation') {
     try { await publish(pending, activeRates); } catch (publishError) { console.error(publishError.message); process.exitCode = 1; }

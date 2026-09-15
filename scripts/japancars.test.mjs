@@ -29,7 +29,8 @@ describe('Japan Cars public snapshot parsing',()=>{
     expect(issue).toBeNull();
     expect(vehicle).toMatchObject({make:'Toyota',model:'Tank',year:2020,mileage:43000,fobPriceNzd:10380,photoCount:15,hasAccident:null});
     expect(vehicle.imageUrls).toHaveLength(15);
-    expect(()=>readDetail(detail,{...row,stockNumber:'different'},timestamp)).toThrow('identity');
+    expect(()=>readDetail(detail,{...row,stockNumber:'different'},timestamp)).toThrow('Requested different; received gh415457');
+    expect(readDetail(detail,{...row,stockNumber:' GH415457 '},timestamp).vehicle.id).toBe('JPJC-GH415457');
   });
   it('matches the screenshot NZ$3,870 quote using the source rate and rounding',()=>{
     const $=load(detail);$('.mainPrice').attr('data-price','344400');
