@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowUpRight, CarFront, Check, Clock3, Download, Images, LayoutDashboard, RefreshCw, Search, type LucideIcon } from 'lucide-react';
-import { loadCollectionReport, type CollectionReport, type CollectionRun } from '../../data/japanMarketSync';
+import { loadCollectionReport, type CollectionReport, type CollectionRun, type CollectionVehicleChange } from '../../data/japanMarketSync';
 import { formatNzd, japanMarketVehiclePath, loadJapanMarketData, type JapanMarketVehicleSummary } from '../../data/japanMarket';
 import { invokeAdminFunction } from '../lib/adminApi';
 import '../../styles/admin-japan-market.css';
@@ -16,6 +16,27 @@ function Status({run}: {run?:CollectionRun}) {
   return <span className={`ajm-badge ${style}`}>{label}</span>;
 }
 function RunDetails({run}: {run:CollectionRun}) {
+  const [open,setOpen]=useState(false);
+  const [changes,setChanges]=useState<CollectionVehicleChange[]|null>(null);
+  const [pending,setPending]=useState(false);
+  const [error,setError]=useState('');
+  const [changePage,setChangePage]=useState(1);
+  const fields:Record<string,string>={fobPriceNzd:'FOB 价格（NZD）',photoCount:'照片数量',make:'品牌',model:'车型',variant:'配置',year:'年份',mileage:'里程（km）',fuelType:'燃料',transmission:'变速箱',status:'库存状态',sourcePriceType:'源价格类型'};
+  const value=(v:unknown)=>v==null?'未记录':typeof v==='number'?number(v):String(v);
+  const showChanges=async()=>{
+    if(open){setOpen(false);return;}
+    setOpen(true);if(changes)return;
+    if(!run.metrics.changesPath || !/^changes\/[\w-]+\.json$/.test(run.metrics.changesPath)){setError('此历史任务未记录逐车变更明细。');return;}
+    setPending(true);setError('');
+    try {
+      const response=await fetch(`/data/japan-market/${run.metrics.changesPath}`,{cache:'no-store'});
+      if(!response.ok)throw new Error('无法读取更新详情，请稍后重试。');
+      const data=await response.json();
+      if(!Array.isArray(data.changes))throw new Error('更新详情格式异常。');
+      setChanges(data.changes);
+    }catch(e){setError(e instanceof Error?e.message:'读取失败');}
+    finally{setPending(false);}
+  };
   const m=run.metrics;
   const counts: [string,number|null|undefined][]=[['有效车源',m.accepted],['FOB 报价',m.withFobPrice],['相册照片',m.photoCount],['详情失败',m.detailFailed],['过滤车源',m.rejected],['读取页面',m.pagesFetched],['总请求',m.requests],['断点复用',m.cachedDetails],['新增',m.added],['更新',m.updated],['保留旧车',m.retained]];
   return <details className="ajm-run">
@@ -23,6 +44,19 @@ function RunDetails({run}: {run:CollectionRun}) {
     <div className="ajm-run-body">
       {run.error && <p role="alert" className="ajm-alert danger">{run.error}</p>}
       <dl className="ajm-run-stats">{counts.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{number(value)}</dd></div>)}</dl>
+      <button type="button" className="ajm-button" disabled={pending} aria-expanded={open} onClick={()=>void showChanges()}>{pending?'读取详情…':open?'收起更新详情':'查看更新详情'}</button>
+      {open && <div className="ajm-change-list">
+        {error && <p role="alert">{error}</p>}
+        {changes && <><p>共 {number(changes.length)} 辆发生变更，以下为本次运行时记录的值。</p>
+          {changes.slice((changePage-1)*20,changePage*20).map(v=><article className="ajm-change-item" key={v.id}>
+            <strong>{v.kind==='added'?'新增':'更新'} · {v.name}</strong> <Link to={`/japan-market/${encodeURIComponent(v.id)}`} target="_blank">查看车辆</Link>
+            <small>{v.stockNumber}</small>
+            <ul>{v.changes.map(c=><li key={c.field}>{fields[c.field] ?? c.field}：{value(c.before)} → {value(c.after)}</li>)}</ul>
+            <p>照片链接：新增 {v.addedPhotos.length} 张，移除 {v.removedPhotos.length} 张</p>
+          </article>)}
+          {changes.length>20 && <div className="ajm-pagination"><button className="ajm-button" disabled={changePage===1} onClick={()=>setChangePage(p=>p-1)}>上一页</button><span>{changePage} / {Math.ceil(changes.length/20)}</span><button className="ajm-button" disabled={changePage*20>=changes.length} onClick={()=>setChangePage(p=>p+1)}>下一页</button></div>}
+        </>}
+      </div>}
       <p>结束于 {date(run.finishedAt)} · {m.published ? '车源文件已生成' : '未发布新车源'} · {run.trigger === 'schedule' ? '每日定时' : run.trigger === 'workflow_dispatch' ? '手动执行' : '本地执行'}</p>
       {Object.entries(m.rejectionReasons ?? {}).length > 0 && <p>{Object.entries(m.rejectionReasons ?? {}).map(([key,value])=>`${reasons[key] ?? key} ${number(value)}`).join(' · ')}</p>}
       <p>增量合并保留旧库存；以上为运行结束后发布的记录。</p>
@@ -53,6 +87,7 @@ export function AdminJapanMarket() {
   };
   const [query,setQuery]=useState('');
   const [quality,setQuality]=useState('all');
+  const [sort,setSort]=useState('newest');
   const [page,setPage]=useState(1);
   useEffect(()=>{
     let active=true; setLoading(true); setError('');
@@ -67,7 +102,18 @@ export function AdminJapanMarket() {
     if(quality==='photos' && (v.photoCount ?? 0)>1)return false;
     if(quality==='ready' && (v.fobPriceNzd==null || !(v.photoCount ?? 0)))return false;
     return `${v.id} ${v.stockNumber ?? ''} ${v.make} ${v.model} ${v.variant} ${v.year}`.toLowerCase().includes(query.trim().toLowerCase());
-  }),[vehicles,query,quality]);
+  }).sort((a,b)=>{
+    if(sort==='original')return 0;
+    const timestamp=(v:JapanMarketVehicleSummary)=>{
+      const checked=Date.parse(v.priceCheckedAt ?? '');
+      const updated=Date.parse(v.updatedAt);
+      return Number.isFinite(checked)?checked:Number.isFinite(updated)?updated:null;
+    };
+    const first=timestamp(a),second=timestamp(b);
+    if(first===null)return second===null?0:1;
+    if(second===null)return -1;
+    return sort==='newest'?second-first:first-second;
+  }),[vehicles,query,quality,sort]);
   const priced=vehicles.filter(v=>v.fobPriceNzd!=null).length;
   const photographed=vehicles.filter(v=>(v.photoCount ?? 0)>0).length;
   const photos=vehicles.reduce((n,v)=>n+(v.photoCount ?? 0),0);
@@ -117,7 +163,7 @@ export function AdminJapanMarket() {
           <section className="ajm-panel ajm-policy"><div><p className="ajm-eyebrow">COLLECTION POLICY</p><h2>每日采集配置，异常保留旧数据</h2></div><dl><div><dt>计划时间</dt><dd>每天 00:00 · 新西兰时间</dd></div><div><dt>发布条件</dt><dd>验证通过即合并，旧库存保留</dd></div><div><dt>价格口径</dt><dd>FOB · NZD，进口费用另计</dd></div><div><dt>照片方式</dt><dd>保存源站完整相册链接</dd></div></dl></section>
         </>}
         {tab==='inventory' && <section className="ajm-panel ajm-inventory">
-          <div className="ajm-inventory-tools"><label className="ajm-search"><Search size={18}/><input aria-label="搜索车源" placeholder="搜索品牌、车型、库存编号…" value={query} onChange={e=>{setQuery(e.target.value);setPage(1);}}/></label><select aria-label="车源完整度" value={quality} onChange={e=>{setQuality(e.target.value);setPage(1);}}><option value="all">全部车源</option><option value="ready">报价与照片齐全</option><option value="price">FOB 待确认</option><option value="photos">相册待补充</option></select><button className="ajm-button" type="button" onClick={exportCsv}><Download size={16}/>导出 {number(filtered.length)} 辆</button></div>
+          <div className="ajm-inventory-tools"><label className="ajm-search"><Search size={18}/><input aria-label="搜索车源" placeholder="搜索品牌、车型、库存编号…" value={query} onChange={e=>{setQuery(e.target.value);setPage(1);}}/></label><select aria-label="车源完整度" value={quality} onChange={e=>{setQuality(e.target.value);setPage(1);}}><option value="all">全部车源</option><option value="ready">报价与照片齐全</option><option value="price">FOB 待确认</option><option value="photos">相册待补充</option></select><select aria-label="车源排序" title="按报价核对时间排序，缺失时使用车源更新时间" value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}}><option value="newest">从新到旧</option><option value="oldest">从旧到新</option><option value="original">原始顺序</option></select><button className="ajm-button" type="button" onClick={exportCsv}><Download size={16}/>导出 {number(filtered.length)} 辆</button></div>
           <div className="ajm-table-scroll"><table><thead><tr><th>车辆 / 库存编号</th><th>年份 / 里程</th><th>FOB · NZD</th><th>相册</th><th>报价核对时间</th><th>查看</th></tr></thead><tbody>{filtered.slice((currentPage-1)*25,currentPage*25).map(v=><tr key={v.id}><td><div className="ajm-vehicle">{v.imageUrl ? <img src={v.imageUrl} alt={`${v.make} ${v.model}`} loading="lazy" referrerPolicy="no-referrer"/> : <CarFront size={28}/>}<div><strong>{v.make} {v.model}</strong><small>{v.stockNumber ?? v.id}</small></div></div></td><td>{v.year}<small>{number(v.mileage)} km</small></td><td><strong className={v.fobPriceNzd==null?'ajm-pending':''}>{v.fobPriceNzd==null?'待确认':formatNzd(v.fobPriceNzd)}</strong><small>原类型：{v.sourcePriceType ?? '未记录'}</small></td><td><Images size={15}/> {number(v.photoCount ?? 0)}</td><td>{date(v.priceCheckedAt)}</td><td><Link to={japanMarketVehiclePath(v)} target="_blank" aria-label={`查看 ${v.stockNumber ?? v.id}`}><ArrowUpRight size={19}/></Link></td></tr>)}</tbody></table></div>
           {!filtered.length && <p className="ajm-empty">没有符合当前条件的车源。</p>}
           <div className="ajm-pagination"><span>共 {number(filtered.length)} 辆 · 第 {currentPage} / {pages} 页</span><div><button className="ajm-button" disabled={currentPage===1} onClick={()=>setPage(currentPage-1)}>上一页</button><button className="ajm-button" disabled={currentPage===pages} onClick={()=>setPage(currentPage+1)}>下一页</button></div></div>

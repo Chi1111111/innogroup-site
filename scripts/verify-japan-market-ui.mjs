@@ -23,10 +23,12 @@ const runs = ['success', 'partial', 'failed', 'cancelled'].map((status, index) =
   workflowUrl: null,
   metrics: status === 'cancelled' ? {} : { received: 4008, accepted: 3991, rejected: 17, pagesExpected: 41, pagesFetched: 41, requests: 100, detailRequested: 59, detailSucceeded: status === 'partial' ? 58 : 59, detailFailed: status === 'partial' ? 1 : 0, added: 20, removed: 5, published: status === 'success' || status === 'partial', rejectionReasons: { invalid_make: 13, invalid_year: 4 } },
 }));
+runs[0].metrics.changesPath='changes/test-0.json';
 await page.route('**/*', async (route) => {
   const url = new URL(route.request().url());
   if (url.pathname.endsWith('/functions/v1/japan-market-scan')) return route.fulfill({ json: { data: { started: true, message: '扫描任务已提交。', workflowUrl: 'https://github.com/Chi1111111/innogroup-site/actions/workflows/japan-market-daily-sync.yml' } } });
   if (url.pathname.endsWith('/functions/v1/admin-api')) return route.fulfill({ json: { data: { valid: true } } });
+  if (url.pathname === '/data/japan-market/changes/test-0.json') return route.fulfill({json:{changes:[{id:'test-car',name:'Toyota Test',stockNumber:'TEST',kind:'updated',changes:[{field:'fobPriceNzd',before:100,after:200}],addedPhotos:[],removedPhotos:[]}]}});
   if (url.origin !== origin) return route.abort();
   if (url.pathname === '/data/japan-market/index.json') return route.fulfill({ json: { ...snapshot, count: snapshot.count + 1, vehicles: [...snapshot.vehicles, polluted] } });
   if (url.pathname === '/data/japan-market/sync-history.json') {
@@ -55,10 +57,17 @@ try {
   await page.getByRole('heading', { name: 'Japan Market 采集中心' }).waitFor();
   await page.getByRole('button', { name: '手动扫描', exact: true }).click();
   await page.getByRole('status').filter({ hasText: '扫描任务已提交。' }).waitFor();
+  await page.getByRole('button', { name: /车源与报价/ }).click();
+  assert.equal(await page.getByLabel('车源排序').inputValue(), 'newest');
+  const expected=snapshot.vehicles.filter(v=>!vehicleQualityIssue(v)).sort((a,b)=>Date.parse(b.priceCheckedAt || b.updatedAt)-Date.parse(a.priceCheckedAt || a.updatedAt))[0];
+  assert.ok((await page.locator('tbody tr').first().innerText()).includes(expected.stockNumber || expected.id));
+  await page.getByLabel('车源排序').selectOption('oldest');
   await page.getByRole('button', { name: '运行记录', exact: true }).click();
   await page.locator('details').first().waitFor();
   assert.equal(await page.locator('details').count(), 4);
   await page.locator('summary').first().click();
+  await page.getByRole('button',{name:'查看更新详情'}).first().click();
+  await page.getByText('FOB 价格（NZD）：100 → 200').waitFor();
   await page.screenshot({ path: 'tmp/admin-japan-market.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);

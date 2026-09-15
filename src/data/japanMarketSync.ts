@@ -18,7 +18,18 @@ export interface CollectionRun {
     lastProgressAt?: string;
     activeRequests?: string[];
     rejectionReasons?: Record<string, number>;
+    changesPath?: string;
   };
+}
+
+export interface CollectionVehicleChange {
+  id:string;
+  name:string;
+  stockNumber:string;
+  kind:'added'|'updated';
+  changes:{field:string;before:unknown;after:unknown}[];
+  addedPhotos:string[];
+  removedPhotos:string[];
 }
 
 export interface CollectionReport {

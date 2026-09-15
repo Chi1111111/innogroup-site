@@ -40,7 +40,8 @@
         "duplicates": 0,
         "sourceAccessBlocked": false,
         "updated": 0,
-        "retained": 3991
+        "retained": 3991,
+        "changesPath": "changes/588ebd85-18eb-4217-be22-ba6c9d5e4da9.json"
       },
       "error": null,
       "workflowUrl": null

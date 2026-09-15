@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { openCloudInventory } from './lib/japan-market-cloud.mjs';
+import { vehicleChanges } from './lib/japan-market-changes.mjs';
 import { load } from 'cheerio';
 import { ORIGIN, SOURCE, readListing, readDetail, readRates, summary, shardFor, applyResponseCookies } from './lib/japancars.mjs';
 
@@ -10,13 +12,16 @@ function integer(value, fallback, min, max) {
   if (!Number.isInteger(n) || n < min || n > max) throw new Error(`Invalid collector setting: expected ${min}–${max}.`);
   return n;
 }
-const target = integer(args.target ?? process.env.JAPANCARS_TARGET, 5000, 1, 10000);
+const remote = Object.hasOwn(args, 'remote');
+let cloud;
+const runId = process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT || '1'}` : randomUUID();
+const target = integer(args.target ?? process.env.JAPANCARS_TARGET, remote ? 25 : 5000, 1, 10000);
 const concurrency = integer(process.env.JAPANCARS_CONCURRENCY, 1, 1, 3);
 const requestGap = integer(process.env.JAPANCARS_REQUEST_GAP_MS, 2000, 200, 10000);
 const timeoutMs = integer(process.env.JAPANCARS_TIMEOUT_MS, 6600000, 60000, 18000000);
 const output = path.resolve(args.output || 'public/data/japan-market');
 const cache = path.resolve('tmp/japancars-cache');
-fs.mkdirSync(cache, { recursive: true });
+if (!remote) fs.mkdirSync(cache, { recursive: true });
 const startedAt = process.env.JAPAN_MARKET_STARTED_AT || new Date().toISOString();
 const deadline = Date.now() + timeoutMs;
 const metrics = {
@@ -28,7 +33,7 @@ const metrics = {
 };
 function checkpoint() {
   metrics.lastProgressAt = new Date().toISOString();
-  if (process.env.JAPAN_MARKET_METRICS_FILE) fs.writeFileSync(process.env.JAPAN_MARKET_METRICS_FILE, JSON.stringify({ startedAt, metrics }));
+  if (!remote && process.env.JAPAN_MARKET_METRICS_FILE) fs.writeFileSync(process.env.JAPAN_MARKET_METRICS_FILE, JSON.stringify({ startedAt, metrics }));
 }
 process.on('exit', checkpoint);
 for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, () => { checkpoint(); process.exit(130); });
@@ -91,7 +96,7 @@ function cachedFile(row) { return path.join(cache, `${createHash('sha256').updat
 async function detail(row, jar) {
   const filename = cachedFile(row);
   try {
-    if (fs.existsSync(filename)) {
+    if (!remote && fs.existsSync(filename)) {
       const cached = JSON.parse(fs.readFileSync(filename, 'utf8'));
       // Resume within six hours, never label cached quotes as freshly checked.
       if (Date.now() - Date.parse(cached.vehicle?.priceCheckedAt) < 6 * 60 * 60 * 1000 && cached.vehicle?.sourceUrl === row.sourceUrl && cached.schema === 2) {
@@ -103,10 +108,10 @@ async function detail(row, jar) {
   const html = await request(row.sourceUrl, {}, 0, jar);
   const result = readDetail(html, row, new Date().toISOString());
   metrics.detailSucceeded++;
-  fs.writeFileSync(filename, JSON.stringify({ schema: 2, ...result }));
+  if (!remote) fs.writeFileSync(filename, JSON.stringify({ schema: 2, ...result }));
   return result;
 }
-function publish(vehicles, rates) {
+async function publish(vehicles, rates) {
   metrics.stage = 'validation'; checkpoint();
   if (!vehicles.length) throw new Error('No validated vehicles; previous inventory preserved.');
   metrics.accepted = vehicles.length;
@@ -115,16 +120,20 @@ function publish(vehicles, rates) {
   metrics.withPhotos = vehicles.filter(v => v.photoCount > 0).length;
   metrics.photoCount = vehicles.reduce((sum, v) => sum + v.photoCount, 0);
   const indexPath = path.join(output, 'index.json');
-  const previous = fs.existsSync(indexPath) ? JSON.parse(fs.readFileSync(indexPath, 'utf8')).vehicles : [];
+  const previous = remote ? cloud.index.vehicles : fs.existsSync(indexPath) ? JSON.parse(fs.readFileSync(indexPath, 'utf8')).vehicles : [];
   const merged = new Map(previous.map(v => [v.id, v]));
   const detailDirectory = path.join(output, 'details');
-  if (fs.existsSync(detailDirectory)) for (const name of fs.readdirSync(detailDirectory).filter(name => /^\d+\.json$/.test(name))) {
+  if (remote) for (const v of await cloud.details()) { if (merged.has(v.id)) merged.set(v.id,v); }
+  if (!remote && fs.existsSync(detailDirectory)) for (const name of fs.readdirSync(detailDirectory).filter(name => /^\d+\.json$/.test(name))) {
     for (const v of JSON.parse(fs.readFileSync(path.join(detailDirectory, name), 'utf8')).vehicles) {
       if (merged.has(v.id)) merged.set(v.id, v);
     }
   }
+  const changes = vehicleChanges([...merged.values()],vehicles);
+  metrics.changesPath = `changes/${runId}.json`;
   metrics.added = vehicles.filter(v => !merged.has(v.id)).length;
-  metrics.updated = vehicles.length - metrics.added;
+  metrics.updated = changes.filter(v=>v.kind==='updated').length;
+  metrics.unchanged = vehicles.length - metrics.added - metrics.updated;
   metrics.retained = previous.length - metrics.updated;
   metrics.removed = 0;
   for (const v of vehicles) merged.set(v.id, v);
@@ -134,10 +143,13 @@ function publish(vehicles, rates) {
   const base = { source: previous.some(v => v.sourceCode !== 'japancars') ? 'Japan Cars + retained inventory' : SOURCE, priceBasis: 'FOB', priceCurrency: 'NZD', destination: 'New Zealand', refreshedAt, pricing, count: vehicles.length };
   const stage = path.join(path.dirname(output), `.japancars-stage-${randomUUID()}`);
   const backup = path.join(cache, `previous-${randomUUID()}`);
-  fs.mkdirSync(path.join(stage, 'details'), { recursive: true });
-  const write = (name, value) => fs.writeFileSync(path.join(stage, name), JSON.stringify(value));
+  const files = new Map();
+  if (!remote) fs.mkdirSync(path.join(stage, 'details'), { recursive: true });
+  const write = (name, value) => {if(remote)files.set(name,value);else {fs.mkdirSync(path.dirname(path.join(stage,name)),{recursive:true});fs.writeFileSync(path.join(stage,name),JSON.stringify(value));}};
+  if (!remote && fs.existsSync(path.join(output,'changes'))) fs.cpSync(path.join(output,'changes'),path.join(stage,'changes'),{recursive:true});
+  write(metrics.changesPath,{version:1,runId,changes});
   // Public reports contain aggregate statistics only; session cookies and HTML stay outside the website.
-  if (fs.existsSync(path.join(output, 'sync-history.json'))) fs.copyFileSync(path.join(output, 'sync-history.json'), path.join(stage, 'sync-history.json'));
+  if (!remote && fs.existsSync(path.join(output, 'sync-history.json'))) fs.copyFileSync(path.join(output, 'sync-history.json'), path.join(stage, 'sync-history.json'));
   const buckets = Array.from({ length:128 }, () => []);
   for (const v of vehicles) buckets[Number(shardFor(v.id))].push(v);
   buckets.forEach((bucket, i) => write(`details/${String(i).padStart(3,'0')}.json`, { ...base, vehicles: bucket }));
@@ -147,9 +159,19 @@ function publish(vehicles, rates) {
   for (const v of vehicles) { if (featured.length >= 8) break; if (!featured.includes(v)) featured.push(v); }
   write('index.json', { ...base, vehicles: vehicles.map(summary) });
   write('featured.json', { ...base, vehicles: featured.map(summary) });
-  write('manifest.json', { ...base, target, withFobPrice: vehicles.filter(v => v.fobPriceNzd != null).length, withPhotos: vehicles.filter(v => v.photoCount > 0).length, photoCount: vehicles.reduce((n,v) => n + (v.photoCount || 0), 0), photoStorage: 'source-urls', disclaimer: 'FOB prices in NZD from Japan Cars. Freight, insurance, NZ taxes, compliance, registration and Inno services are quoted separately. Availability and price require reconfirmation.' });
+  write('manifest.json', { ...base, target:5000, lastRunTarget:target, withFobPrice: vehicles.filter(v => v.fobPriceNzd != null).length, withPhotos: vehicles.filter(v => v.photoCount > 0).length, photoCount: vehicles.reduce((n,v) => n + (v.photoCount || 0), 0), photoStorage: 'source-urls', disclaimer: 'FOB prices in NZD from Japan Cars. Freight, insurance, NZ taxes, compliance, registration and Inno services are quoted separately. Availability and price require reconfirmation.' });
   metrics.stage = 'publish'; checkpoint();
   // Swap fully written snapshots; restore the last one if installation fails.
+  if (remote) {
+    const history=await cloud.read('sync-history.json');
+    const finishedAt=new Date().toISOString();
+    const run={id:runId,source:SOURCE,trigger:'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:metrics.sourceAccessBlocked || metrics.detailFailed || metrics.accepted<target?'partial':'success',metrics:{...metrics,published:true,stage:'complete'},error:metrics.sourceAccessBlocked?'来源访问受限，已保留本次验证成功的车辆。':null,workflowUrl:null};
+    write('sync-history.json',{version:1,runs:[run,...history.runs].slice(0,90)});
+    const sha=await cloud.publish(files);
+    metrics.published=true;metrics.stage='complete';
+    console.log(`Uploaded ${metrics.added} new, ${metrics.updated} updated vehicles. Cloud commit: ${sha}. No vehicle data written to local disk.`);
+    return;
+  }
   const existed = fs.existsSync(output);
   if (existed) fs.renameSync(output, backup);
   try { fs.renameSync(stage, output); } catch (error) { if (existed) fs.renameSync(backup, output); throw error; }
@@ -159,6 +181,7 @@ function publish(vehicles, rates) {
 
 let pending = []; let activeRates;
 try {
+  if (remote) { cloud=await openCloudInventory(); console.log(`Cloud inventory ready: ${cloud.index.vehicles.length} vehicles. Memory-only mode.`); if(Object.hasOwn(args,'check')) process.exit(0); }
   if (args.input) {
     const fixture = JSON.parse(fs.readFileSync(path.resolve(args.input), 'utf8'));
     const vehicles = [];
@@ -168,7 +191,7 @@ try {
       if (issue || !vehicle.photoCount) reject(issue || 'missing_photos');
       else vehicles.push(vehicle);
     }
-    publish(vehicles.slice(0,target), fixture.rates);
+    await publish(vehicles.slice(0,target), fixture.rates);
   } else {
   const initial = await request(`${ORIGIN}/stock-list?country=Japan&perPage=10&page=1`);
   const rates = readRates(initial); activeRates = rates;
@@ -181,7 +204,7 @@ try {
   metrics.stage = 'listing';
   const collected = pending; const seen = new Set();
   const existingPath = path.join(output, 'index.json');
-  const existing = fs.existsSync(existingPath) ? JSON.parse(fs.readFileSync(existingPath, 'utf8')).vehicles : [];
+  const existing = remote ? cloud.index.vehicles : fs.existsSync(existingPath) ? JSON.parse(fs.readFileSync(existingPath, 'utf8')).vehicles : [];
   const recent = new Set(existing.filter(v => Date.now() - Date.parse(v.priceCheckedAt) < 7 * 86400000).map(v => v.id));
   let consecutiveDetailFailures = 0;
   const maxPages = Math.ceil(target / 10 * 1.5) + 10;
@@ -226,12 +249,20 @@ try {
     if (page % 10 === 0 || collected.length >= target) console.log(`Page ${page}: ${collected.length}/${target} vehicles; ${metrics.detailFailed} detail errors.`);
     if (count != null && page * 10 >= count) break;
   }
-  publish(collected, rates);
+  await publish(collected, rates);
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   if (pending.length && activeRates && metrics.stage !== 'publish' && metrics.stage !== 'validation') {
-    try { publish(pending, activeRates); } catch (publishError) { console.error(publishError.message); process.exitCode = 1; }
+    try { await publish(pending, activeRates); } catch (publishError) { console.error(publishError.message); process.exitCode = 1; }
   } else process.exitCode = 1;
+  if (remote && cloud && !metrics.published && metrics.stage !== 'publish') {
+    try {
+      const history=await cloud.read('sync-history.json');
+      const finishedAt=new Date().toISOString();
+      const run={id:runId,source:SOURCE,trigger:'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:'failed',metrics,error:metrics.sourceAccessBlocked?'来源访问受限，未发布新车源。':'本地扫描未完成，旧库存保留。',workflowUrl:null};
+      await cloud.publish(new Map([['sync-history.json',{version:1,runs:[run,...history.runs].slice(0,90)}]]));
+    } catch { console.error('Failure report could not be uploaded; no local report was written.'); }
+  }
   checkpoint();
 }
