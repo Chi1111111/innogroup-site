@@ -1,3 +1,4 @@
+import { openResumeStore } from './japan-market-resume.mjs';
 import { execFileSync } from 'node:child_process';
 
 // Vehicle payloads and credentials stay in memory. No git checkout or temporary data files.
@@ -7,7 +8,7 @@ export async function openCloudInventory({token,request=fetch}={}) {
     const r=await request(`https://api.github.com/repos/Chi1111111/innogroup-site/${endpoint}`,{method,
       headers:{Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'},
       body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(60000)});
-    if(!r.ok)throw new Error(`Cloud inventory ${method} failed (${r.status}); no local data backup was written.`);
+    if(!r.ok)throw Object.assign(new Error(`Cloud inventory ${method} failed (${r.status}); no local data backup was written.`), {status:r.status});
     return r.json();
   };
   const head=(await api('git/ref/heads/main')).object.sha;
@@ -26,7 +27,7 @@ export async function openCloudInventory({token,request=fetch}={}) {
   };
   const index=await read('index.json');
   if(!Array.isArray(index.vehicles))throw new Error('Invalid cloud inventory.');
-  return {index,read,
+  return {index,read, resume: () => openResumeStore(api),
     async details(){
       const names=[...entries.keys()].filter(p=>/^public\/data\/japan-market\/details\/\d+\.json$/.test(p)).map(p=>p.replace('public/data/japan-market/',''));
       const records=[];

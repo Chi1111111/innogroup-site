@@ -15,10 +15,11 @@ it('visits every combination before the next round and terminates after a round 
 });
 it('resumes the partially filled group across batches without granting it five extra slots',async()=>{
   const turns=[];
-  for await(const turn of rotateGroups({makes:['Toyota','Honda'],modelsFor:async make=>make==='Toyota'?['Tank','Vitz']:['Fit'],cursor:{make:'Toyota',model:'Vitz',cycle:3,accepted:4}})){
+  for await(const turn of rotateGroups({makes:['Toyota','Honda'],modelsFor:async make=>make==='Toyota'?['Tank','Vitz']:['Fit'],cursor:{make:'Toyota',model:'Vitz',cycle:3,accepted:4,page:7}})){
     turns.push({...turn});
     if(turn.cycle===3 && turn.model==='Vitz')turn.accepted++;
   }
-  expect(turns[0]).toEqual({make:'Toyota',model:'Vitz',cycle:3,accepted:4});
+  expect(turns[0]).toEqual({make:'Toyota',model:'Vitz',cycle:3,accepted:4,page:7});
+  expect(turns[1].page).toBe(1);
   expect(turns.map(v=>[v.cycle,v.model])).toEqual([[3,'Vitz'],[3,'Fit'],[4,'Tank'],[4,'Vitz'],[4,'Fit']]);
 });

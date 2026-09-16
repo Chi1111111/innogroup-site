@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $stagePath = Join-Path $repoRoot 'tmp/local-runner-package'
-$files = @('scripts/japan-market-local-service.mjs', 'scripts/sync-japancars-japan-market.mjs', 'scripts/lib/japancars.mjs', 'scripts/lib/japan-market-cloud.mjs', 'scripts/lib/japan-market-changes.mjs', 'scripts/lib/japan-market-seen.mjs', 'scripts/lib/japan-market-recovery.mjs', 'scripts/lib/japan-market-rotation.mjs', 'src/data/japanMarketQuality.mjs')
+$files = @('scripts/japan-market-local-service.mjs', 'scripts/sync-japancars-japan-market.mjs', 'scripts/lib/japancars.mjs', 'scripts/lib/japan-market-cloud.mjs', 'scripts/lib/japan-market-resume.mjs', 'scripts/lib/japan-market-changes.mjs', 'scripts/lib/japan-market-seen.mjs', 'scripts/lib/japan-market-recovery.mjs', 'scripts/lib/japan-market-rotation.mjs', 'src/data/japanMarketQuality.mjs')
 foreach ($file in $files) {
   $destination = Join-Path $stagePath $file
   New-Item -ItemType Directory -Force -Path (Split-Path $destination -Parent) | Out-Null

@@ -34,7 +34,7 @@ await page.route('**/*', async (route) => {
   if (url.origin === 'http://127.0.0.1:17831') {
     if(url.pathname==='/scan')localStarted=true;
     const finished=localStarted && url.pathname==='/status' && ++localPolls>=2;
-    return route.fulfill({json:{status:!localStarted?'idle':finished?'finished':'running',message:finished?'本地测试任务已完成':'本地测试扫描中',startedAt:new Date(Date.now()-10000).toISOString(),metrics:{stage:finished?'complete':localPolls===0?'cooldown':'details',resumeAt:new Date(Date.now()+900000).toISOString(),recoveryAttempts:1,batchNumber:2,totalAdded:144,rotationMake:'Toyota',rotationModel:'Tank',rotationCycle:2,accepted:finished?25:12,target:5000,photoCount:155,withFobPrice:10,published:finished},logs:[{at:new Date().toISOString(),level:'info',text:'测试实时日志'}]},headers:{'Access-Control-Allow-Origin':origin}});
+    return route.fulfill({json:{status:!localStarted?'idle':finished?'finished':'running',message:finished?'本地测试任务已完成':'本地测试扫描中',startedAt:new Date(Date.now()-10000).toISOString(),metrics:{stage:finished?'complete':localPolls===0?'cooldown':'details',resumeAt:new Date(Date.now()+900000).toISOString(),recoveryAttempts:1,batchNumber:2,totalAdded:144,rotationMake:'Toyota',rotationModel:'Tank',rotationCycle:2,checkpointAt:new Date().toISOString(),restoredVehicles:3,accepted:finished?25:12,target:5000,photoCount:155,withFobPrice:10,published:finished},logs:[{at:new Date().toISOString(),level:'info',text:'测试实时日志'}]},headers:{'Access-Control-Allow-Origin':origin}});
   }
   if (url.origin !== origin) return route.abort();
   if (url.pathname === '/data/japan-market/index.json') return route.fulfill({ json: { ...snapshot, count: snapshot.count + 1, vehicles: [...snapshot.vehicles, polluted] } });

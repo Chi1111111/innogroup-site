@@ -17,7 +17,8 @@ export async function* rotateGroups({ makes, modelsFor, cursor = {} }) {
       const first = initial && make === cursor.make ? Math.max(0, names.indexOf(cursor.model)) : 0;
       for (let j = first; j < names.length; j++) {
         const accepted = initial && make === cursor.make && names[j] === cursor.model ? Math.min(5, Math.max(0, Number(cursor.accepted) || 0)) : 0;
-        const turn = {make,model:names[j],cycle,accepted};
+        const page = initial && make === cursor.make && names[j] === cursor.model ? Math.max(1, Number(cursor.page) || 1) : 1;
+        const turn = {make,model:names[j],cycle,accepted,page};
         yield turn;
         addedThisRound += turn.accepted - accepted;
       }

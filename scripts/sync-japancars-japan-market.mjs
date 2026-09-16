@@ -1,3 +1,4 @@
+import { restorePending } from './lib/japan-market-resume.mjs';
 import { rotateGroups, readMakes, readModels, groupListingUrl, normalizeGroup } from './lib/japan-market-rotation.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -183,6 +184,8 @@ async function publish(vehicles, rates) {
     write('sync-history.json',{version:1,runs:[run,...history.runs].slice(0,90)});
     const sha=await cloud.publish(files);
     metrics.published=true;metrics.stage='complete';
+    pending = [];
+    try { await saveResume(); } catch (error) { console.warn(`Inventory uploaded; checkpoint acknowledgement failed. Next start will deduplicate saved vehicles: ${error.message}`); }
     console.log(`Uploaded ${metrics.added} new, ${metrics.updated} updated vehicles. Cloud commit: ${sha}. No vehicle data written to local disk.`);
     return;
   }
@@ -193,9 +196,33 @@ async function publish(vehicles, rates) {
   console.log(`Published ${vehicles.length} Japan Cars vehicles; ${metrics.withFobPrice} FOB quotes; ${metrics.photoCount} source photos.`);
 }
 
-let pending = []; let activeRates;
+let pending = []; let activeRates; let resumeStore; let resumeCursor;
+async function saveResume() {
+  if (!resumeStore) return;
+  metrics.checkpointAt = await resumeStore.save({cursor:metrics.rotationCursor || resumeCursor || {},pending,rates:activeRates});
+  checkpoint();
+}
 try {
   if (remote) { cloud=await openCloudInventory(); console.log(`Cloud inventory ready: ${cloud.index.vehicles.length} vehicles. Memory-only mode.`); if(Object.hasOwn(args,'check')) process.exit(0); }
+  if (remote && !args.input) {
+    resumeStore = await cloud.resume();
+    resumeCursor = resumeStore.snapshot.cursor;
+    pending = restorePending(resumeStore.snapshot, cloud.index.vehicles);
+    activeRates = resumeStore.snapshot.rates;
+    if (!resumeCursor.make) {
+      const history = await cloud.read('sync-history.json');
+      resumeCursor = history.runs.find(r=>r.metrics?.published && r.metrics?.rotationCursor)?.metrics.rotationCursor || {};
+    }
+    metrics.rotationCursor = resumeCursor;
+    metrics.accepted = pending.length;
+    metrics.restoredVehicles = pending.length;
+    metrics.photoCount = pending.reduce((n,v)=>n+(v.photoCount||0),0);
+    metrics.withPhotos = pending.filter(v=>v.photoCount>0).length;
+    metrics.withFobPrice = pending.filter(v=>v.fobPriceNzd!=null).length;
+    metrics.withoutFobPrice = pending.length - metrics.withFobPrice;
+    metrics.checkpointAt = resumeStore.snapshot.savedAt || null;
+    console.log(`Cloud resume: ${resumeCursor.make || 'start'} / ${resumeCursor.model || '-'}, page ${resumeCursor.page || 1}; ${pending.length} unpublished vehicles restored.`);
+  }
   if (args.input) {
     const fixture = JSON.parse(fs.readFileSync(path.resolve(args.input), 'utf8'));
     const vehicles = [];
@@ -219,7 +246,7 @@ try {
   const collected = pending; const seen = createVehicleIdentitySet();
   const existingPath = path.join(output, 'index.json');
   const existing = remote ? cloud.index.vehicles : fs.existsSync(existingPath) ? JSON.parse(fs.readFileSync(existingPath, 'utf8')).vehicles : [];
-  const known = createVehicleIdentitySet(existing);
+  const known = createVehicleIdentitySet([...existing,...pending]);
 
   let consecutiveDetailFailures = 0;
   let consecutiveMissingDetails = 0;
@@ -236,7 +263,7 @@ try {
   metrics.stage = 'catalog'; checkpoint();
   const makes = readMakes(await catalog('get-maker-data', {maker:''}));
   if (!makes.length) throw new Error('Source make catalog is empty.');
-  const cursor = JSON.parse(process.env.JAPANCARS_ROTATION_CURSOR || '{}');
+  const cursor = resumeCursor || JSON.parse(process.env.JAPANCARS_ROTATION_CURSOR || '{}');
   const turns = rotateGroups({ makes, cursor, modelsFor: async make => readModels(await catalog('get-model-data', {value:make})) });
   for await (const turn of turns) {
     if (collected.length >= target) break;
@@ -244,7 +271,9 @@ try {
     metrics.rotationCursor = {...turn}; metrics.rotationMake = turn.make; metrics.rotationModel = turn.model; metrics.rotationCycle = turn.cycle;
     console.log(`Round ${turn.cycle}: ${turn.make} / ${turn.model}, up to ${5-turn.accepted} additional vehicles.`);
     const maxPages = 2000;
-    for (let page = 1; page <= maxPages && collected.length < target && turn.accepted < 5; page++) {
+    for (let page = turn.page || 1; page <= maxPages && collected.length < target && turn.accepted < 5; page++) {
+    metrics.rotationCursor = {...turn,page};
+    await saveResume();
     metrics.stage = 'listing';
     const html = await request(groupListingUrl(ORIGIN, turn.make, turn.model, page));
     const { rows, count } = readListing(html);
@@ -291,7 +320,8 @@ try {
         if (!v.photoCount) { reject('missing_photos'); continue; }
         if (collected.length < target) {
           collected.push(v);
-          turn.accepted++; metrics.rotationCursor = {...turn};
+          turn.accepted++; turn.page = page; metrics.rotationCursor = {...turn};
+          await saveResume();
           metrics.photoCount += v.photoCount;
           metrics.withPhotos++;
           if (v.fobPriceNzd != null) metrics.withFobPrice++;

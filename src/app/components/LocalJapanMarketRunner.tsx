@@ -70,7 +70,7 @@ export function LocalJapanMarketRunner() {
           {m.stage === 'between_batches' && m.resumeAt && <p>约 {Math.max(0, Math.ceil((Date.parse(String(m.resumeAt)) - now) / 1000))} 秒后自动启动下一批。当前批次已经保存到云端。</p>}
           <strong>{progress.status === 'failed' ? '运行失败' : stages[String(m.stage)] ?? '等待采集进度'}</strong>
           <p>已用时 {Math.floor(seconds / 60)} 分 {seconds % 60} 秒 · 每 2 秒刷新</p>
-          {m.stage === 'cooldown' && m.resumeAt && <p role="status">正在等待，约 {Math.max(0, Math.ceil((Date.parse(String(m.resumeAt)) - now) / 60000))} 分钟后自动检查恢复（第 {count('recoveryAttempts')} / 3 次）。保持程序开启，已采集结果暂存在内存中。</p>}
+          {m.stage === 'cooldown' && m.resumeAt && <p role="status">正在等待，约 {Math.max(0, Math.ceil((Date.parse(String(m.resumeAt)) - now) / 60000))} 分钟后自动检查恢复（第 {count('recoveryAttempts')} / 3 次）。保持程序开启，已确认的采集结果已保存云端断点。</p>}
           <label>本批有效车源：{count('accepted')} / 上限 {(n('target') || 5000).toLocaleString('en-NZ')}
             <progress aria-label="本批有效车源进度" value={n('accepted')} max={n('target') || 5000} />
           </label>
@@ -80,9 +80,10 @@ export function LocalJapanMarketRunner() {
           <p>上传状态：{m.published ? `已上传（新增 ${count('added')} 辆，更新 ${count('updated')} 辆），待网站发布后刷新运行记录。` : m.stage === 'publish' && running ? '正在上传，请保持本地程序开启。' : '尚未上传本批车源'}</p>
           {m.lastProgressAt && <small>程序最后报告：{new Date(String(m.lastProgressAt)).toLocaleTimeString()}</small>}
         </> : progress.status !== 'idle' && <p>此程序未提供实时统计，请在本批结束后下载最新版并重启。</p>}
+        {m?.checkpointAt && <p>云端断点：{new Date(String(m.checkpointAt)).toLocaleString()} · 恢复未入库车辆 {count('restoredVehicles')} 辆</p>}
         {!!progress.logs?.length && <details open><summary>最近运行日志（最多 50 条）</summary><div className="ajm-local-logs">{progress.logs.map((log, i) => <p key={`${log.at}-${i}`}><time>{new Date(log.at).toLocaleTimeString()}</time> {log.level === 'error' ? '⚠ ' : ''}{log.text}</p>)}</div></details>}
       </div>}
-      <p>刷新网页后重新填入配对码，点击“连接并查看进度”可接回当前任务。进度和日志仅保留在本地程序内存，不写入文件。</p>
+      <p>刷新网页后重新填入配对码，点击“连接并查看进度”可接回当前任务。目录位置和已确认的未入库车辆自动保存云端；重启后点击开始可续采。日志仅在内存，不写本地文件。</p>
     </section>}
   </div>;
 }
