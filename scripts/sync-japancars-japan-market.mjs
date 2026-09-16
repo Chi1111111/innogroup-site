@@ -1,3 +1,4 @@
+import { rotateGroups, readMakes, readModels, groupListingUrl, normalizeGroup } from './lib/japan-market-rotation.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -219,7 +220,7 @@ try {
   const existingPath = path.join(output, 'index.json');
   const existing = remote ? cloud.index.vehicles : fs.existsSync(existingPath) ? JSON.parse(fs.readFileSync(existingPath, 'utf8')).vehicles : [];
   const known = createVehicleIdentitySet(existing);
-  const checkRepeatedPage = createRepeatedPageGuard();
+
   let consecutiveDetailFailures = 0;
   let consecutiveMissingDetails = 0;
   const recoverDetail = createDetailRecovery({ deadline,
@@ -231,11 +232,21 @@ try {
     },
     onResume: () => { metrics.stage = 'details'; metrics.resumeAt = null; checkpoint(); console.log('Checking whether vehicle details have recovered.'); },
   });
-  const maxPages = Math.ceil(target / 10 * 1.5) + 10;
-  metrics.pagesExpected = Math.ceil(target / 10);
-  for (let page = 1; page <= maxPages && collected.length < target; page++) {
+  const catalog = async (route, data) => JSON.parse(await request(`${ORIGIN}/stock-list/${route}`, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({_token:csrf,...data}).toString() }));
+  metrics.stage = 'catalog'; checkpoint();
+  const makes = readMakes(await catalog('get-maker-data', {maker:''}));
+  if (!makes.length) throw new Error('Source make catalog is empty.');
+  const cursor = JSON.parse(process.env.JAPANCARS_ROTATION_CURSOR || '{}');
+  const turns = rotateGroups({ makes, cursor, modelsFor: async make => readModels(await catalog('get-model-data', {value:make})) });
+  for await (const turn of turns) {
+    if (collected.length >= target) break;
+    const checkRepeatedPage = createRepeatedPageGuard();
+    metrics.rotationCursor = {...turn}; metrics.rotationMake = turn.make; metrics.rotationModel = turn.model; metrics.rotationCycle = turn.cycle;
+    console.log(`Round ${turn.cycle}: ${turn.make} / ${turn.model}, up to ${5-turn.accepted} additional vehicles.`);
+    const maxPages = 2000;
+    for (let page = 1; page <= maxPages && collected.length < target && turn.accepted < 5; page++) {
     metrics.stage = 'listing';
-    const html = await request(`${ORIGIN}/stock-list?country=Japan&perPage=10&page=${page}`);
+    const html = await request(groupListingUrl(ORIGIN, turn.make, turn.model, page));
     const { rows, count } = readListing(html);
     if (!rows.length) { if (count === 0) break; throw new Error('Empty or changed listing markup.'); }
     metrics.pagesFetched++;
@@ -243,13 +254,14 @@ try {
     const eligible = [];
     for (const row of rows) {
       if (seen.has(row)) { metrics.duplicates++; continue; }
-      seen.add(row); fresh++; metrics.received++;
-      if (row.location !== 'Japan') { reject('outside_japan'); continue; }
-      if (/sold|reserved|pending|unavailable|on order/i.test(row.status)) { reject('unavailable'); continue; }
-      if (known.has(row)) { metrics.detailSkipped++; continue; }
+      fresh++; metrics.received++;
+      if (row.location !== 'Japan') { seen.add(row); reject('outside_japan'); continue; }
+      if (/sold|reserved|pending|unavailable|on order/i.test(row.status)) { seen.add(row); reject('unavailable'); continue; }
+      if (known.has(row)) { seen.add(row); metrics.detailSkipped++; continue; }
       eligible.push(row);
     }
-    const repeated = checkRepeatedPage(fresh);
+    let repeated;
+    try { repeated = checkRepeatedPage(fresh); } catch { console.warn('Repeated group pages; moving to the next make/model.'); break; }
     if (repeated) {
       metrics.repeatedPages = (metrics.repeatedPages || 0) + 1;
       console.warn(`Listing page ${page} repeated earlier vehicles; skipping page (${repeated}/3 consecutive).`);
@@ -258,8 +270,8 @@ try {
       continue;
     }
     metrics.stage = 'details'; checkpoint();
-    for (let i = 0; i < eligible.length && collected.length < target; i += concurrency) {
-      const results = await Promise.allSettled(eligible.slice(i, i+concurrency).map((row) => process.env.JAPANCARS_AUTO_BATCH === '1' ? detail(row, cookies) : recoverDetail(() => detail(row, cookies))));
+    for (let i = 0; i < eligible.length && collected.length < target && turn.accepted < 5; i += concurrency) {
+      const results = await Promise.allSettled(eligible.slice(i, i+concurrency).map((row) => { seen.add(row); return process.env.JAPANCARS_AUTO_BATCH === '1' ? detail(row, cookies) : recoverDetail(() => detail(row, cookies)); }));
       for (const result of results) {
         if (result.status === 'rejected') {
           if (result.reason?.code === 'DETAIL_RECOVERY_EXHAUSTED') throw result.reason;
@@ -275,9 +287,11 @@ try {
         consecutiveDetailFailures = 0; consecutiveMissingDetails = 0;
         if (result.value.issue) { reject(result.value.issue); continue; }
         const v = result.value.vehicle;
+        if (normalizeGroup(v.make) !== normalizeGroup(turn.make) || normalizeGroup(v.model) !== normalizeGroup(turn.model)) { reject('group_mismatch'); continue; }
         if (!v.photoCount) { reject('missing_photos'); continue; }
         if (collected.length < target) {
           collected.push(v);
+          turn.accepted++; metrics.rotationCursor = {...turn};
           metrics.photoCount += v.photoCount;
           metrics.withPhotos++;
           if (v.fobPriceNzd != null) metrics.withFobPrice++;
@@ -290,6 +304,7 @@ try {
     }
     if (page % 10 === 0 || collected.length >= target) console.log(`Page ${page}: ${collected.length}/${target} vehicles; ${metrics.detailFailed} detail errors.`);
     if (count != null && page * 10 >= count) break;
+  }
   }
   await publish(collected, rates);
   }

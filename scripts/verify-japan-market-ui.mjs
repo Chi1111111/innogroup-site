@@ -34,7 +34,7 @@ await page.route('**/*', async (route) => {
   if (url.origin === 'http://127.0.0.1:17831') {
     if(url.pathname==='/scan')localStarted=true;
     const finished=localStarted && url.pathname==='/status' && ++localPolls>=2;
-    return route.fulfill({json:{status:!localStarted?'idle':finished?'finished':'running',message:finished?'本地测试任务已完成':'本地测试扫描中',startedAt:new Date(Date.now()-10000).toISOString(),metrics:{stage:finished?'complete':localPolls===0?'cooldown':'details',resumeAt:new Date(Date.now()+900000).toISOString(),recoveryAttempts:1,batchNumber:2,totalAdded:144,accepted:finished?25:12,target:5000,photoCount:155,withFobPrice:10,published:finished},logs:[{at:new Date().toISOString(),level:'info',text:'测试实时日志'}]},headers:{'Access-Control-Allow-Origin':origin}});
+    return route.fulfill({json:{status:!localStarted?'idle':finished?'finished':'running',message:finished?'本地测试任务已完成':'本地测试扫描中',startedAt:new Date(Date.now()-10000).toISOString(),metrics:{stage:finished?'complete':localPolls===0?'cooldown':'details',resumeAt:new Date(Date.now()+900000).toISOString(),recoveryAttempts:1,batchNumber:2,totalAdded:144,rotationMake:'Toyota',rotationModel:'Tank',rotationCycle:2,accepted:finished?25:12,target:5000,photoCount:155,withFobPrice:10,published:finished},logs:[{at:new Date().toISOString(),level:'info',text:'测试实时日志'}]},headers:{'Access-Control-Allow-Origin':origin}});
   }
   if (url.origin !== origin) return route.abort();
   if (url.pathname === '/data/japan-market/index.json') return route.fulfill({ json: { ...snapshot, count: snapshot.count + 1, vehicles: [...snapshot.vehicles, polluted] } });
@@ -77,6 +77,7 @@ try {
   assert.equal(await page.getByRole('progressbar').getAttribute('value'),'12');
   await page.getByRole('button',{name:'本批结束后停止',exact:true}).waitFor();
   await page.getByText('第 2 批 · 累计已上传新增 144 / 5,000 辆',{exact:true}).waitFor();
+  await page.getByText('第 2 轮 · Toyota / Tank · 本组合最多新增 5 辆',{exact:true}).waitFor();
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.setViewportSize({width:1440,height:1000});

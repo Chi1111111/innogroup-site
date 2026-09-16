@@ -47,11 +47,11 @@ async function batchHarness(run) {
 }
 test('starts another batch only after confirmed upload, caps the combined target and prevents clicks during the gap',()=>batchHarness(async({call,children,settings,done,next,isQueued})=>{
   await call('/scan','POST');
-  done({published:true,added:144,accepted:144,stopCode:'BATCH_CONTENT_MISSING'});
+  done({published:true,added:144,accepted:144,stopCode:'BATCH_CONTENT_MISSING',rotationCursor:{make:'Toyota',model:'Tank',cycle:2,accepted:4}});
   assert.equal(children.length,1);assert.equal(isQueued(),true);
   assert.equal((await call('/scan','POST')).status,409);
   assert.equal((await (await call('/status')).json()).metrics.totalAdded,144);
-  next();assert.equal(children.length,2);assert.equal(settings[1].target,4856);
+  next();assert.equal(children.length,2);assert.equal(settings[1].target,4856);assert.deepEqual(settings[1].rotationCursor,{make:'Toyota',model:'Tank',cycle:2,accepted:4});
   done({published:true,added:4856,accepted:4856,stopCode:'BATCH_CONTENT_MISSING'});
   const result=await (await call('/status')).json();
   assert.equal(result.status,'finished');assert.equal(result.metrics.totalAdded,5000);assert.equal(isQueued(),false);
