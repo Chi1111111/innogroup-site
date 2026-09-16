@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { openCloudInventory } from './lib/japan-market-cloud.mjs';
 import { vehicleChanges } from './lib/japan-market-changes.mjs';
-import { createVehicleIdentitySet } from './lib/japan-market-seen.mjs';
+import { createVehicleIdentitySet, createRepeatedPageGuard } from './lib/japan-market-seen.mjs';
 import { createDetailRecovery } from './lib/japan-market-recovery.mjs';
 import { load } from 'cheerio';
 import { ORIGIN, SOURCE, readListing, readDetail, readRates, summary, shardFor, applyResponseCookies } from './lib/japancars.mjs';
@@ -219,6 +219,7 @@ try {
   const existingPath = path.join(output, 'index.json');
   const existing = remote ? cloud.index.vehicles : fs.existsSync(existingPath) ? JSON.parse(fs.readFileSync(existingPath, 'utf8')).vehicles : [];
   const known = createVehicleIdentitySet(existing);
+  const checkRepeatedPage = createRepeatedPageGuard();
   let consecutiveDetailFailures = 0;
   let consecutiveMissingDetails = 0;
   const recoverDetail = createDetailRecovery({ deadline,
@@ -248,7 +249,14 @@ try {
       if (known.has(row)) { metrics.detailSkipped++; continue; }
       eligible.push(row);
     }
-    if (!fresh) throw new Error('Pagination repeated an earlier page; previous inventory preserved.');
+    const repeated = checkRepeatedPage(fresh);
+    if (repeated) {
+      metrics.repeatedPages = (metrics.repeatedPages || 0) + 1;
+      console.warn(`Listing page ${page} repeated earlier vehicles; skipping page (${repeated}/3 consecutive).`);
+      checkpoint();
+      if (count != null && page * 10 >= count) break;
+      continue;
+    }
     metrics.stage = 'details'; checkpoint();
     for (let i = 0; i < eligible.length && collected.length < target; i += concurrency) {
       const results = await Promise.allSettled(eligible.slice(i, i+concurrency).map((row) => process.env.JAPANCARS_AUTO_BATCH === '1' ? detail(row, cookies) : recoverDetail(() => detail(row, cookies))));

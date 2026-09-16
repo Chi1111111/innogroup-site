@@ -19,3 +19,12 @@ export function createVehicleIdentitySet(vehicles = []) {
     add: vehicle => keys(vehicle).forEach(key => seen.add(key)),
   };
 }
+
+export function createRepeatedPageGuard() {
+  let consecutive = 0;
+  return freshCount => {
+    consecutive = freshCount > 0 ? 0 : consecutive + 1;
+    if (consecutive >= 3) throw Object.assign(new Error('Three consecutive listing pages repeated previously seen vehicles; stopped to avoid an endless scan.'), { code: 'REPEATED_LISTING_PAGES' });
+    return consecutive;
+  };
+}

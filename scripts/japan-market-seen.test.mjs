@@ -1,6 +1,16 @@
 import { expect, it } from 'vitest';
-import { createVehicleIdentitySet } from './lib/japan-market-seen.mjs';
+import { createVehicleIdentitySet, createRepeatedPageGuard } from './lib/japan-market-seen.mjs';
 const row={stockNumber:'abc123',sourceUrl:'https://www.japancars.co.jp/stock-detail/car.html'};
+it('skips transient repeated pages, resets on fresh identities and stops a persistent pagination loop',()=>{
+  const guard=createRepeatedPageGuard();
+  expect(guard(10)).toBe(0);
+  expect(guard(0)).toBe(1);
+  expect(guard(0)).toBe(2);
+  expect(guard(1)).toBe(0);
+  expect(guard(0)).toBe(1);
+  expect(guard(0)).toBe(2);
+  expect(()=>guard(0)).toThrow('Three consecutive listing pages');
+});
 it('skips previously stored vehicles regardless of age, using stock or source URL',()=>{
   const known=createVehicleIdentitySet([{id:'jpjc-ABC123',priceCheckedAt:'2020-01-01'},{sourceUrl:'https://www.japancars.co.jp/stock-detail/second.html?old=1'}]);
   expect(known.has(row)).toBe(true);
