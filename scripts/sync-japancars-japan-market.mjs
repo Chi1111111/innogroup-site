@@ -1,5 +1,5 @@
 import { restorePending } from './lib/japan-market-resume.mjs';
-import { rotateGroups, readMakes, readModels, groupListingUrl, normalizeGroup } from './lib/japan-market-rotation.mjs';
+import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup } from './lib/japan-market-rotation.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -316,7 +316,7 @@ try {
         consecutiveDetailFailures = 0; consecutiveMissingDetails = 0;
         if (result.value.issue) { reject(result.value.issue); continue; }
         const v = result.value.vehicle;
-        if (normalizeGroup(v.make) !== normalizeGroup(turn.make) || normalizeGroup(v.model) !== normalizeGroup(turn.model)) { reject('group_mismatch'); continue; }
+        if (!matchesGroup(v, turn)) { reject('group_mismatch'); continue; }
         if (!v.photoCount) { reject('missing_photos'); continue; }
         if (collected.length < target) {
           collected.push(v);

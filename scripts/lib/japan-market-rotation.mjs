@@ -1,5 +1,14 @@
 import { load } from 'cheerio';
 export const normalizeGroup = value => String(value || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+// Catalog model names may describe a family (Cooper -> MINI COOPER 5DOOR).
+// Match complete tokens, keeping make and stock identity checks separate.
+export function matchesGroup(vehicle, group) {
+  if (normalizeGroup(vehicle.make) !== normalizeGroup(group.make)) return false;
+  if (normalizeGroup(vehicle.model) === normalizeGroup(group.model)) return true;
+  const words = value => String(value || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  const expected = words(group.model), actual = words(vehicle.model);
+  return expected.length > 0 && actual.some((_,i)=>expected.every((word,j)=>actual[i+j]===word));
+}
 export function groupListingUrl(origin, make, model, page) {
   return `${origin}/stock-list?${new URLSearchParams({country:'Japan',make,maker:model,perPage:'10',page:String(page)})}`;
 }
