@@ -70,6 +70,7 @@ try {
   await page.getByRole('heading', { name: 'Japan Market 采集中心' }).waitFor();
   await page.getByRole('button', { name: '本地运行', exact: true }).click();
   assert.equal(await page.getByRole('button', { name: '开始本地扫描', exact: true }).isDisabled(), true);
+  assert.equal(await page.getByRole('link',{name:'唤起本地采集程序'}).getAttribute('href'),'innogroup-collector://launch');
   await page.getByLabel('本地程序配对码').fill('test-pairing');
   await page.getByRole('button', { name: '开始本地扫描', exact: true }).click();
   await page.getByText('测试实时日志', {exact:false}).waitFor();

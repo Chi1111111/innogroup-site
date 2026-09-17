@@ -55,6 +55,8 @@ export function LocalJapanMarketRunner() {
     {open && <section className="ajm-panel ajm-local-panel">
       <strong>品牌车型轮询 · 每组合每轮 5 辆 · 累计最多 5,000 辆</strong>
       <p><a href="/downloads/japan-market-local.zip" download>下载最新版本地程序</a>，解压后按 README 启动服务。更新程序请等当前批次结束后重启。</p>
+      <p><a className="ajm-button" href="innogroup-collector://launch">唤起本地采集程序</a></p>
+      <p>首次使用：解压程序后双击 Install-Launcher.cmd 注册启动入口。之后点击上方按钮唤起程序，按浏览器提示允许打开，再填入程序显示的配对码。</p>
       <label>配对码 <input aria-label="本地程序配对码" type="password" autoComplete="off" value={token} disabled={running} onChange={e => { setToken(e.target.value); setProgress(null); }} /></label>
       <div className="ajm-actions">
         <button type="button" className="ajm-button" disabled={busy || !token.trim()} onClick={() => void connect(false)}>连接并查看进度</button>

@@ -9,6 +9,12 @@ export interface CollectionRun {
   error: string | null;
   workflowUrl: string | null;
   metrics: Partial<Record<'pagesExpected' | 'pagesFetched' | 'received' | 'accepted' | 'rejected' | 'detailRequested' | 'detailSucceeded' | 'detailFailed' | 'detailSkipped' | 'requests' | 'added' | 'updated' | 'retained' | 'removed' | 'target' | 'withFobPrice' | 'withoutFobPrice' | 'withPhotos' | 'photoCount' | 'cachedDetails' | 'duplicates', number | null>> & {
+    rotationCursor?: {make?:string;model?:string;cycle?:number;page?:number;deferred?:boolean};
+    stopReason?: string;
+    checkpointAt?: string;
+    restoredVehicles?: number;
+    malformedDetailLinks?: number;
+    deferredGroups?: number;
     stage?: string;
     published?: boolean;
     sourceAccessBlocked?: boolean;

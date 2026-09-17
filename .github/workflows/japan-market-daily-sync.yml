@@ -34,7 +34,7 @@ jobs:
     needs: schedule
     if: needs.schedule.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 350
     env:
       JAPAN_MARKET_COLLECTOR: japancars
       JAPANCARS_TARGET: 5000
@@ -51,63 +51,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install collector dependencies
         run: npm ci
 
-      - name: Restore interrupted detail collection
-        uses: actions/cache@v4
-        with:
-          path: tmp/japancars-cache/*.json
-          key: japancars-details-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: japancars-details-
-
-      - name: Refresh vehicles and photo galleries
-        id: collector
-        run: node scripts/run-japan-market-sync.mjs
-
-      - name: Record interrupted collection
-        if: always()
+      - name: Collect with shared cloud checkpoint and detailed reports
         env:
-          SYNC_OUTCOME: ${{ steps.collector.outcome }}
-        run: node scripts/run-japan-market-sync.mjs --finalize
-
-      - name: Preserve collection report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: japan-market-sync-${{ github.run_id }}-${{ github.run_attempt }}
-          path: public/data/japan-market
-          retention-days: 7
-
-      - name: Commit refreshed market data
-        if: always()
-        env:
-          SYNC_OUTCOME: ${{ steps.collector.outcome }}
-        shell: bash
-        run: |
-          if [ "$SYNC_OUTCOME" = "success" ]; then
-            git add public/data/japan-market
-          elif [ -f public/data/japan-market/sync-history.json ]; then
-            git add public/data/japan-market/sync-history.json
-          fi
-          if git diff --cached --quiet; then
-            echo "Collector returned no data changes."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: refresh Japan Market inventory"
-          for attempt in 1 2 3; do
-            if git push; then
-              exit 0
-            fi
-            if [ "$attempt" -eq 3 ]; then
-              echo "Failed to push refreshed inventory after 3 attempts."
-              exit 1
-            fi
-            echo "GitHub rejected push attempt $attempt; retrying shortly."
-            git pull --rebase
-            sleep $((attempt * 5))
-          done
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/japan-market-cloud-runner.mjs

@@ -3,7 +3,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-export function createLocalService({ token = randomBytes(24).toString('hex'), schedule = setTimeout, cancel = clearTimeout, now = Date.now, launch = ({ target, timeoutMs, rotationCursor }) => spawn(process.execPath,
+export function createLocalService({ maxDurationMs = 21600000, token = randomBytes(24).toString('hex'), schedule = setTimeout, cancel = clearTimeout, now = Date.now, launch = ({ target, timeoutMs, rotationCursor }) => spawn(process.execPath,
   [fileURLToPath(new URL('./sync-japancars-japan-market.mjs', import.meta.url)), '--remote', `--target=${target}`],
   { env: { ...process.env, JAPANCARS_AUTO_BATCH: '1', JAPANCARS_ROTATION_CURSOR: JSON.stringify(rotationCursor || {}), JAPANCARS_REQUEST_GAP_MS: '3000', JAPANCARS_CONCURRENCY: '1', JAPANCARS_TIMEOUT_MS: String(timeoutMs) }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true }) } = {}) {
   let child;
@@ -81,7 +81,7 @@ export function createLocalService({ token = randomBytes(24).toString('hex'), sc
     if (req.method !== 'POST' || req.url !== '/scan') return reply(404, { message: '接口不存在' });
     if (state.status === 'running') return reply(409, { message: '这台电脑已有扫描或批次等待正在运行。' });
     state = { status: 'running', startedAt: new Date().toISOString(), finishedAt: null, message: '扫描中：最多 5,000 辆，间隔 3 秒。', metrics: { stage: 'configuration', target: 5000 }, logs: [] };
-    rotationCursor = {}; totalAdded = 0; batchNumber = 0; stopAfterBatch = false; deadline = now() + 21600000;
+    rotationCursor = {}; totalAdded = 0; batchNumber = 0; stopAfterBatch = false; deadline = now() + maxDurationMs;
     startBatch();
     reply(state.status === 'failed' ? 500 : 202, state);
 

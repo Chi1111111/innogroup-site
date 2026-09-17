@@ -9,7 +9,7 @@ import '../../styles/admin-japan-market.css';
 
 const WORKFLOW = 'https://github.com/Chi1111111/innogroup-site/actions/workflows/japan-market-daily-sync.yml';
 const statuses = { success: ['成功', 'success'], partial: ['部分完成', 'warning'], failed: ['采集失败', 'danger'], cancelled: ['已取消', 'muted'] } as const;
-const reasons: Record<string,string> = { invalid_record:'记录格式异常', missing_id:'缺少编号', invalid_make:'品牌异常', invalid_model:'车型异常', invalid_year:'年份异常', invalid_mileage:'里程异常', invalid_detail:'详情格式异常', outside_japan:'非日本库存', unavailable:'已售或不可用', missing_photos:'无可用相册' };
+const reasons: Record<string,string> = { invalid_record:'记录格式异常', missing_id:'缺少编号', invalid_make:'品牌异常', invalid_model:'车型异常', invalid_year:'年份异常', invalid_mileage:'里程异常', invalid_detail:'详情格式异常', outside_japan:'非日本库存', unavailable:'已售或不可用', missing_photos:'无可用相册', missing_model_slug:'来源详情链接缺少车型', group_mismatch:'车型目录不匹配' };
 const number = (v: number | null | undefined) => v == null ? '—' : v.toLocaleString('en-NZ');
 const date = (v: string | null | undefined) => v && Number.isFinite(Date.parse(v)) ? new Intl.DateTimeFormat('zh-CN',{timeZone:'Pacific/Auckland',dateStyle:'medium',timeStyle:'short',hour12:false}).format(new Date(v)) : '尚无记录';
 function Status({run}: {run?:CollectionRun}) {
@@ -47,6 +47,10 @@ function RunDetails({run}: {run:CollectionRun}) {
       <dl className="ajm-run-stats">{counts.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{number(value)}</dd></div>)}</dl>
       <button type="button" className="ajm-button" disabled={pending} aria-expanded={open} onClick={()=>void showChanges()}>{pending?'读取详情…':open?'收起更新详情':'查看更新详情'}</button>
       {open && <div className="ajm-change-list">
+        {m.rotationCursor && <p>目录位置：第 {m.rotationCursor.cycle ?? 1} 轮 · {m.rotationCursor.make} / {m.rotationCursor.model} · 第 {m.rotationCursor.page ?? 1} 页</p>}
+        {m.checkpointAt && <p>云端断点：{date(m.checkpointAt)} · 恢复未入库车辆 {number(m.restoredVehicles)} 辆</p>}
+        <p>跳过缺名链接 {number(m.malformedDetailLinks ?? 0)} 条 · 暂跳异常目录 {number(m.deferredGroups ?? 0)} 个</p>
+        {m.stopReason && <p>结束原因：{m.stopReason}</p>}
         {error && <p role="alert">{error}</p>}
         {changes && <><p>共 {number(changes.length)} 辆发生变更，以下为本次运行时记录的值。</p>
           {changes.slice((changePage-1)*20,changePage*20).map(v=><article className="ajm-change-item" key={v.id}>
