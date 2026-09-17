@@ -40,10 +40,13 @@ export async function openResumeStore(api) {
   }
   let head = ref.object.sha;
   let treeSha = commit.tree.sha;
+  const ownHeads = new Set([head]);
   return {snapshot, async save(value) {
     const next = {version:1,...value,savedAt:new Date().toISOString()};
     const current = (await api(`git/ref/heads/${branch}`)).object.sha;
-    if (current !== head) throw new Error('Cloud checkpoint changed on another computer; stopped to preserve its progress.');
+    // GitHub ref reads can lag a just-completed write. An older head produced by
+    // this writer is safe to ignore: the final non-force PATCH still rejects races.
+    if (current !== head && !ownHeads.has(current)) throw Object.assign(new Error(`Cloud checkpoint changed by another task; stopped to preserve its progress (expected ${head.slice(0,8)}, received ${current.slice(0,8)}).`), {code:'CHECKPOINT_CONFLICT'});
     const updated = new Map(next.pending.map(v=>[fileFor(v.id),JSON.stringify(v)]));
     const entries = [...updated].filter(([name,text])=>contents.get(name)!==text).map(([path,content])=>({path,mode:'100644',type:'blob',content}));
     for (const name of contents.keys()) if (!updated.has(name)) entries.push({path:name,mode:'100644',type:'blob',sha:null});
@@ -51,7 +54,7 @@ export async function openResumeStore(api) {
     const nextTree = await api('git/trees','POST',{base_tree:treeSha,tree:entries});
     const nextCommit = await api('git/commits','POST',{message:'Save collector recovery position',tree:nextTree.sha,parents:[head]});
     await api(`git/refs/heads/${branch}`,'PATCH',{sha:nextCommit.sha,force:false});
-    head = nextCommit.sha; treeSha = nextTree.sha;
+    head = nextCommit.sha; ownHeads.add(head); treeSha = nextTree.sha;
     contents.clear(); for (const [name,text] of updated) contents.set(name,text);
     return next.savedAt;
   }};

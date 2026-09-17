@@ -46,7 +46,7 @@ it('keeps position when acknowledging upload and rejects stale concurrent writer
  const s=server({version:1,cursor:{make:'Toyota'},pending:[{id:'a'}]});
  const a=await openResumeStore(s.api),b=await openResumeStore(s.api);
  await a.save({cursor:a.snapshot.cursor,pending:[]});
- await expect(b.save({cursor:{make:'Honda'},pending:[]})).rejects.toThrow('changed on another computer');
+ await expect(b.save({cursor:{make:'Honda'},pending:[]})).rejects.toThrow('changed by another task');
  const next=await openResumeStore(s.api);
  expect(next.snapshot.cursor).toEqual({make:'Toyota'});expect(next.snapshot.pending).toEqual([]);
 });
@@ -54,4 +54,24 @@ it('fails closed for inaccessible or malformed checkpoints',async()=>{
  await expect(openResumeStore(async()=>{throw Object.assign(new Error('forbidden'),{status:403});})).rejects.toThrow('forbidden');
  const s=server({version:99,cursor:{},pending:[]});
  await expect(openResumeStore(s.api)).rejects.toThrow('Invalid');
+});
+
+it('tolerates a stale read of its own previous head without force-pushing',async()=>{
+ const s=server({version:1,cursor:{make:'Toyota'},pending:[]});
+ let stale=false;
+ const api=(path,...args)=>stale && path==='git/ref/heads/japan-market-resume' ? Promise.resolve({object:{sha:'initial'}}) : s.api(path,...args);
+ const store=await openResumeStore(api);
+ await store.save({cursor:{make:'Toyota',page:1},pending:[]});
+ stale=true;
+ await store.save({cursor:{make:'Toyota',page:2},pending:[]});
+ expect((await openResumeStore(s.api)).snapshot.cursor.page).toBe(2);
+});
+it('still rejects a concurrent write when a stale ref read masks it',async()=>{
+ const s=server({version:1,cursor:{},pending:[]});
+ let stale=false;
+ const a=await openResumeStore((path,...args)=>stale && path==='git/ref/heads/japan-market-resume' ? Promise.resolve({object:{sha:'initial'}}) : s.api(path,...args));
+ const b=await openResumeStore(s.api);
+ await b.save({cursor:{make:'Honda'},pending:[]});stale=true;
+ await expect(a.save({cursor:{make:'Toyota'},pending:[]})).rejects.toThrow('concurrent conflict');
+ expect((await openResumeStore(s.api)).snapshot.cursor.make).toBe('Honda');
 });

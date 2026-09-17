@@ -199,7 +199,7 @@ async function publish(vehicles, rates) {
 let pending = []; let activeRates; let resumeStore; let resumeCursor;
 async function saveResume() {
   if (!resumeStore) return;
-  metrics.checkpointAt = await resumeStore.save({cursor:metrics.rotationCursor || resumeCursor || {},pending,rates:activeRates});
+  metrics.checkpointAt = await resumeStore.save({writer:{runId,trigger:process.env.GITHUB_EVENT_NAME || 'local'},cursor:metrics.rotationCursor || resumeCursor || {},pending,rates:activeRates});
   checkpoint();
 }
 try {

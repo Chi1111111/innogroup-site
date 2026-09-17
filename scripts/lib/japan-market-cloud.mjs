@@ -6,7 +6,7 @@ export async function openCloudInventory({token,request=fetch}={}) {
   token ||= process.env.GH_TOKEN || process.env.GITHUB_TOKEN || execFileSync('gh',['auth','token'],{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
   const api=async (endpoint,method='GET',body)=>{
     const r=await request(`https://api.github.com/repos/Chi1111111/innogroup-site/${endpoint}`,{method,
-      headers:{Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'},
+      headers:{'Cache-Control':'no-cache',Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'},
       body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(60000)});
     if(!r.ok)throw Object.assign(new Error(`Cloud inventory ${method} failed (${r.status}); no local data backup was written.`), {status:r.status});
     return r.json();
