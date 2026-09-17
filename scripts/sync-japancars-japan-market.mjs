@@ -1,5 +1,5 @@
 import { restorePending } from './lib/japan-market-resume.mjs';
-import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction } from './lib/japan-market-rotation.mjs';
+import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction, hasMissingModelSlug } from './lib/japan-market-rotation.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -288,6 +288,12 @@ try {
       if (row.location !== 'Japan') { seen.add(row); reject('outside_japan'); continue; }
       if (/sold|reserved|pending|unavailable|on order/i.test(row.status)) { seen.add(row); reject('unavailable'); continue; }
       if (known.has(row)) { seen.add(row); metrics.detailSkipped++; continue; }
+      if (hasMissingModelSlug(row, turn)) {
+        seen.add(row); reject('missing_model_slug');
+        metrics.malformedDetailLinks = (metrics.malformedDetailLinks || 0) + 1;
+        if (metrics.malformedDetailLinks <= 5) console.warn(`Skipping incomplete source detail link: ${turn.make} / ${turn.model}, stock ${row.stockNumber}. Continuing catalog without requesting this detail.`);
+        continue;
+      }
       eligible.push(row);
     }
     let repeated;

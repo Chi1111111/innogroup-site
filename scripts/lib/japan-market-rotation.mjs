@@ -9,6 +9,13 @@ export function matchesGroup(vehicle, group) {
   const expected = words(group.model), actual = words(vehicle.model);
   return expected.length > 0 && actual.some((_,i)=>expected.every((word,j)=>actual[i+j]===word));
 }
+// Observed Japanese catalog entries can emit an empty model slug and empty details.
+// Only defer this specific malformed URL shape, never all Japanese model names.
+export function hasMissingModelSlug(row, group) {
+  if (!/[\u3040-\u30ff\u3400-\u9fff]/u.test(group.model || '')) return false;
+  try { return /--[\w=]+\.html$/.test(new URL(row.sourceUrl).pathname); }
+  catch { return false; }
+}
 export function missingGroupAction(consecutiveMissing, groupMissing, groupSucceeded) {
   if (consecutiveMissing < 3) return 'continue';
   return consecutiveMissing === 3 && groupMissing === 3 && groupSucceeded === 0 ? 'defer' : 'stop';

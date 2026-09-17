@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction } from './lib/japan-market-rotation.mjs';
+import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction, hasMissingModelSlug } from './lib/japan-market-rotation.mjs';
 it('uses maker for models and parses the actual public catalog formats',()=>{
   const url=new URL(groupListingUrl('https://www.japancars.co.jp','Toyota','Tank',2));
   expect(url.searchParams.get('maker')).toBe('Tank');expect(url.searchParams.has('model')).toBe(false);
@@ -45,4 +45,13 @@ it('resumes after a deferred directory without counting it as five collected car
  for await(const turn of rotateGroups({makes:['Chevrolet','Toyota'],modelsFor:async m=>m==='Chevrolet'?['Corvette']:['Tank'],cursor:{make:'Chevrolet',model:'Corvette',cycle:1,accepted:0,deferred:true}}))turns.push({...turn});
  expect(turns[0]).toMatchObject({make:'Toyota',model:'Tank',cycle:1,accepted:0});
  expect(turns[1]).toMatchObject({make:'Chevrolet',model:'Corvette',cycle:2,accepted:0});
+});
+
+it('skips consecutive empty-model Japanese links without excluding valid Japanese or English models',()=>{
+ const row={sourceUrl:'https://www.japancars.co.jp/stock-detail/japanese-used-chevrolet--QVVDMjU3NjU0MTMyMDI2.html'};
+ expect(hasMissingModelSlug(row,{model:'コルベット'})).toBe(true);
+ expect(hasMissingModelSlug(row,{model:'シボレーコルベット'})).toBe(true);
+ expect(hasMissingModelSlug({...row,sourceUrl:row.sourceUrl.replace('chevrolet--','chevrolet-corvette-')},{model:'コルベット'})).toBe(false);
+ expect(hasMissingModelSlug(row,{model:'Corvette'})).toBe(false);
+ expect(hasMissingModelSlug({sourceUrl:'invalid'},{model:'コルベット'})).toBe(false);
 });
