@@ -11,6 +11,8 @@ export interface CollectionRun {
   metrics: Partial<Record<'pagesExpected' | 'pagesFetched' | 'received' | 'accepted' | 'rejected' | 'detailRequested' | 'detailSucceeded' | 'detailFailed' | 'detailSkipped' | 'requests' | 'added' | 'updated' | 'retained' | 'removed' | 'target' | 'withFobPrice' | 'withoutFobPrice' | 'withPhotos' | 'photoCount' | 'cachedDetails' | 'duplicates', number | null>> & {
     rotationCursor?: {make?:string;model?:string;cycle?:number;page?:number;deferred?:boolean};
     stopReason?: string;
+    publishError?: string | null;
+    publishRetries?: number;
     checkpointAt?: string;
     restoredVehicles?: number;
     malformedDetailLinks?: number;

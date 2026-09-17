@@ -46,7 +46,7 @@ export function createLocalService({ maxDurationMs = 21600000, token = randomByt
       const uploaded = m.published === true && Number.isInteger(m.added) && m.added >= 0;
       if (uploaded) { totalAdded += m.added; rotationCursor = m.rotationCursor || rotationCursor; }
       const ok = !launchFailed && code === 0 && uploaded;
-      const continueBatch = ok && uploaded && m.added > 0 && m.stopCode === 'BATCH_CONTENT_MISSING'
+      const continueBatch = ok && uploaded && m.added > 0 && ['BATCH_CONTENT_MISSING','RECOVERED_PENDING'].includes(m.stopCode)
         && !m.sourceAccessBlocked && !stopAfterBatch && totalAdded < 5000 && batchNumber < 40 && deadline - now() >= 90000;
       state = { ...state, metrics: decorate(m) };
       if (!continueBatch) return finish(ok, ok ? `采集结束，累计上传新增 ${totalAdded} 辆。${m.sourceAccessBlocked ? '来源访问受限，已停止自动批次。' : '请刷新云端运行记录。'}` : '扫描或上传失败，已停止自动批次。已有云端库存保留，请查看日志。');

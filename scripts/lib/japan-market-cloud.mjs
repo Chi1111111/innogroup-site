@@ -1,16 +1,18 @@
+import { retryCloudRead } from './japan-market-retry.mjs';
 import { openResumeStore } from './japan-market-resume.mjs';
 import { execFileSync } from 'node:child_process';
 
 // Vehicle payloads and credentials stay in memory. No git checkout or temporary data files.
 export async function openCloudInventory({token,request=fetch}={}) {
   token ||= process.env.GH_TOKEN || process.env.GITHUB_TOKEN || execFileSync('gh',['auth','token'],{encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
-  const api=async (endpoint,method='GET',body)=>{
+  const once=async (endpoint,method='GET',body)=>{
     const r=await request(`https://api.github.com/repos/Chi1111111/innogroup-site/${endpoint}`,{method,
       headers:{'Cache-Control':'no-cache',Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'},
       body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(60000)});
-    if(!r.ok)throw Object.assign(new Error(`Cloud inventory ${method} failed (${r.status}); no local data backup was written.`), {status:r.status});
+    if(!r.ok)throw Object.assign(new Error(`Cloud inventory ${method} failed (${r.status}); no local data backup was written.`), {status:r.status,retryAfterMs:Number(r.headers?.get('retry-after')||0)*1000});
     return r.json();
   };
+  const api=(endpoint,method='GET',body)=>method==='GET' ? retryCloudRead(()=>once(endpoint,method,body)) : once(endpoint,method,body);
   const head=(await api('git/ref/heads/main')).object.sha;
   const commit=await api(`git/commits/${head}`);
   const tree=await api(`git/trees/${commit.tree.sha}?recursive=1`);
@@ -46,7 +48,7 @@ export async function openCloudInventory({token,request=fetch}={}) {
         const latestTree=await api(`git/trees/${latestCommit.tree.sha}?recursive=1`);
         if(latestTree.truncated)throw new Error('Cloud inventory tree incomplete.');
         const inventoryEntries=items=>items.filter(v=>v.path.startsWith('public/data/japan-market/')).map(v=>`${v.path}:${v.sha}`).sort();
-        if(JSON.stringify(inventoryEntries(tree.tree))!==JSON.stringify(inventoryEntries(latestTree.tree)))throw new Error('Cloud inventory changed during scan; upload stopped to avoid overwriting newer data. Run again.');
+        if(JSON.stringify(inventoryEntries(tree.tree))!==JSON.stringify(inventoryEntries(latestTree.tree)))throw Object.assign(new Error('Cloud inventory changed during scan; refreshing before merge.'),{code:'INVENTORY_CHANGED'});
       }
       const nextTree=await api('git/trees','POST',{base_tree:latestCommit.tree.sha,tree:[...files].map(([name,value])=>({path:`public/data/japan-market/${name}`,mode:'100644',type:'blob',content:JSON.stringify(value)}))});
       const nextCommit=await api('git/commits','POST',{message:'Update Japan Market from memory-only local scan',tree:nextTree.sha,parents:[latestHead]});

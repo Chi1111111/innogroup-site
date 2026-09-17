@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 type Progress = { status: string; message: string; startedAt?: string; finishedAt?: string; metrics?: Record<string, number | string | boolean | null>; logs?: { at: string; level: string; text: string }[] };
-const stages: Record<string, string> = { catalog: '读取品牌和车型目录', between_batches: '本批已上传，等待下一批', cooldown: '详情暂不可用，自动等待恢复', configuration: '连接云端库存', listing: '读取车辆列表', details: '读取车辆详情', validation: '核对并合并库存', publish: '上传云端', complete: '已上传，等待网站发布', access: '来源访问受限' };
+const stages: Record<string, string> = { upload_retry: '云端入库暂时失败，正在自动重试', catalog: '读取品牌和车型目录', between_batches: '本批已上传，等待下一批', cooldown: '详情暂不可用，自动等待恢复', configuration: '连接云端库存', listing: '读取车辆列表', details: '读取车辆详情', validation: '核对并合并库存', publish: '上传云端', complete: '已上传，等待网站发布', access: '来源访问受限' };
 async function localRequest(token: string, endpoint: string, method = 'GET'): Promise<Progress> {
   const response = await fetch(`http://127.0.0.1:17831/${endpoint}`, { method, headers: { Authorization: `Bearer ${token.trim()}` }, signal: AbortSignal.timeout(10000), cache: 'no-store' });
   const data = await response.json();
@@ -78,6 +78,7 @@ export function LocalJapanMarketRunner() {
           </label>
           <small>这是采集数量，不是整体完成百分比；访问受限或无更多车源时可能提前结束。</small>
           <dl className="ajm-local-stats">{stats.map(([label, key]) => <div key={key}><dt>{label}</dt><dd>{count(key)}</dd></div>)}</dl>
+          {m.publishError && <p role="alert">入库错误：{String(m.publishError)}。已保存的断点将在下次启动时优先恢复入库。</p>}
           {!!m.sourceAccessBlocked && <p role="alert">来源访问受限，采集已停止；请查看上传状态，确认已采集车辆是否保存到云端。</p>}
           <p>上传状态：{m.published ? `已上传（新增 ${count('added')} 辆，更新 ${count('updated')} 辆），待网站发布后刷新运行记录。` : m.stage === 'publish' && running ? '正在上传，请保持本地程序开启。' : '尚未上传本批车源'}</p>
           {m.lastProgressAt && <small>程序最后报告：{new Date(String(m.lastProgressAt)).toLocaleTimeString()}</small>}

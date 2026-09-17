@@ -69,3 +69,8 @@ test('stop-after-batch preserves current work and cancels waiting batches',async
   await batchHarness(async({call,done,isQueued})=>{await call('/scan','POST');await call('/stop-after-batch','POST');done({published:true,added:144,stopCode:'BATCH_CONTENT_MISSING'});assert.equal(isQueued(),false);});
   await batchHarness(async({call,done,isQueued,isCancelled})=>{await call('/scan','POST');done({published:true,added:144,stopCode:'BATCH_CONTENT_MISSING'});await call('/stop-after-batch','POST');assert.equal(isQueued(),false);assert.equal(isCancelled(),true);assert.equal((await (await call('/status')).json()).status,'finished');});
 });
+
+test('publishes recovered cloud vehicles before allowing the next collection batch',()=>batchHarness(async({call,done,isQueued,next,settings})=>{
+ await call('/scan','POST');done({published:true,added:135,accepted:135,stopCode:'RECOVERED_PENDING'});
+ assert.equal(isQueued(),true);next();assert.equal(settings[1].target,4865);
+}));

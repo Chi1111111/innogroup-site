@@ -50,6 +50,7 @@ function RunDetails({run,initiallyOpen=false}: {run:CollectionRun;initiallyOpen?
         {m.rotationCursor && <p>目录位置：第 {m.rotationCursor.cycle ?? 1} 轮 · {m.rotationCursor.make} / {m.rotationCursor.model} · 第 {m.rotationCursor.page ?? 1} 页</p>}
         {m.checkpointAt && <p>云端断点：{date(m.checkpointAt)} · 恢复未入库车辆 {number(m.restoredVehicles)} 辆</p>}
         <p>跳过缺名链接 {number(m.malformedDetailLinks ?? 0)} 条 · 暂跳异常目录 {number(m.deferredGroups ?? 0)} 个</p>
+        {m.publishError && <p>入库错误：{m.publishError} · 重试 {m.publishRetries ?? 0} 次</p>}
         {m.stopReason && <p>结束原因：{m.stopReason}</p>}
         {error && <p role="alert">{error}</p>}
         {changes && <><p>共 {number(changes.length)} 辆发生变更，以下为本次运行时记录的值。</p>

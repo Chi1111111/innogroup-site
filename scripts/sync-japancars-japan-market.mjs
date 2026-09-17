@@ -1,3 +1,4 @@
+import { retryPublication } from './lib/japan-market-retry.mjs';
 import { restorePending } from './lib/japan-market-resume.mjs';
 import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction, hasMissingModelSlug } from './lib/japan-market-rotation.mjs';
 import fs from 'node:fs';
@@ -126,6 +127,29 @@ async function detail(row, jar) {
   if (!remote) fs.writeFileSync(filename, JSON.stringify({ schema: 2, ...result }));
   return result;
 }
+async function publishWithRetry(vehicles,rates) {
+  const batch=[...vehicles];
+  try { return await retryPublication(async attempt=>{
+    let candidates=batch;
+    if(remote && attempt>0){
+      cloud=await openCloudInventory();
+      const existingIds=new Set(cloud.index.vehicles.map(v=>v.id));
+      candidates=batch.filter(v=>!existingIds.has(v.id));
+      if(!candidates.length){
+        metrics.published=true;metrics.added=0;metrics.updated=0;metrics.publishError=null;metrics.stage='complete';pending=[];
+        try{await saveResume();}catch(error){console.warn(`Checkpoint acknowledgement deferred: ${error.message}`);}
+        console.log('Recovered publication: all pending vehicles already exist in cloud inventory.');
+        return;
+      }
+    }
+    await publish(candidates,rates);
+    metrics.publishError=null;
+  },{onRetry:({attempt,delay,error})=>{
+    metrics.publishRetries=attempt;metrics.publishError=error.message;metrics.stage='upload_retry';
+    metrics.resumeAt=new Date(Date.now()+delay).toISOString();checkpoint();
+    console.warn(`Cloud upload retry ${attempt}/2 in ${delay/1000}s: ${error.message}. Pending vehicles remain in cloud checkpoint.`);
+  }}); } catch(error) { metrics.publishError=error.message;throw Object.assign(error,{code:'UPLOAD_FAILED'}); }
+}
 async function publish(vehicles, rates) {
   metrics.stage = 'validation'; checkpoint();
   if (!vehicles.length) throw new Error('No validated vehicles; previous inventory preserved.');
@@ -180,7 +204,7 @@ async function publish(vehicles, rates) {
   if (remote) {
     const history=await cloud.read('sync-history.json');
     const finishedAt=new Date().toISOString();
-    const run={id:runId,source:SOURCE,trigger:process.env.GITHUB_EVENT_NAME || 'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:metrics.sourceAccessBlocked || metrics.detailFailed || metrics.accepted<target?'partial':'success',metrics:{...metrics,published:true,stage:'complete'},error:metrics.sourceAccessBlocked?'来源访问受限，已保留本次验证成功的车辆。':metrics.stopReason || null,workflowUrl:process.env.GITHUB_RUN_ID ? `https://github.com/Chi1111111/innogroup-site/actions/runs/${process.env.GITHUB_RUN_ID}` : null};
+    const run={id:runId,source:SOURCE,trigger:process.env.GITHUB_EVENT_NAME || 'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:metrics.sourceAccessBlocked || metrics.detailFailed || metrics.accepted<target?'partial':'success',metrics:{...metrics,published:true,stage:'complete',publishError:null},error:metrics.sourceAccessBlocked?'来源访问受限，已保留本次验证成功的车辆。':metrics.stopReason || null,workflowUrl:process.env.GITHUB_RUN_ID ? `https://github.com/Chi1111111/innogroup-site/actions/runs/${process.env.GITHUB_RUN_ID}` : null};
     write('sync-history.json',{version:1,runs:[run,...history.runs].slice(0,90)});
     const sha=await cloud.publish(files);
     metrics.published=true;metrics.stage='complete';
@@ -223,7 +247,12 @@ try {
     metrics.checkpointAt = resumeStore.snapshot.savedAt || null;
     console.log(`Cloud resume: ${resumeCursor.make || 'start'} / ${resumeCursor.model || '-'}, page ${resumeCursor.page || 1}; ${pending.length} unpublished vehicles restored.`);
   }
-  if (args.input) {
+  if (remote && Object.hasOwn(args,'recover-only') && !pending.length) { console.log('No pending cloud vehicles to recover.');process.exit(0); }
+  if (remote && Object.hasOwn(args,'recover-only') && pending.length && !activeRates) throw new Error('Cloud recovery rates are missing; no source requests made.');
+  if (remote && pending.length && activeRates) {
+    metrics.stopCode='RECOVERED_PENDING';metrics.stopReason='Recovered pending cloud vehicles before requesting source pages.';
+    await publishWithRetry(pending,activeRates);
+  } else if (args.input) {
     const fixture = JSON.parse(fs.readFileSync(path.resolve(args.input), 'utf8'));
     const vehicles = [];
     for (const item of fixture.items) {
@@ -232,7 +261,7 @@ try {
       if (issue || !vehicle.photoCount) reject(issue || 'missing_photos');
       else vehicles.push(vehicle);
     }
-    await publish(vehicles.slice(0,target), fixture.rates);
+    await publishWithRetry(vehicles.slice(0,target), fixture.rates);
   } else {
   const initial = await request(`${ORIGIN}/stock-list?country=Japan&perPage=10&page=1`);
   const rates = readRates(initial); activeRates = rates;
@@ -267,7 +296,7 @@ try {
   const turns = rotateGroups({ makes, cursor, modelsFor: async make => readModels(await catalog('get-model-data', {value:make})) });
   groups: for await (const turn of turns) {
     if (collected.length >= target) break;
-    let groupMissing = 0, groupSucceeded = 0;
+    let groupMissing = 0, groupSucceeded = 0, groupMismatches = 0;
     const checkRepeatedPage = createRepeatedPageGuard();
     metrics.rotationCursor = {...turn}; metrics.rotationMake = turn.make; metrics.rotationModel = turn.model; metrics.rotationCycle = turn.cycle;
     console.log(`Round ${turn.cycle}: ${turn.make} / ${turn.model}, up to ${5-turn.accepted} additional vehicles.`);
@@ -332,10 +361,16 @@ try {
         if (result.value.issue) { reject(result.value.issue); continue; }
         const v = result.value.vehicle;
         if (!matchesGroup(v, turn)) {
-          reject('group_mismatch');
+          reject('group_mismatch');groupMismatches++;
           const mismatch = {expected:`${turn.make} / ${turn.model}`,received:`${v.make} / ${v.model}`,stockNumber:v.stockNumber};
           metrics.groupMismatchSamples = [...(metrics.groupMismatchSamples || []),mismatch].slice(-5);
           if (metrics.rejectionReasons.group_mismatch <= 5) console.warn(`Catalog mismatch: expected ${mismatch.expected}; received ${mismatch.received}; stock ${mismatch.stockNumber}.`);
+          if(groupMismatches>=5 && turn.accepted===0){
+            metrics.deferredGroups=(metrics.deferredGroups||0)+1;
+            metrics.rotationCursor={...turn,page,deferred:true};
+            console.warn(`Deferred catalog mapping after 5 mismatches: ${turn.make} / ${turn.model}. Vehicles were not relabeled or imported.`);
+            await saveResume();continue groups;
+          }
           continue;
         }
         if (!v.photoCount) { reject('missing_photos'); continue; }
@@ -357,21 +392,21 @@ try {
     if (count != null && page * 10 >= count) break;
   }
   }
-  await publish(collected, rates);
+  await publishWithRetry(collected, rates);
   }
 } catch (error) {
   metrics.stopCode = error?.code || null;
   metrics.stopReason = error instanceof Error ? error.message : String(error);
   console.error(error instanceof Error ? error.message : String(error));
-  if (pending.length && activeRates && metrics.stage !== 'publish' && metrics.stage !== 'validation') {
-    try { await publish(pending, activeRates); } catch (publishError) { console.error(publishError.message); process.exitCode = 1; }
+  if (error?.code !== 'UPLOAD_FAILED' && pending.length && activeRates && metrics.stage !== 'publish' && metrics.stage !== 'validation') {
+    try { await publishWithRetry(pending, activeRates); } catch (publishError) { metrics.publishError=publishError.message;metrics.stopCode='UPLOAD_FAILED';metrics.stopReason=`Upload failed: ${publishError.message}`;console.error(metrics.stopReason);process.exitCode=1; }
   } else process.exitCode = 1;
-  if (remote && cloud && !metrics.published && metrics.stage !== 'publish') {
+  if (remote && cloud && !metrics.published) {
     try {
       const history=await cloud.read('sync-history.json');
       const finishedAt=new Date().toISOString();
       metrics.changesPath = `changes/${runId}.json`;
-      const run={id:runId,source:SOURCE,trigger:process.env.GITHUB_EVENT_NAME || 'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:'failed',metrics,error:metrics.sourceAccessBlocked?'来源访问受限，未发布新车源。':'扫描未完成，旧库存保留。',workflowUrl:process.env.GITHUB_RUN_ID ? `https://github.com/Chi1111111/innogroup-site/actions/runs/${process.env.GITHUB_RUN_ID}` : null};
+      const run={id:runId,source:SOURCE,trigger:process.env.GITHUB_EVENT_NAME || 'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:'failed',metrics,error:metrics.sourceAccessBlocked?'来源访问受限，未发布新车源。':metrics.publishError ? `入库失败：${metrics.publishError}；已确认车源保留在云端断点。` : '扫描未完成，旧库存保留。',workflowUrl:process.env.GITHUB_RUN_ID ? `https://github.com/Chi1111111/innogroup-site/actions/runs/${process.env.GITHUB_RUN_ID}` : null};
       await cloud.publish(new Map([[metrics.changesPath,{version:1,runId,changes:[]}],['sync-history.json',{version:1,runs:[run,...history.runs].slice(0,90)}]]));
     } catch { console.error('Failure report could not be uploaded; no local report was written.'); }
   }
