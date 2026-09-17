@@ -137,7 +137,8 @@ function ConsignmentContractDocument({ contract }: { contract: VehicleContract }
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
           <p className="font-semibold">Key commercial terms</p>
           <p className="mt-1">
-            Inno Group's consignment service fee is {commissionRate}% of the actual sale price. After the buyer's
+            Inno Group's consignment service fee is {commissionRate}% of the actual sale price, capped at NZD 4,000
+            per vehicle. After the buyer's
             full payment has been received and cleared, Inno Group will pay the net sale proceeds to the owner
             within {settlementDays} business days.
           </p>
@@ -196,7 +197,8 @@ function ConsignmentContractDocument({ contract }: { contract: VehicleContract }
         <div className="break-inside-avoid space-y-4 text-sm leading-7 text-slate-700">
           <SectionTitle>3. Service Fee and Costs</SectionTitle>
           <p>
-            Inno Group's service fee is {commissionRate}% of the actual sale price. The service fee will be deducted
+            Inno Group's service fee is the lesser of {commissionRate}% of the actual sale price and NZD 4,000
+            per vehicle. The service fee will be deducted
             from the sale proceeds after the vehicle is sold and the buyer has paid in full.
           </p>
           <p>

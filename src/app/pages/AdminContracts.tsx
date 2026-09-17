@@ -703,7 +703,10 @@ export function AdminContracts() {
                     <TextInput label="Listing / target price" value={active.consignmentAgreement?.listingPrice ?? ''} onChange={(v) => updateConsignment('listingPrice', v)} />
                     <TextInput label="Minimum sale price" value={active.consignmentAgreement?.minimumSalePrice ?? ''} onChange={(v) => updateConsignment('minimumSalePrice', v)} />
                     <TextInput label="Term end date" value={active.consignmentAgreement?.termEndDate ?? ''} onChange={(v) => updateConsignment('termEndDate', v)} />
-                    <TextInput label="Commission rate %" value={active.consignmentAgreement?.commissionRate ?? '7'} onChange={(v) => updateConsignment('commissionRate', v)} />
+                    <div className="space-y-2">
+                      <TextInput label="Commission rate %" value={active.consignmentAgreement?.commissionRate ?? '7'} onChange={(v) => updateConsignment('commissionRate', v)} />
+                      <p className="text-xs leading-5 text-slate-500">比例可修改，默认 7%。服务费按实际成交价计算，每辆车最高 NZD 4,000。</p>
+                    </div>
                     <TextInput label="Settlement business days" value={active.consignmentAgreement?.settlementBusinessDays ?? '5'} onChange={(v) => updateConsignment('settlementBusinessDays', v)} />
                     <TextInput label="Additional costs / notes" value={active.consignmentAgreement?.additionalCosts ?? ''} onChange={(v) => updateConsignment('additionalCosts', v)} />
                     <TextInput label="Owner email(s)" value={active.client.email} onChange={(v) => updateClient('email', v)} />
