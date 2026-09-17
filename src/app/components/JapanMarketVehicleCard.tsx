@@ -14,7 +14,7 @@ import {
 } from '../../data/japanMarket';
 import { useLanguage } from './SiteTranslator';
 
-export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle: JapanMarketVehicleSummary; className?: string }) {
+export function JapanMarketVehicleVisual({ vehicle, className = '', onImageError }: { vehicle: JapanMarketVehicleSummary; className?: string; onImageError?: () => void }) {
   const { language } = useLanguage();
   return (
     <div className={`relative overflow-hidden bg-[#17191c] ${className}`}>
@@ -25,7 +25,7 @@ export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle:
           loading="lazy"
           referrerPolicy="no-referrer"
           className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
-          onError={(event) => { event.currentTarget.style.display = 'none'; }}
+          onError={(event) => { event.currentTarget.style.display = 'none'; onImageError?.(); }}
         />
       ) : null}
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-black/30" />
@@ -50,7 +50,7 @@ export function JapanMarketVehicleVisual({ vehicle, className = '' }: { vehicle:
   );
 }
 
-export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: JapanMarketVehicleSummary; compact?: boolean }) {
+export function JapanMarketVehicleCard({ vehicle, compact = false, onImageError }: { vehicle: JapanMarketVehicleSummary; compact?: boolean; onImageError?: () => void }) {
   const { language, text } = useLanguage();
   const hasPrice = vehicle.fobPriceNzd != null;
   const variant = vehicleVariant(vehicle);
@@ -65,7 +65,7 @@ export function JapanMarketVehicleCard({ vehicle, compact = false }: { vehicle: 
       to={japanMarketVehiclePath(vehicle)}
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-black/10 bg-white/65 transition duration-300 hover:-translate-y-1 hover:border-primary/45 hover:bg-white"
     >
-      <JapanMarketVehicleVisual vehicle={vehicle} className={compact ? 'aspect-[16/10]' : 'aspect-[4/3]'} />
+      <JapanMarketVehicleVisual vehicle={vehicle} onImageError={onImageError} className={compact ? 'aspect-[16/10]' : 'aspect-[4/3]'} />
       <div className="flex flex-1 flex-col p-5">
         <p className="text-sm font-bold text-foreground/48">{vehicle.year}</p>
         <h3 className="mt-4 line-clamp-2 text-xl leading-snug">{vehicleName(vehicle)}</h3>

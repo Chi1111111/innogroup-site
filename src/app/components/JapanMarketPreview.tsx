@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
-import { loadJapanMarketFeatured, type JapanMarketPayload } from '../../data/japanMarket';
+import { loadJapanMarketData, type JapanMarketPayload } from '../../data/japanMarket';
+import { dailyFeaturedVehicles, newZealandDay } from '../../data/japanMarketFeatured';
 import { useLanguage } from './SiteTranslator';
 import { JapanMarketVehicleCard } from './JapanMarketVehicleCard';
 
@@ -10,9 +11,19 @@ export function JapanMarketPreview() {
   const [payload, setPayload] = useState<JapanMarketPayload | null>(null);
   const [failed, setFailed] = useState(false);
 
+  const [day, setDay] = useState(() => newZealandDay());
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(() => new Set());
+  const candidates = useMemo(() => dailyFeaturedVehicles(payload?.vehicles ?? [], day), [payload, day]);
+  const vehicles = candidates.filter((vehicle) => !brokenImages.has(vehicle.imageUrl!)).slice(0, 8);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setDay(newZealandDay()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     let active = true;
-    loadJapanMarketFeatured()
+    loadJapanMarketData()
       .then((data) => active && setPayload(data))
       .catch(() => active && setFailed(true));
     return () => { active = false; };
@@ -44,7 +55,7 @@ export function JapanMarketPreview() {
           </div>
         ) : payload ? (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {payload.vehicles.map((vehicle) => <JapanMarketVehicleCard key={vehicle.id} vehicle={vehicle} compact />)}
+            {vehicles.map((vehicle) => <JapanMarketVehicleCard key={vehicle.id} vehicle={vehicle} compact onImageError={() => setBrokenImages((previous) => new Set(previous).add(vehicle.imageUrl!))} />)}
           </div>
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Loading Japan Market vehicles">
