@@ -31,3 +31,7 @@ it('publishes memory payloads without force-pushing, and rejects concurrent clou
   await expect(cloud.publish(new Map())).rejects.toThrow('changed during scan');
   expect(writes.length).toBe(count);
 });
+
+it('keeps GitHub validation details and the failing endpoint instead of hiding 422',async()=>{
+ await expect(openCloudInventory({token:'test',request:async()=>({ok:false,status:422,json:async()=>({message:'Validation Failed',errors:[{resource:'Commit',field:'tree',code:'invalid'}]})})})).rejects.toThrow('GET git/ref/heads/main failed (422): Validation Failed; Commit:tree:invalid');
+});

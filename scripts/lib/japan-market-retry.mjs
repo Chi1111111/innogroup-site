@@ -15,3 +15,11 @@ export async function retryPublication(action,{sleep=ms=>new Promise(r=>setTimeo
   onRetry({attempt:attempt+1,delay,error});await sleep(delay);
  }
 }
+
+export function createCheckpointGate({now=Date.now,intervalMs=60000}={}) {
+ let next=0;
+ return async (save,force=false)=>{
+  if(!force && now()<next)return false;
+  await save();next=now()+intervalMs;return true;
+ };
+}

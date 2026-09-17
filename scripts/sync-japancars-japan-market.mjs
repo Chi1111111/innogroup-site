@@ -1,4 +1,4 @@
-import { retryPublication } from './lib/japan-market-retry.mjs';
+import { retryPublication, createCheckpointGate } from './lib/japan-market-retry.mjs';
 import { restorePending } from './lib/japan-market-resume.mjs';
 import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction, hasMissingModelSlug } from './lib/japan-market-rotation.mjs';
 import fs from 'node:fs';
@@ -129,6 +129,7 @@ async function detail(row, jar) {
 }
 async function publishWithRetry(vehicles,rates) {
   const batch=[...vehicles];
+  try { await saveResume(true); } catch(error) { console.warn(`Pre-upload checkpoint failed: ${error.message}; attempting inventory upload from memory.`); }
   try { return await retryPublication(async attempt=>{
     let candidates=batch;
     if(remote && attempt>0){
@@ -137,7 +138,7 @@ async function publishWithRetry(vehicles,rates) {
       candidates=batch.filter(v=>!existingIds.has(v.id));
       if(!candidates.length){
         metrics.published=true;metrics.added=0;metrics.updated=0;metrics.publishError=null;metrics.stage='complete';pending=[];
-        try{await saveResume();}catch(error){console.warn(`Checkpoint acknowledgement deferred: ${error.message}`);}
+        try{await saveResume(true);}catch(error){console.warn(`Checkpoint acknowledgement deferred: ${error.message}`);}
         console.log('Recovered publication: all pending vehicles already exist in cloud inventory.');
         return;
       }
@@ -209,7 +210,7 @@ async function publish(vehicles, rates) {
     const sha=await cloud.publish(files);
     metrics.published=true;metrics.stage='complete';
     pending = [];
-    try { await saveResume(); } catch (error) { console.warn(`Inventory uploaded; checkpoint acknowledgement failed. Next start will deduplicate saved vehicles: ${error.message}`); }
+    try { await saveResume(true); } catch (error) { console.warn(`Inventory uploaded; checkpoint acknowledgement failed. Next start will deduplicate saved vehicles: ${error.message}`); }
     console.log(`Uploaded ${metrics.added} new, ${metrics.updated} updated vehicles. Cloud commit: ${sha}. No vehicle data written to local disk.`);
     return;
   }
@@ -221,10 +222,13 @@ async function publish(vehicles, rates) {
 }
 
 let pending = []; let activeRates; let resumeStore; let resumeCursor;
-async function saveResume() {
+const checkpointGate = createCheckpointGate();
+async function saveResume(force=false) {
   if (!resumeStore) return;
+  await checkpointGate(async()=>{
   metrics.checkpointAt = await resumeStore.save({writer:{runId,trigger:process.env.GITHUB_EVENT_NAME || 'local'},cursor:metrics.rotationCursor || resumeCursor || {},pending,rates:activeRates});
   checkpoint();
+  },force);
 }
 try {
   if (remote) { cloud=await openCloudInventory(); console.log(`Cloud inventory ready: ${cloud.index.vehicles.length} vehicles. Memory-only mode.`); if(Object.hasOwn(args,'check')) process.exit(0); }

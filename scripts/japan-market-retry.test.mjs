@@ -1,5 +1,5 @@
 import {it,expect} from 'vitest';
-import {retryCloudRead,retryPublication} from './lib/japan-market-retry.mjs';
+import {retryCloudRead,retryPublication,createCheckpointGate} from './lib/japan-market-retry.mjs';
 it('retries transient reads and succeeds without an unbounded loop',async()=>{
  let calls=0;const delays=[];
  const value=await retryCloudRead(()=>{if(++calls<3)throw Object.assign(new Error('server unavailable'),{status:503});return 7;},{sleep:async n=>delays.push(n)});
@@ -17,4 +17,15 @@ it('bounds publication retries and exposes the attempt for fresh inventory merge
 });
 it('does not retry a genuine checkpoint conflict as an upload',async()=>{
  let calls=0;await expect(retryPublication(()=>{calls++;throw Object.assign(new Error('conflict'),{code:'CHECKPOINT_CONFLICT'});})).rejects.toThrow('conflict');expect(calls).toBe(1);
+});
+
+it('coalesces frequent checkpoints and always flushes on batch completion',async()=>{
+ let now=0,calls=0;const gate=createCheckpointGate({now:()=>now});const save=async()=>{calls++;};
+ await gate(save);for(now=1000;now<60000;now+=1000)await gate(save);
+ expect(calls).toBe(1);await gate(save);expect(calls).toBe(2);
+ await gate(save,true);expect(calls).toBe(3);
+});
+it('a failed checkpoint does not suppress the next save',async()=>{
+ const gate=createCheckpointGate({now:()=>0});await expect(gate(async()=>{throw new Error('network');})).rejects.toThrow('network');
+ let saved=false;await gate(async()=>{saved=true;});expect(saved).toBe(true);
 });

@@ -86,7 +86,7 @@ export function LocalJapanMarketRunner() {
         {m?.checkpointAt && <p>云端断点：{new Date(String(m.checkpointAt)).toLocaleString()} · 恢复未入库车辆 {count('restoredVehicles')} 辆</p>}
         {!!progress.logs?.length && <details open><summary>最近运行日志（最多 50 条）</summary><div className="ajm-local-logs">{progress.logs.map((log, i) => <p key={`${log.at}-${i}`}><time>{new Date(log.at).toLocaleTimeString()}</time> {log.level === 'error' ? '⚠ ' : ''}{log.text}</p>)}</div></details>}
       </div>}
-      <p>刷新网页后重新填入配对码，点击“连接并查看进度”可接回当前任务。目录位置和已确认的未入库车辆自动保存云端；重启后点击开始可续采。日志仅在内存，不写本地文件。</p>
+      <p>刷新网页后重新填入配对码，点击“连接并查看进度”可接回当前任务。目录位置和未入库车辆约每 60 秒保存云端，批次结束时另行保存；强制退出可能重读最近一分钟的车辆。重启后点击开始可续采。日志仅在内存，不写本地文件。</p>
     </section>}
   </div>;
 }

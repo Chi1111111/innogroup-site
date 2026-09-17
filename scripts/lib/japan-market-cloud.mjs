@@ -9,7 +9,12 @@ export async function openCloudInventory({token,request=fetch}={}) {
     const r=await request(`https://api.github.com/repos/Chi1111111/innogroup-site/${endpoint}`,{method,
       headers:{'Cache-Control':'no-cache',Authorization:`Bearer ${token}`,Accept:'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'},
       body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(60000)});
-    if(!r.ok)throw Object.assign(new Error(`Cloud inventory ${method} failed (${r.status}); no local data backup was written.`), {status:r.status,retryAfterMs:Number(r.headers?.get('retry-after')||0)*1000});
+    if(!r.ok){
+      let info={};try{info=await r.json();}catch{/* Some proxy errors have no JSON body. */}
+      const detail=String(info.message || 'No response message').slice(0,500);
+      const fields=Array.isArray(info.errors)?info.errors.map(e=>typeof e==='string'?e:[e.resource,e.field,e.code,e.message].filter(Boolean).join(':')).join('; ').slice(0,500):'';
+      throw Object.assign(new Error(`Cloud inventory ${method} ${endpoint} failed (${r.status}): ${detail}${fields?`; ${fields}`:''}`),{status:r.status,retryAfterMs:Number(r.headers?.get('retry-after')||0)*1000,requestId:r.headers?.get('x-github-request-id')});
+    }
     return r.json();
   };
   const api=(endpoint,method='GET',body)=>method==='GET' ? retryCloudRead(()=>once(endpoint,method,body)) : once(endpoint,method,body);
