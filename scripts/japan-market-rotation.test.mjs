@@ -63,3 +63,10 @@ it('matches the verified Honda stepwgn alias in both directions without broad fu
  expect(matchesGroup({make:'Toyota',model:'Stepwagon'},{make:'Honda',model:'stepwgn'})).toBe(false);
  expect(matchesGroup({make:'Honda',model:'Fit'},{make:'Honda',model:'stepwgn'})).toBe(false);
 });
+
+it('accepts source ROVER labeling only for matching Land Rover model families',()=>{
+ for(const model of ['Rover Defender','Rover Discovery3','Rover Freelander2','Rover Range Rover','Rover Range Rover Evogue'])expect(matchesGroup({make:'ROVER',model},{make:'Land Rover',model})).toBe(true);
+ expect(matchesGroup({make:'ROVER',model:'Rover Mini'},{make:'Land Rover',model:'Rover Mini'})).toBe(false);
+ expect(matchesGroup({make:'ROVER',model:'Rover Discovery'},{make:'Land Rover',model:'Rover Defender'})).toBe(false);
+ expect(matchesGroup({make:'Toyota',model:'Rover Defender'},{make:'Land Rover',model:'Rover Defender'})).toBe(false);
+});

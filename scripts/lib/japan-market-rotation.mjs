@@ -3,7 +3,12 @@ export const normalizeGroup = value => String(value || '').normalize('NFKC').toL
 // Catalog model names may describe a family (Cooper -> MINI COOPER 5DOOR).
 // Match complete tokens, keeping make and stock identity checks separate.
 export function matchesGroup(vehicle, group) {
-  if (normalizeGroup(vehicle.make) !== normalizeGroup(group.make)) return false;
+  const expectedMake = normalizeGroup(group.make), actualMake = normalizeGroup(vehicle.make);
+  // Japan Cars labels these Land Rover families as ROVER in the detail table.
+  // Rover Mini and unrelated Rover models must not inherit this exception.
+  const landRoverFamily = value => /^(?:rover)?(?:defender|discovery|freelander|rangerover)/.test(normalizeGroup(value));
+  const sourceBrandAlias = expectedMake === 'landrover' && actualMake === 'rover' && landRoverFamily(group.model) && landRoverFamily(vehicle.model);
+  if (actualMake !== expectedMake && !sourceBrandAlias) return false;
   if (normalizeGroup(vehicle.model) === normalizeGroup(group.model)) return true;
   const words = value => String(value || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
   // Verified source alias: Honda catalog stepwgn uses Stepwagon in details.
