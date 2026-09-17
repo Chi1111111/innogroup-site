@@ -1,5 +1,5 @@
 import { restorePending } from './lib/japan-market-resume.mjs';
-import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup } from './lib/japan-market-rotation.mjs';
+import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction } from './lib/japan-market-rotation.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -265,8 +265,9 @@ try {
   if (!makes.length) throw new Error('Source make catalog is empty.');
   const cursor = resumeCursor || JSON.parse(process.env.JAPANCARS_ROTATION_CURSOR || '{}');
   const turns = rotateGroups({ makes, cursor, modelsFor: async make => readModels(await catalog('get-model-data', {value:make})) });
-  for await (const turn of turns) {
+  groups: for await (const turn of turns) {
     if (collected.length >= target) break;
+    let groupMissing = 0, groupSucceeded = 0;
     const checkRepeatedPage = createRepeatedPageGuard();
     metrics.rotationCursor = {...turn}; metrics.rotationMake = turn.make; metrics.rotationModel = turn.model; metrics.rotationCycle = turn.cycle;
     console.log(`Round ${turn.cycle}: ${turn.make} / ${turn.model}, up to ${5-turn.accepted} additional vehicles.`);
@@ -307,13 +308,21 @@ try {
           metrics.detailFailed++;
           consecutiveDetailFailures++;
           consecutiveMissingDetails = result.reason?.code === 'VEHICLE_IDENTITY_MISMATCH' && result.reason?.receivedStock === 'Not listed' ? consecutiveMissingDetails + 1 : 0;
+          if (consecutiveMissingDetails) groupMissing++;
           if (process.env.JAPANCARS_AUTO_BATCH === '1' && consecutiveMissingDetails >= 3 && result.reason?.code === 'VEHICLE_IDENTITY_MISMATCH' && result.reason?.receivedStock === 'Not listed') {
+            if (missingGroupAction(consecutiveMissingDetails, groupMissing, groupSucceeded) === 'defer') {
+              metrics.deferredGroups = (metrics.deferredGroups || 0) + 1;
+              metrics.rotationCursor = {...turn,page,deferred:true};
+              console.warn(`Skipping unavailable model group ${turn.make} / ${turn.model} for this round. Checking the next group in the same session; another missing detail will stop this batch.`);
+              await saveResume();
+              continue groups;
+            }
             throw Object.assign(new Error('Detail content missing repeatedly; ending this batch and uploading validated vehicles.'), { code: 'BATCH_CONTENT_MISSING' });
           }
           if (metrics.detailFailed <= 5) console.warn(`Detail: ${result.reason instanceof Error ? result.reason.message : 'failed'}`);
           continue;
         }
-        consecutiveDetailFailures = 0; consecutiveMissingDetails = 0;
+        consecutiveDetailFailures = 0; consecutiveMissingDetails = 0; groupSucceeded++;
         if (result.value.issue) { reject(result.value.issue); continue; }
         const v = result.value.vehicle;
         if (!matchesGroup(v, turn)) { reject('group_mismatch'); continue; }

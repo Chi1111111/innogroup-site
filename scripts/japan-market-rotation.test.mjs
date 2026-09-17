@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup } from './lib/japan-market-rotation.mjs';
+import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction } from './lib/japan-market-rotation.mjs';
 it('uses maker for models and parses the actual public catalog formats',()=>{
   const url=new URL(groupListingUrl('https://www.japancars.co.jp','Toyota','Tank',2));
   expect(url.searchParams.get('maker')).toBe('Tank');expect(url.searchParams.has('model')).toBe(false);
@@ -31,4 +31,18 @@ it('accepts catalog model families while rejecting other makes and partial-word 
  expect(matchesGroup({make:'Toyota',model:'Cooper'},{make:'BMW',model:'Cooper'})).toBe(false);
  expect(matchesGroup({make:'BMW',model:'320i'},{make:'BMW',model:'Cooper'})).toBe(false);
  expect(matchesGroup({make:'BMW',model:'320i'},{make:'BMW',model:''})).toBe(false);
+});
+
+it('allows only one adjacent-group check for an entirely missing group',()=>{
+ expect(missingGroupAction(2,2,0)).toBe('continue');
+ expect(missingGroupAction(3,3,0)).toBe('defer');
+ expect(missingGroupAction(4,1,0)).toBe('stop');
+ expect(missingGroupAction(3,3,1)).toBe('stop');
+ expect(missingGroupAction(3,1,0)).toBe('stop');
+});
+it('resumes after a deferred directory without counting it as five collected cars',async()=>{
+ const turns=[];
+ for await(const turn of rotateGroups({makes:['Chevrolet','Toyota'],modelsFor:async m=>m==='Chevrolet'?['Corvette']:['Tank'],cursor:{make:'Chevrolet',model:'Corvette',cycle:1,accepted:0,deferred:true}}))turns.push({...turn});
+ expect(turns[0]).toMatchObject({make:'Toyota',model:'Tank',cycle:1,accepted:0});
+ expect(turns[1]).toMatchObject({make:'Chevrolet',model:'Corvette',cycle:2,accepted:0});
 });
