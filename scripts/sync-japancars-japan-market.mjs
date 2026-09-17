@@ -365,7 +365,7 @@ try {
       const history=await cloud.read('sync-history.json');
       const finishedAt=new Date().toISOString();
       metrics.changesPath = `changes/${runId}.json`;
-      const run={id:runId,source:SOURCE,trigger:process.env.GITHUB_EVENT_NAME || 'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:'failed',metrics,error:metrics.sourceAccessBlocked?'来源访问受限，未发布新车源。':'本地扫描未完成，旧库存保留。',workflowUrl:process.env.GITHUB_RUN_ID ? `https://github.com/Chi1111111/innogroup-site/actions/runs/${process.env.GITHUB_RUN_ID}` : null};
+      const run={id:runId,source:SOURCE,trigger:process.env.GITHUB_EVENT_NAME || 'local',startedAt,finishedAt,durationSeconds:Math.round((Date.parse(finishedAt)-Date.parse(startedAt))/1000),status:'failed',metrics,error:metrics.sourceAccessBlocked?'来源访问受限，未发布新车源。':'扫描未完成，旧库存保留。',workflowUrl:process.env.GITHUB_RUN_ID ? `https://github.com/Chi1111111/innogroup-site/actions/runs/${process.env.GITHUB_RUN_ID}` : null};
       await cloud.publish(new Map([[metrics.changesPath,{version:1,runId,changes:[]}],['sync-history.json',{version:1,runs:[run,...history.runs].slice(0,90)}]]));
     } catch { console.error('Failure report could not be uploaded; no local report was written.'); }
   }
