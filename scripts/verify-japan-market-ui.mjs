@@ -68,6 +68,11 @@ try {
   await page.evaluate(() => sessionStorage.setItem('inno:admin-session:v1', 'local-test-only'));
   await page.reload();
   await page.getByRole('heading', { name: 'Japan Market 采集中心' }).waitFor();
+  await page.getByRole('button',{name:'线上扫描',exact:true}).waitFor();
+  await page.getByRole('button',{name:'详情',exact:true}).click();
+  await page.getByRole('region',{name:'线上扫描详情'}).waitFor();
+  await page.getByRole('link',{name:'查看线上任务与实时日志'}).waitFor();
+  await page.getByRole('button',{name:'详情',exact:true}).click();
   await page.getByRole('button', { name: '本地运行', exact: true }).click();
   assert.equal(await page.getByRole('button', { name: '开始本地扫描', exact: true }).isDisabled(), true);
   assert.equal(await page.getByRole('link',{name:'唤起本地采集程序'}).getAttribute('href'),'innogroup-collector://launch');
@@ -85,8 +90,10 @@ try {
   await page.getByText('本地测试任务已完成', {exact:true}).waitFor();
   assert.equal(await page.getByRole('progressbar').getAttribute('value'),'25');
   await page.getByRole('button', { name: '本地运行', exact: true }).click();
-  await page.getByRole('button', { name: '手动扫描', exact: true }).click();
+  await page.getByRole('button', { name: '线上扫描', exact: true }).click();
   await page.getByRole('status').filter({ hasText: '扫描任务已提交。' }).waitFor();
+  await page.getByRole('region',{name:'线上扫描详情'}).waitFor();
+  await page.getByRole('button',{name:'详情',exact:true}).click();
   await page.getByRole('button', { name: /车源与报价/ }).click();
   assert.equal(await page.getByLabel('车源排序').inputValue(), 'newest');
   const expected=snapshot.vehicles.filter(v=>!vehicleQualityIssue(v)).sort((a,b)=>Date.parse(b.priceCheckedAt || b.updatedAt)-Date.parse(a.priceCheckedAt || a.updatedAt))[0];

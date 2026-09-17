@@ -16,7 +16,7 @@ function Status({run}: {run?:CollectionRun}) {
   const [label,style] = run ? statuses[run.status] ?? statuses.failed : ['等待首次运行','muted'];
   return <span className={`ajm-badge ${style}`}>{label}</span>;
 }
-function RunDetails({run}: {run:CollectionRun}) {
+function RunDetails({run,initiallyOpen=false}: {run:CollectionRun;initiallyOpen?:boolean}) {
   const [open,setOpen]=useState(false);
   const [changes,setChanges]=useState<CollectionVehicleChange[]|null>(null);
   const [pending,setPending]=useState(false);
@@ -40,7 +40,7 @@ function RunDetails({run}: {run:CollectionRun}) {
   };
   const m=run.metrics;
   const counts: [string,number|null|undefined][]=[['有效车源',m.accepted],['FOB 报价',m.withFobPrice],['相册照片',m.photoCount],['详情失败',m.detailFailed],['过滤车源',m.rejected],['读取页面',m.pagesFetched],['总请求',m.requests],['断点复用',m.cachedDetails],['新增',m.added],['更新',m.updated],['保留旧车',m.retained]];
-  return <details className="ajm-run">
+  return <details className="ajm-run" open={initiallyOpen || undefined}>
     <summary><Status run={run}/><strong>{date(run.startedAt ?? run.finishedAt)}</strong><span>{run.source}</span><span className="ajm-run-count">{number(m.accepted)} 辆 · {number(run.durationSeconds == null ? null : Math.round(run.durationSeconds / 60))} 分钟</span></summary>
     <div className="ajm-run-body">
       {run.error && <p role="alert" className="ajm-alert danger">{run.error}</p>}
@@ -79,10 +79,11 @@ export function AdminJapanMarket() {
   const [tab,setTab]=useState<'overview'|'inventory'|'history'>('overview');
   const [scanning,setScanning]=useState(false);
   const [scanMessage,setScanMessage]=useState('');
+  const [onlineDetails,setOnlineDetails]=useState(false);
   const [scanUrl,setScanUrl]=useState(WORKFLOW);
   const scan=async()=>{
     if(scanning)return;
-    setScanning(true);setScanMessage('');
+    setScanning(true);setScanMessage('');setOnlineDetails(true);
     try {
       const result=await invokeAdminFunction<{started:boolean;message:string;workflowUrl:string}>('japan-market-scan',{});
       setScanMessage(result.message);
@@ -143,8 +144,15 @@ export function AdminJapanMarket() {
     </aside>
     <div className="ajm-main">
       <header className="ajm-header"><div><p className="ajm-eyebrow">INVENTORY OPERATIONS</p><h1>{tab==='overview'?'Japan Market 采集中心':tab==='inventory'?'车源与 FOB 报价':'采集运行记录'}</h1><p>增量采集 · 每次最多 {number(target)} 辆 · 保留现有库存</p></div>
-        <div className="ajm-actions"><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}><RefreshCw size={16} className={loading?'ajm-spin':''}/>{loading?'读取中…':'刷新记录'}</button><button className="ajm-button primary" type="button" disabled={scanning} onClick={()=>void scan()}><RefreshCw size={16} className={scanning?'ajm-spin':''}/>{scanning?'正在提交…':'手动扫描'}</button></div>
+        <div className="ajm-actions"><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}><RefreshCw size={16} className={loading?'ajm-spin':''}/>{loading?'读取中…':'刷新记录'}</button><button className="ajm-button primary" type="button" disabled={scanning} onClick={()=>void scan()}><RefreshCw size={16} className={scanning?'ajm-spin':''}/>{scanning?'正在提交…':'线上扫描'}</button><button className="ajm-button" type="button" aria-expanded={onlineDetails} aria-controls="online-scan-details" onClick={()=>setOnlineDetails(v=>!v)}>详情</button></div>
       </header>
+      {onlineDetails && <section id="online-scan-details" className="ajm-panel" aria-label="线上扫描详情">
+        <h2>线上扫描详情</h2>
+        <p>GitHub 云端执行 · 每车型每轮 5 辆 · 间隔 3 秒 · 累计最多新增 5,000 辆 · 云端断点续采</p>
+        <div className="ajm-actions"><a className="ajm-button" href={scanUrl} target="_blank" rel="noreferrer">查看线上任务与实时日志</a><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}>刷新线上详情</button></div>
+        <p>运行中的进度查看上方日志；以下为已发布的线上采集结果，包含新增车辆、照片变更及停止原因。</p>
+        {report?.runs.some(run=>run.trigger==='schedule' || run.trigger==='workflow_dispatch') ? report.runs.filter(run=>run.trigger==='schedule' || run.trigger==='workflow_dispatch').slice(0,5).map((run,index)=><RunDetails key={run.id} run={run} initiallyOpen={index===0}/>) : <p>尚无已发布的线上扫描记录。任务结束并发布后，点击“刷新线上详情”查看。</p>}
+      </section>}
       <LocalJapanMarketRunner/>
       {scanMessage && <p role="status" className="ajm-alert warning">{scanMessage} <a href={scanUrl} target="_blank" rel="noreferrer">查看任务进度</a></p>}
       {error && <p role="alert" className="ajm-alert danger">{error}{report ? ' 当前仍显示上次读取的数据。' : ''}</p>}
@@ -176,7 +184,7 @@ export function AdminJapanMarket() {
         </section>}
         {tab==='history' && <section className="ajm-history"><p>最近保留 90 次运行记录。时间均为新西兰时间；记录随网站发布更新。</p>{report.runs.map(run=><RunDetails key={run.id} run={run}/>)}{!report.runs.length && <div className="ajm-empty">尚无采集详情。首次采集完成并发布后显示。</div>}</section>}
       </>}
-      <footer className="ajm-footer"><span>这里显示已发布快照，并非实时进度。手动扫描直接提交任务；每日新西兰时间 00:00 自动扫描，调度可能有延迟。</span><Link to="/japan-market" target="_blank">查看 Japan Market <ArrowUpRight size={15}/></Link></footer>
+      <footer className="ajm-footer"><span>这里显示已发布快照，并非实时进度。线上扫描直接提交 GitHub 任务；每日新西兰时间 00:00 自动扫描，调度可能有延迟。</span><Link to="/japan-market" target="_blank">查看 Japan Market <ArrowUpRight size={15}/></Link></footer>
     </div>
   </main>;
 }
