@@ -55,3 +55,11 @@ it('skips consecutive empty-model Japanese links without excluding valid Japanes
  expect(hasMissingModelSlug(row,{model:'Corvette'})).toBe(false);
  expect(hasMissingModelSlug({sourceUrl:'invalid'},{model:'コルベット'})).toBe(false);
 });
+
+it('matches the verified Honda stepwgn alias in both directions without broad fuzzy matching',()=>{
+ expect(matchesGroup({make:'Honda',model:'Stepwagon'},{make:'Honda',model:'stepwgn'})).toBe(true);
+ expect(matchesGroup({make:'Honda',model:'STEPWGN SPADA'},{make:'Honda',model:'Stepwagon'})).toBe(true);
+ expect(matchesGroup({make:'Honda',model:'Stepwagon'},{make:'Honda',model:'stepwgn 4wd'})).toBe(false);
+ expect(matchesGroup({make:'Toyota',model:'Stepwagon'},{make:'Honda',model:'stepwgn'})).toBe(false);
+ expect(matchesGroup({make:'Honda',model:'Fit'},{make:'Honda',model:'stepwgn'})).toBe(false);
+});

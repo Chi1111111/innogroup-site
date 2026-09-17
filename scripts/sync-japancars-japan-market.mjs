@@ -331,7 +331,13 @@ try {
         consecutiveDetailFailures = 0; consecutiveMissingDetails = 0; groupSucceeded++;
         if (result.value.issue) { reject(result.value.issue); continue; }
         const v = result.value.vehicle;
-        if (!matchesGroup(v, turn)) { reject('group_mismatch'); continue; }
+        if (!matchesGroup(v, turn)) {
+          reject('group_mismatch');
+          const mismatch = {expected:`${turn.make} / ${turn.model}`,received:`${v.make} / ${v.model}`,stockNumber:v.stockNumber};
+          metrics.groupMismatchSamples = [...(metrics.groupMismatchSamples || []),mismatch].slice(-5);
+          if (metrics.rejectionReasons.group_mismatch <= 5) console.warn(`Catalog mismatch: expected ${mismatch.expected}; received ${mismatch.received}; stock ${mismatch.stockNumber}.`);
+          continue;
+        }
         if (!v.photoCount) { reject('missing_photos'); continue; }
         if (collected.length < target) {
           collected.push(v);

@@ -6,7 +6,9 @@ export function matchesGroup(vehicle, group) {
   if (normalizeGroup(vehicle.make) !== normalizeGroup(group.make)) return false;
   if (normalizeGroup(vehicle.model) === normalizeGroup(group.model)) return true;
   const words = value => String(value || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-  const expected = words(group.model), actual = words(vehicle.model);
+  // Verified source alias: Honda catalog stepwgn uses Stepwagon in details.
+  const canonical = value => words(value).map(word=>normalizeGroup(group.make)==='honda' && word==='stepwgn' ? 'stepwagon' : word);
+  const expected = canonical(group.model), actual = canonical(vehicle.model);
   return expected.length > 0 && actual.some((_,i)=>expected.every((word,j)=>actual[i+j]===word));
 }
 // Observed Japanese catalog entries can emit an empty model slug and empty details.
