@@ -131,8 +131,8 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
       <section className="border-b border-black/8 px-4 py-8"><div className="section-shell"><Link to="/japan-market" className="inline-flex items-center gap-2 text-sm font-bold text-foreground/60 hover:text-foreground"><ArrowLeft className="h-4 w-4" />{text({ en: 'Back to Japan Market', zh: '返回日本市场' })}</Link></div></section>
       <section className="px-4 py-10 sm:py-14">
         <div className="section-shell">
-          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
-            <div>
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+            <div className="min-w-0">
               <JapanMarketPhotoGallery vehicle={vehicle} />
               <div className="mt-8">
                 <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">{vehicle.id}</p>
@@ -155,7 +155,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
               </div>
             </div>
 
-            <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+            <aside className="min-w-0 space-y-5 lg:sticky lg:top-24 lg:self-start">
               <section className="rounded-3xl border border-black/10 bg-white/65 p-6 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.18em] text-foreground/45">{text({ en: 'Vehicle condition', zh: '车辆车况' })}</p><h2 className="mt-4 !text-2xl">{conditionTitle}</h2><p className="mt-4 text-sm leading-7">{conditionDescription}</p></section>
 
               <section className="rounded-3xl border border-primary/25 bg-[#111214] p-6 text-white sm:p-8">

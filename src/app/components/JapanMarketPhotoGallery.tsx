@@ -68,13 +68,13 @@ export function JapanMarketPhotoGallery({ vehicle }: { vehicle: JapanMarketVehic
   }
 
   return (
-    <div>
-      <div className="group relative flex aspect-[16/10] items-center justify-center overflow-hidden rounded-3xl bg-[#17191c]">
+    <div className="min-w-0 max-w-full">
+      <div className="group relative aspect-[16/10] w-full overflow-hidden rounded-3xl bg-[#17191c]">
         <img
           src={activePhoto}
           alt={`${vehicleName} — ${text({ en: `photo ${activeIndex + 1} of ${photos.length}`, zh: `第 ${activeIndex + 1} 张，共 ${photos.length} 张` })}`}
           referrerPolicy="no-referrer"
-          className="h-full w-full object-contain"
+          className="absolute inset-0 h-full w-full object-contain"
           onError={() => markPhotoFailed(activePhoto)}
         />
         <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-black/70 px-3 py-2 text-xs font-bold text-white backdrop-blur-sm">
@@ -98,7 +98,7 @@ export function JapanMarketPhotoGallery({ vehicle }: { vehicle: JapanMarketVehic
       </div>
 
       {photos.length > 1 ? (
-        <div className="mt-3 flex gap-3 overflow-x-auto pb-2" aria-label={text({ en: 'Vehicle photo thumbnails', zh: '车辆照片缩略图' })}>
+        <div className="mt-3 flex max-w-full gap-3 overflow-x-auto pb-2" aria-label={text({ en: 'Vehicle photo thumbnails', zh: '车辆照片缩略图' })}>
           {photos.map((photo, index) => (
             <button
               key={photo}
