@@ -1,0 +1,43 @@
+:root { --motion-ease: cubic-bezier(.22, 1, .36, 1); }
+
+/* Opacity only: fixed dialogs and sticky filters keep their viewport anchors. */
+.page-motion { animation: page-arrive 300ms ease-out both; }
+@keyframes page-arrive { from { opacity: .35; } to { opacity: 1; } }
+@keyframes content-arrive {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-copy > * { animation: content-arrive 700ms var(--motion-ease) backwards; }
+.hero-copy > :nth-child(2) { animation-delay: 80ms; }
+.hero-copy > :nth-child(3) { animation-delay: 160ms; }
+.hero-copy > :nth-child(4) { animation-delay: 240ms; }
+.hero-aside { animation: content-arrive 800ms var(--motion-ease) 200ms backwards; }
+
+.page-motion :is(.section-card, .section-card-dark, .jm-listing) {
+  transition: translate 320ms var(--motion-ease), border-color 250ms ease,
+    background-color 250ms ease, box-shadow 320ms ease;
+}
+.page-motion .jm-photo img { transition: transform 650ms var(--motion-ease); }
+header nav .group > a > svg,
+header nav .group > button > svg { transition: transform 250ms var(--motion-ease); }
+header nav .group:is(:hover, :focus-within) > :is(a, button) > svg { transform: rotate(180deg); }
+
+.sticky-motion {
+  transition: opacity 240ms ease, translate 360ms var(--motion-ease), visibility 360ms;
+}
+.sticky-motion[data-visible='false'] { opacity: 0; translate: 0 16px; visibility: hidden; pointer-events: none; }
+.sticky-motion[data-visible='true'] { opacity: 1; translate: 0 0; visibility: visible; }
+.quick-actions-enter { animation: content-arrive 260ms var(--motion-ease) backwards; }
+
+@media (hover: hover) and (pointer: fine) {
+  .page-motion :is(a.section-card, .section-card:has(a), .jm-listing):hover {
+    translate: 0 -4px;
+    box-shadow: 0 16px 36px rgb(16 17 19 / 9%);
+  }
+  .page-motion .jm-photo:hover img { transform: scale(1.035); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-motion, .hero-copy > *, .hero-aside, .quick-actions-enter { animation: none; }
+  .page-motion :is(.section-card, .section-card-dark, .jm-listing), .sticky-motion { translate: none !important; }
+  .page-motion .jm-photo img { transform: none !important; }
+}

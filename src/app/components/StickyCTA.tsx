@@ -22,12 +22,15 @@ export function StickyCTA() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (!isVisible || hasVehicleSpecificActions) return null;
+  if (hasVehicleSpecificActions) return null;
 
   return (
     <>
       <div
-        className="fixed bottom-2 left-3 right-3 z-50 animate-fadeIn rounded-[18px] border border-white/70 bg-white/92 p-2 shadow-[0_16px_40px_rgba(17,17,17,0.16)] backdrop-blur-xl md:hidden"
+        data-visible={isVisible}
+        aria-hidden={!isVisible}
+        {...(!isVisible ? { inert: '' } : {})}
+        className="sticky-motion fixed bottom-2 left-3 right-3 z-50 rounded-[18px] border border-white/70 bg-white/92 p-2 shadow-[0_16px_40px_rgba(17,17,17,0.16)] backdrop-blur-xl md:hidden"
         style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
       >
         <div className="flex gap-2">
@@ -52,9 +55,9 @@ export function StickyCTA() {
         </div>
       </div>
 
-      <div className="fixed bottom-8 right-8 z-50 hidden space-y-3 animate-fadeIn md:block">
+      <div data-visible={isVisible} aria-hidden={!isVisible} {...(!isVisible ? { inert: '' } : {})} className="sticky-motion fixed bottom-8 right-8 z-50 hidden space-y-3 md:block">
         {isExpanded ? (
-          <>
+          <div className="quick-actions-enter space-y-3">
             {showCalculatorCta ? (
               <Link
                 to={calculatorHref}
@@ -84,7 +87,7 @@ export function StickyCTA() {
               <X className="w-4 h-4" />
               <span>{text({ en: 'Minimize', zh: '收起' })}</span>
             </button>
-          </>
+          </div>
         ) : (
           <button
             type="button"

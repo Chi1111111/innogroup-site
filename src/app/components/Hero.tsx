@@ -39,7 +39,9 @@ export function Hero() {
   const { text } = useLanguage();
 
   useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     const interval = window.setInterval(() => {
+      if (preference.matches || document.hidden) return;
       setCurrentImage((previous) => (previous + 1) % heroGalleryImages.length);
     }, 6500);
 
@@ -47,7 +49,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative isolate min-h-[760px] overflow-hidden bg-[#101113] px-4 pb-12 pt-28 text-white sm:pt-32 lg:flex lg:min-h-[780px] lg:items-center lg:pb-16 lg:pt-36">
+    <section className="hero-motion relative isolate min-h-[760px] overflow-hidden bg-[#101113] px-4 pb-12 pt-28 text-white sm:pt-32 lg:flex lg:min-h-[780px] lg:items-center lg:pb-16 lg:pt-36">
       <div className="absolute inset-0 -z-20">
         {heroGalleryImages.map((image, index) => (
           <img
@@ -69,7 +71,7 @@ export function Hero() {
 
       <div className="section-shell w-full">
         <div className="grid gap-10 lg:grid-cols-[1.08fr_0.72fr] lg:items-end lg:gap-16">
-          <div className="max-w-4xl animate-slideUp">
+          <div className="hero-copy max-w-4xl">
             <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-primary sm:text-xs sm:tracking-[0.25em]">
               <span className="h-px w-8 bg-primary" />
               <MapPin className="h-4 w-4" />
@@ -101,7 +103,7 @@ export function Hero() {
             </div>
           </div>
 
-          <aside className="overflow-hidden rounded-2xl border border-white/12 bg-black/38 shadow-[0_28px_90px_rgba(0,0,0,0.36)] backdrop-blur-xl">
+          <aside className="hero-aside overflow-hidden rounded-2xl border border-white/12 bg-black/38 shadow-[0_28px_90px_rgba(0,0,0,0.36)] backdrop-blur-xl">
             <div className="border-b border-white/10 px-5 py-4 sm:px-6">
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
                 {text({ en: 'Start with what you know', zh: '从你现在的需求开始' })}

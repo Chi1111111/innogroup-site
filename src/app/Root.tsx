@@ -6,6 +6,7 @@ import { StickyCTA } from './components/StickyCTA';
 import { SEO } from './components/SEO';
 import { SiteTranslatorProvider } from './components/SiteTranslator';
 import { isWorkflowPath } from './lib/routePaths';
+import { PageMotion } from './components/PageMotion';
 
 export function Root() {
   const location = useLocation();
@@ -17,7 +18,7 @@ export function Root() {
         <SEO />
         <ScrollToTop />
         {isWorkflowRoute ? null : <Navbar />}
-        <Outlet />
+        {isWorkflowRoute ? <Outlet /> : <PageMotion key={location.pathname}><Outlet /></PageMotion>}
         {isWorkflowRoute ? null : <Footer />}
         {isWorkflowRoute ? null : <StickyCTA />}
       </div>
