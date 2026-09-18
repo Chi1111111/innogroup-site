@@ -1,5 +1,14 @@
 import { expect, it } from 'vitest';
 import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction, hasMissingModelSlug } from './lib/japan-market-rotation.mjs';
+it('accepts verified Mercedes catalogue/detail brand aliases while preserving model boundaries',()=>{
+ for(const model of ['C-class','Mercedes Amg E Class Sedan','Mercedes Amg E Class Coupe Hybrid']) {
+   expect(matchesGroup({make:'Mercedes Benz',model},{make:'Mercedes',model})).toBe(true);
+   expect(matchesGroup({make:'Mercedes',model},{make:'Mercedes-Benz',model})).toBe(true);
+ }
+ expect(matchesGroup({make:'Mercedes Benz',model:'E-class'},{make:'Mercedes',model:'C-class'})).toBe(false);
+ expect(matchesGroup({make:'BMW',model:'C-class'},{make:'Mercedes',model:'C-class'})).toBe(false);
+ expect(matchesGroup({make:'Mercedes AMG',model:'C-class'},{make:'Mercedes',model:'C-class'})).toBe(false);
+});
 it('uses maker for models and parses the actual public catalog formats',()=>{
   const url=new URL(groupListingUrl('https://www.japancars.co.jp','Toyota','Tank',2));
   expect(url.searchParams.get('maker')).toBe('Tank');expect(url.searchParams.has('model')).toBe(false);

@@ -7,7 +7,10 @@ export function matchesGroup(vehicle, group) {
   // Japan Cars labels these Land Rover families as ROVER in the detail table.
   // Rover Mini and unrelated Rover models must not inherit this exception.
   const landRoverFamily = value => /^(?:rover)?(?:defender|discovery|freelander|rangerover)/.test(normalizeGroup(value));
-  const sourceBrandAlias = expectedMake === 'landrover' && actualMake === 'rover' && landRoverFamily(group.model) && landRoverFamily(vehicle.model);
+  // Verified catalogue/detail pair: Mercedes -> Mercedes Benz. Model checks
+  // below still apply; this must not relax vehicle stock-number validation.
+  const mercedesAlias = ['mercedes', 'mercedesbenz'].includes(expectedMake) && ['mercedes', 'mercedesbenz'].includes(actualMake);
+  const sourceBrandAlias = mercedesAlias || (expectedMake === 'landrover' && actualMake === 'rover' && landRoverFamily(group.model) && landRoverFamily(vehicle.model));
   if (actualMake !== expectedMake && !sourceBrandAlias) return false;
   if (normalizeGroup(vehicle.model) === normalizeGroup(group.model)) return true;
   const words = value => String(value || '').normalize('NFKC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
