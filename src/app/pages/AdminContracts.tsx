@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import emailjs from '@emailjs/browser';
-import { Link } from 'react-router';
 import { ContractDocument } from '../components/ContractDocument';
 import {
   ContractType,
@@ -520,9 +519,6 @@ export function AdminContracts() {
               <p className="mt-2 text-sm text-slate-600">管理合同草稿、发送邮件、复制签署链接和查看签署状态。</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link to="/admin" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">内容管理</Link>
-              <Link to="/admin/crm" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">CRM 管理</Link>
-              <Link to="/admin/invoices" className="rounded-full border border-slate-200 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white">发票管理</Link>
               <button onClick={() => createNewContract()} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">新建合同</button>
             </div>
           </div>

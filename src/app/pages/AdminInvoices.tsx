@@ -4,7 +4,6 @@ import {
   Copy,
   Download,
   FileText,
-  LogOut,
   Mail,
   Plus,
   Printer,
@@ -12,11 +11,9 @@ import {
   ShieldCheck,
   Trash2,
 } from 'lucide-react';
-import { Link } from 'react-router';
 import { InvoiceDocument } from '../components/InvoiceDocument';
 import { formatDateTime, getErrorMessage, loadContracts, type VehicleContract } from '../lib/contracts';
 import { sendInvoiceEmail } from '../lib/invoiceEmail';
-import { signOutAdmin } from '../lib/adminAuth';
 import { createInvoicePdfAttachment, downloadInvoicePdf } from '../lib/invoicePdf';
 import {
   createEmptyInvoice,
@@ -157,15 +154,6 @@ export function AdminInvoices() {
       .reduce((sum, invoice) => sum + getInvoiceTotal(invoice), 0),
   }), [invoices]);
 
-  const handleLogout = async () => {
-    setIsBusy(true);
-    try {
-      await signOutAdmin();
-    } finally {
-      setInvoices([]);
-      setIsBusy(false);
-    }
-  };
 
   const createNew = () => {
     setActive(createEmptyInvoice());
@@ -402,11 +390,6 @@ export function AdminInvoices() {
               <p className="mt-2 text-sm text-slate-600">从合同带入资料，管理 Commercial Invoice，并打印或另存为 PDF。</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link to="/admin/contracts" className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-300">合同管理</Link>
-              <Link to="/admin/crm" className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-300">CRM 管理</Link>
-              <button type="button" disabled={isBusy} onClick={() => void handleLogout()} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:border-slate-300 disabled:opacity-50">
-                <LogOut size={15} />退出
-              </button>
               <button type="button" onClick={createNew} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 hover:bg-black">
                 <Plus size={16} />新建发票
               </button>

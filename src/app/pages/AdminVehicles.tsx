@@ -1,19 +1,15 @@
 import { type ClipboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
-import type { PartnerPlaceholder } from '../../data/services';
 import {
   type JapanWeeklyReportMeta,
   type JapanWeeklyReportState,
   DEFAULT_JAPAN_WEEKLY_REPORT_META,
   useJapanSpecialOrders,
 } from '../hooks/useJapanSpecialOrders';
-import { usePartnersCatalog } from '../hooks/usePartnersCatalog';
-import { signOutAdmin } from '../lib/adminAuth';
 
 import {
   EMPTY_JAPAN_SPECIAL_ORDER_DRAFT,
-  EMPTY_PARTNER_DRAFT,
   buildWeeklyReport,
   createId,
   findFirstMatch,
@@ -22,17 +18,13 @@ import {
   parseJapanFindSource,
   splitImageText,
   toJapanSpecialOrderDraft,
-  toPartner,
-  toPartnerDraft,
   type AdminNotice,
   type JapanSpecialOrderDraft,
-  type PartnerDraft,
   type WeeklyAutoSaveStatus,
 } from './adminVehiclesModel';
 import { TextareaInput, TextInput } from './adminVehicleFields';
 
-export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
-  const { partners, setPartners, resetPartners } = usePartnersCatalog();
+export function AdminVehicles() {
   const {
     report: japanWeeklyReport,
     reports: japanWeeklyReports,
@@ -47,7 +39,6 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     japanWeeklyReports[0] ??
     japanWeeklyReport;
   const [notice, setNotice] = useState<AdminNotice | null>(null);
-  const [partnerDrafts, setPartnerDrafts] = useState<PartnerDraft[]>([]);
   const [japanSpecialOrderDrafts, setJapanSpecialOrderDrafts] = useState<
     JapanSpecialOrderDraft[]
   >([]);
@@ -69,13 +60,9 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     nextWeekTeaser: selectedWeeklyReport.nextWeekTeaser ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.nextWeekTeaser,
     zhNextWeekTeaser: selectedWeeklyReport.zhNextWeekTeaser ?? DEFAULT_JAPAN_WEEKLY_REPORT_META.zhNextWeekTeaser,
   }));
-  const [expandedPartnerId, setExpandedPartnerId] = useState<string | null>(null);
   const [expandedJapanSpecialOrderSlug, setExpandedJapanSpecialOrderSlug] = useState<
     string | null
   >(null);
-  const [uploadingPartnerLogoMap, setUploadingPartnerLogoMap] = useState<Record<string, boolean>>(
-    {}
-  );
   const [uploadingJapanSpecialOrderImageMap, setUploadingJapanSpecialOrderImageMap] = useState<
     Record<string, boolean>
   >({});
@@ -104,29 +91,6 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   const reportsRef = useRef(japanWeeklyReports);
   const setReportsRef = useRef(setJapanWeeklyReports);
 
-  useEffect(() => {
-    let robotsMeta = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
-
-    if (!robotsMeta) {
-      robotsMeta = document.createElement('meta');
-      robotsMeta.setAttribute('name', 'robots');
-      document.head.appendChild(robotsMeta);
-    }
-
-    const previous = robotsMeta.content;
-    robotsMeta.content = 'noindex, nofollow';
-    document.title = 'Inno Group Admin';
-
-    return () => {
-      robotsMeta.content = previous || 'index, follow';
-    };
-  }, []);
-
-  useEffect(() => {
-    const nextPartnerDrafts = partners.map((partner) => toPartnerDraft(partner));
-    setPartnerDrafts(nextPartnerDrafts);
-    setExpandedPartnerId((current) => current ?? nextPartnerDrafts[0]?.id ?? null);
-  }, [partners]);
 
   useEffect(() => {
     reportsRef.current = japanWeeklyReports;
@@ -176,16 +140,6 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoadingCloudVehicles, selectedWeeklyReport.issueNumber]);
 
-  const handleLogout = async () => {
-    setNotice(null);
-    await signOutAdmin();
-  };
-
-  const updatePartnerDraftField = (id: string, key: keyof PartnerDraft, value: string) => {
-    setPartnerDrafts((current) =>
-      current.map((draft) => (draft.id === id ? { ...draft, [key]: value } : draft))
-    );
-  };
 
   const updateJapanSpecialOrderDraftField = (
     slug: string,
@@ -360,7 +314,7 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
   }, [selectedIssueNumber]);
 
   useEffect(() => {
-    if (mode !== 'weekly' || isLoadingCloudVehicles) return;
+    if (isLoadingCloudVehicles) return;
 
     if (!weeklyReportBuild.report) {
       setWeeklyAutoSaveStatus('incomplete');
@@ -399,7 +353,6 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     return () => window.clearTimeout(timer);
   }, [
     isLoadingCloudVehicles,
-    mode,
     persistWeeklyReport,
     selectedIssueNumber,
     selectedWeeklyReport.issueNumber,
@@ -564,73 +517,6 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
     } finally {
       setSmartOcrProcessingMap((current) => ({ ...current, [slug]: false }));
     }
-  };
-
-  const addPartnerDraft = () => {
-    const nextId = createId('partner');
-    setPartnerDrafts((current) => [
-      ...current,
-      {
-        ...EMPTY_PARTNER_DRAFT,
-        id: nextId,
-        name: `新合作方 ${current.length + 1}`,
-      },
-    ]);
-    setExpandedPartnerId(nextId);
-    setNotice({ type: 'info', text: '已新增供应商/合作方。' });
-  };
-
-  const removePartnerDraft = (id: string) => {
-    setPartnerDrafts((current) => current.filter((draft) => draft.id !== id));
-    setExpandedPartnerId((current) => (current === id ? null : current));
-  };
-
-  const handleSavePartners = () => {
-    const normalizedIds = partnerDrafts.map((draft) => draft.id.trim()).filter(Boolean);
-    const hasDuplicateId = new Set(normalizedIds).size !== normalizedIds.length;
-
-    if (hasDuplicateId) {
-      setNotice({ type: 'error', text: '保存失败：每个供应商 ID 不能重复。' });
-      return;
-    }
-
-    const nextPartners = partnerDrafts
-      .map((draft) => toPartner(draft))
-      .filter((partner): partner is PartnerPlaceholder => partner !== null);
-
-    if (nextPartners.length !== partnerDrafts.length) {
-      setNotice({ type: 'error', text: '保存失败：每个供应商都需要 ID、名称和地址。' });
-      return;
-    }
-
-    setPartners(nextPartners);
-    setNotice({ type: 'success', text: '供应商/合作方列表已保存，并同步到前台。' });
-  };
-
-  const handleUploadPartnerLogo = async (id: string, files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-
-    setUploadingPartnerLogoMap((current) => ({ ...current, [id]: true }));
-    setNotice(null);
-
-    try {
-      const logoUrl = await uploadImageToCloudinary(file);
-      setPartnerDrafts((current) =>
-        current.map((draft) => (draft.id === id ? { ...draft, logoSrc: logoUrl } : draft))
-      );
-      setNotice({ type: 'success', text: '供应商 logo 已上传。' });
-    } catch {
-      setNotice({ type: 'error', text: '供应商 logo 上传失败。' });
-    } finally {
-      setUploadingPartnerLogoMap((current) => ({ ...current, [id]: false }));
-    }
-  };
-
-  const handleResetPartners = () => {
-    if (!window.confirm('确定要把供应商/合作方恢复为默认数据吗？')) return;
-    resetPartners();
-    setNotice({ type: 'success', text: '供应商/合作方已恢复默认。' });
   };
 
   const removeArrivalVehicleDraft = (slug: string) => {
@@ -871,48 +757,13 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                {mode === 'weekly' ? '周报管理' : '内容管理后台'}
+                周报管理
               </h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                {mode === 'weekly'
-                  ? '按客户阅读顺序完成每期 Inno Auto Weekly；周报推荐车辆和实际到港车辆分开管理，数量不限。'
-                  : '管理供应商/合作方信息，并从独立入口进入周报管理。'}
+                按客户阅读顺序完成每期 Inno Auto Weekly；周报推荐车辆和实际到港车辆分开管理，数量不限。
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                to={mode === 'weekly' ? '/admin' : '/admin/weekly-reports'}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-              >
-                {mode === 'weekly' ? '返回内容后台' : '周报管理'}
-              </Link>
-              <Link
-                to="/admin/japan-market"
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium hover:bg-slate-50"
-              >
-                Japan Market 采集
-              </Link>
-              <Link
-                to="/admin/crm"
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
-              >
-                CRM 管理
-              </Link>
-              <Link
-                to="/admin/contracts"
-                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-              >
-                合同管理
-              </Link>
-              <button
-                type="button"
-                onClick={() => void handleLogout()}
-                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-              >
-                退出登录
-              </button>
-            </div>
-          </div>
+   </div>
         </div>
 
         {notice ? (
@@ -921,7 +772,7 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
           </div>
         ) : null}
 
-        {mode === 'weekly' ? <section className="flex flex-col gap-5">
+        <section className="flex flex-col gap-5">
           <div className="order-0 overflow-hidden rounded-3xl bg-slate-950 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
             <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_360px] lg:items-end">
               <div>
@@ -1524,199 +1375,8 @@ export function AdminVehicles({ mode = 'main' }: { mode?: 'main' | 'weekly' }) {
               </div>
             ))}
           </div>
-        </section> : null}
+        </section>
 
-        {mode === 'main' ? <section className="space-y-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="text-xl font-semibold text-slate-900">供应商/合作方卡片</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              编辑服务与车主支持页面使用的供应商和合作方信息。
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={addPartnerDraft}
-              className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-            >
-              + 添加供应商/合作方
-            </button>
-            <button
-              type="button"
-              onClick={handleSavePartners}
-              className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-primary/90"
-            >
-              保存供应商
-            </button>
-            <button
-              type="button"
-              onClick={handleResetPartners}
-              className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100"
-            >
-              恢复供应商默认
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {partnerDrafts.map((draft, index) => (
-              <div
-                key={draft.id}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
-              >
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-base font-semibold text-slate-900">
-                      供应商 #{index + 1} - {draft.name || '未命名'}
-                    </h2>
-                    <p className="text-xs text-slate-500">{draft.address || '暂无地址'}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExpandedPartnerId((current) => (current === draft.id ? null : draft.id))
-                      }
-                      className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-                    >
-                      {expandedPartnerId === draft.id ? '收起' : '编辑'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removePartnerDraft(draft.id)}
-                      className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
-                    >
-                      删除
-                    </button>
-                  </div>
-                </div>
-
-                {expandedPartnerId !== draft.id ? null : (
-                  <>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <TextInput
-                        label="ID *"
-                        value={draft.id}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'id', value)}
-                      />
-                      <TextInput
-                        label="名称 *"
-                        value={draft.name}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'name', value)}
-                      />
-                      <TextInput
-                        label="地址 *"
-                        value={draft.address}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'address', value)}
-                        className="md:col-span-2"
-                      />
-                      <TextInput
-                        label="网站"
-                        value={draft.website ?? ''}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'website', value)}
-                        placeholder="https://..."
-                      />
-                      <TextInput
-                        label="邮箱"
-                        value={draft.email ?? ''}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'email', value)}
-                      />
-                      <TextInput
-                        label="电话"
-                        value={draft.phone ?? ''}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'phone', value)}
-                      />
-                      <TextInput
-                        label="营业时间"
-                        value={draft.hours ?? ''}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'hours', value)}
-                      />
-                      <TextInput
-                        label="Logo URL"
-                        value={draft.logoSrc ?? ''}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'logoSrc', value)}
-                        placeholder="https://..."
-                      />
-                      <TextInput
-                        label="Logo 说明"
-                        value={draft.logoAlt ?? ''}
-                        onChange={(value) => updatePartnerDraftField(draft.id, 'logoAlt', value)}
-                      />
-                      <label className="space-y-1.5">
-                        <span className="text-sm font-medium text-slate-700">Logo 背景</span>
-                        <select
-                          value={draft.logoPanel ?? 'light'}
-                          onChange={(event) =>
-                            updatePartnerDraftField(draft.id, 'logoPanel', event.target.value)
-                          }
-                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-                        >
-                          <option value="light">浅色</option>
-                          <option value="dark">深色</option>
-                        </select>
-                      </label>
-                      <label className="space-y-1.5">
-                        <span className="text-sm font-medium text-slate-700">Logo 适配</span>
-                        <select
-                          value={draft.logoFit ?? 'contain'}
-                          onChange={(event) =>
-                            updatePartnerDraftField(draft.id, 'logoFit', event.target.value)
-                          }
-                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-                        >
-                          <option value="contain">完整显示</option>
-                          <option value="cover">填充裁切</option>
-                        </select>
-                      </label>
-                      <TextInput
-                        label="文字 Logo 第一行（可选）"
-                        value={draft.logoWordmarkLine1}
-                        onChange={(value) =>
-                          updatePartnerDraftField(draft.id, 'logoWordmarkLine1', value)
-                        }
-                      />
-                      <TextInput
-                        label="文字 Logo 第二行（可选）"
-                        value={draft.logoWordmarkLine2}
-                        onChange={(value) =>
-                          updatePartnerDraftField(draft.id, 'logoWordmarkLine2', value)
-                        }
-                      />
-                    </div>
-
-                    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-                      <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100">
-                        {uploadingPartnerLogoMap[draft.id]
-                          ? '供应商 logo 上传中...'
-                          : '上传供应商 Logo'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          disabled={uploadingPartnerLogoMap[draft.id]}
-                          onChange={(event) => {
-                            void handleUploadPartnerLogo(draft.id, event.target.files);
-                            event.target.value = '';
-                          }}
-                        />
-                      </label>
-                    </div>
-
-                    {draft.logoSrc ? (
-                      <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
-                        <img
-                          src={draft.logoSrc}
-                          alt={draft.logoAlt || draft.name}
-                          className="h-24 w-full rounded-lg object-contain"
-                        />
-                      </div>
-                    ) : null}
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        </section> : null}
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useSearchParams } from 'react-router';
+import { useAdminCrm } from '../hooks/useAdminCrm';
 import {
   CarFront,
-  CheckCircle2,
   Download,
   FileText,
   Plus,
@@ -11,17 +11,13 @@ import {
   UsersRound,
 } from 'lucide-react';
 import {
-  loadCrmState,
-  saveCrmState,
   type CrmLead,
   type CrmOrder,
-  type CrmState,
   type LoanCar,
 } from '../lib/crm';
 import { getErrorMessage, loadContracts, type VehicleContract } from '../lib/contracts';
 import {
   ARRIVED_COMPLIANCE_STAGE,
-  CRM_STORAGE_KEY,
   COMPLETED_COMPLIANCE_STAGE,
   COMPLIANCE_STAGE_OPTIONS,
   CONTACT_METHOD_OPTIONS,
@@ -35,9 +31,7 @@ import {
   contractTitleFromContract,
   createId,
   isCrmOrderContract,
-  loadCrm,
   mergeContractOrders,
-  normalizeCrmState,
   orderFromSignedContract,
   syncArrivedOrderToWeeklyReport,
   type CrmView,
@@ -47,16 +41,18 @@ import {
 import { ComboField, Field, OrderVehiclePhotos, StatButton } from './adminCrmFields';
 
 export function AdminCrm() {
-  const initialCrm = useMemo(() => loadCrm(), []);
-  const [crm, setCrm] = useState<CrmState>(initialCrm);
+  const { crm, setCrm, hasLoadedCloudCrm, cloudSyncNotice, saveStatus, retry } = useAdminCrm();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [leadDraft, setLeadDraft] = useState(EMPTY_LEAD);
-  const [activeView, setActiveView] = useState<CrmView>('leads');
+  const viewParam = searchParams.get('view');
+  const activeView: CrmView = viewParam === 'orders' || viewParam === 'loanCars' ? viewParam : 'leads';
+  const setActiveView = (view: CrmView) => setSearchParams((current) => {
+    const next = new URLSearchParams(current);
+    next.set('view', view);
+    return next;
+  });
   const [activeStatus, setActiveStatus] = useState<LeadFilter>('all');
   const [query, setQuery] = useState('');
-  const [savedAt, setSavedAt] = useState('');
-  const [cloudSyncNotice, setCloudSyncNotice] = useState('等待登录后同步 Supabase');
-  const [hasLoadedCloudCrm, setHasLoadedCloudCrm] = useState(false);
-  const [isSavingCloudCrm, setIsSavingCloudCrm] = useState(false);
   const [contractSyncNotice, setContractSyncNotice] = useState('');
   const [availableContracts, setAvailableContracts] = useState<VehicleContract[]>([]);
   const [selectedContractId, setSelectedContractId] = useState('');
@@ -65,81 +61,6 @@ export function AdminCrm() {
   const [arrivalSyncNotice, setArrivalSyncNotice] = useState<Record<string, string>>({});
   const [syncingArrivalOrderId, setSyncingArrivalOrderId] = useState('');
 
-  useEffect(() => {
-    document.title = 'Inno Group CRM Admin';
-    let robotsMeta = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
-    if (!robotsMeta) {
-      robotsMeta = document.createElement('meta');
-      robotsMeta.setAttribute('name', 'robots');
-      document.head.appendChild(robotsMeta);
-    }
-    const previous = robotsMeta.content;
-    robotsMeta.content = 'noindex, nofollow';
-    return () => {
-      robotsMeta.content = previous || 'index, follow';
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(CRM_STORAGE_KEY, JSON.stringify(crm));
-    }
-
-    if (!hasLoadedCloudCrm) return;
-
-    let isMounted = true;
-    setIsSavingCloudCrm(true);
-
-    saveCrmState(crm)
-      .then(() => {
-        if (!isMounted) return;
-        const nextSavedAt = new Date().toLocaleTimeString('en-NZ', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        setSavedAt(nextSavedAt);
-        setCloudSyncNotice(`Supabase 已保存 ${nextSavedAt}`);
-      })
-      .catch((error) => {
-        if (!isMounted) return;
-        setCloudSyncNotice(`Supabase 保存失败，本机已缓存：${getErrorMessage(error)}`);
-      })
-      .finally(() => {
-        if (isMounted) setIsSavingCloudCrm(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [crm, hasLoadedCloudCrm]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadCloudCrm = async () => {
-      setCloudSyncNotice('正在从 Supabase 同步 CRM...');
-      try {
-        const cloudCrm = await loadCrmState();
-        if (!isMounted) return;
-        const nextCrm = normalizeCrmState(cloudCrm ?? loadCrm());
-        setCrm(nextCrm);
-        setHasLoadedCloudCrm(true);
-        setCloudSyncNotice(cloudCrm ? '已从 Supabase 同步 CRM' : 'Supabase 暂无 CRM 数据，已使用本机缓存');
-      } catch (error) {
-        if (!isMounted) return;
-        const localCrm = loadCrm();
-        setCrm(localCrm);
-        setHasLoadedCloudCrm(true);
-        setCloudSyncNotice(`Supabase 读取失败，暂用本机缓存：${getErrorMessage(error)}`);
-      }
-    };
-
-    loadCloudCrm();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!hasLoadedCloudCrm) return;
@@ -173,7 +94,7 @@ export function AdminCrm() {
       isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [hasLoadedCloudCrm]);
+  }, [hasLoadedCloudCrm, setCrm]);
 
   const filteredLeads = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -440,24 +361,6 @@ export function AdminCrm() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link
-                  to="/admin"
-                  className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-                >
-                  内容管理
-                </Link>
-                <Link
-                  to="/admin/contracts"
-                  className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-                >
-                  合同管理
-                </Link>
-                <Link
-                  to="/admin/invoices"
-                  className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-                >
-                  发票管理
-                </Link>
                 <button
                   type="button"
                   onClick={exportCrm}
@@ -470,17 +373,14 @@ export function AdminCrm() {
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
-            <p className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700">
-              <CheckCircle2 size={16} />
-              已自动保存{savedAt ? ` ${savedAt}` : ''}
-            </p>
+
             {contractSyncNotice ? (
               <p className="text-sm font-medium text-slate-500">{contractSyncNotice}</p>
             ) : null}
-            <p className="text-sm font-medium text-slate-500">
+            <div role={saveStatus === 'error' ? 'alert' : 'status'} className={`text-sm font-medium ${saveStatus === 'error' ? 'text-red-700' : 'text-slate-600'}`}>
               {cloudSyncNotice}
-              {isSavingCloudCrm ? '，保存中...' : ''}
-            </p>
+              {saveStatus === 'error' && <button type="button" onClick={retry} className="ml-3 underline">重试</button>}
+            </div>
             <label className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:w-96">
               <Search size={17} className="text-slate-400" />
               <input
@@ -517,8 +417,8 @@ export function AdminCrm() {
           />
         </section>
 
-        <section className="space-y-5">
-          <form
+        <fieldset disabled={!hasLoadedCloudCrm} className="min-w-0 space-y-5 disabled:opacity-60">
+          {activeView === 'leads' && <form
             onSubmit={addLead}
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
           >
@@ -593,7 +493,7 @@ export function AdminCrm() {
                 保存线索
               </button>
             </div>
-          </form>
+          </form>}
 
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
@@ -1085,7 +985,7 @@ export function AdminCrm() {
               </div>
             ) : null}
           </div>
-        </section>
+        </fieldset>
       </div>
     </div>
   );

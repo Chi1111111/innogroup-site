@@ -32,20 +32,24 @@ export const router = createBrowserRouter([
       {
         path: 'admin',
         lazy: async () => ({ Component: (await import('./components/AdminAuthGate')).AdminAuthGate }),
-        children: [
-          { index: true, lazy: async () => ({ Component: (await import('./pages/AdminVehicles')).AdminVehicles }) },
+        children: [{
+          lazy: async () => ({ Component: (await import('./components/AdminLayout')).AdminLayout }),
+          children: [
+          { index: true, lazy: async () => ({ Component: (await import('./pages/AdminDashboard')).AdminDashboard }) },
+          { path: 'partners', lazy: async () => ({ Component: (await import('./pages/AdminPartners')).AdminPartners }) },
           {
             path: 'weekly-reports',
             lazy: async () => {
               const { AdminVehicles } = await import('./pages/AdminVehicles');
-              return { Component: () => <AdminVehicles mode="weekly" /> };
+              return { Component: AdminVehicles };
             },
           },
           { path: 'crm', lazy: async () => ({ Component: (await import('./pages/AdminCrm')).AdminCrm }) },
           { path: 'japan-market', lazy: async () => ({ Component: (await import('./pages/AdminJapanMarket')).AdminJapanMarket }) },
           { path: 'contracts', lazy: async () => ({ Component: (await import('./pages/AdminContracts')).AdminContracts }) },
           { path: 'invoices', lazy: async () => ({ Component: (await import('./pages/AdminInvoices')).AdminInvoices }) },
-        ],
+          ],
+        }],
       },
       { path: 'contract/:contractId', lazy: async () => ({ Component: (await import('./pages/SignContract')).SignContract }) },
       { path: 'sign/:contractId', lazy: async () => ({ Component: (await import('./pages/SignContract')).SignContract }) },

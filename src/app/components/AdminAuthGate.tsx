@@ -92,9 +92,9 @@ export function AdminAuthGate() {
           <ShieldCheck size={24} />
         </div>
         <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Inno Group Admin</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">统一密码登录</h1>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">登录管理中心</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          合同、CRM、车辆和 Invoice 共用同一个密码。输入密码即可进入，无需邮箱或邮件链接。
+          登录后管理客户、订单、合同与发票，以及网站内容和日本车源。
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={(event) => void submitPassword(event)}>
@@ -130,7 +130,7 @@ export function AdminAuthGate() {
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
           >
             <KeyRound size={18} />
-            {isSubmitting ? '正在登录…' : '登录 Admin'}
+            {isSubmitting ? '正在登录…' : '进入工作台'}
           </button>
         </form>
 

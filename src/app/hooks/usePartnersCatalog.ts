@@ -15,7 +15,7 @@ function readPartners(): PartnerPlaceholder[] {
     const raw = window.localStorage.getItem(PARTNERS_STORAGE_KEY);
     if (!raw) return partnerPlaceholders;
     const parsed = JSON.parse(raw) as PartnerPlaceholder[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return partnerPlaceholders;
+    if (!Array.isArray(parsed)) return partnerPlaceholders;
     return parsed;
   } catch {
     return partnerPlaceholders;
