@@ -1,4 +1,8 @@
 {
+  "redirects": [
+    { "source": "/japan-market", "destination": "/japan-market-unavailable.html", "permanent": false },
+    { "source": "/japan-market/:path*", "destination": "/japan-market-unavailable.html", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/admin/:path*", "destination": "/workflow.html" },
     { "source": "/sign/:path*", "destination": "/workflow.html" },
@@ -11,6 +15,7 @@
     { "source": "/zh/:path*", "destination": "/index.html" }
   ],
   "headers": [
+    { "source": "/japan-market-unavailable.html", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }, { "key": "Cache-Control", "value": "no-store" }] },
     {
       "source": "/assets/:path*",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]

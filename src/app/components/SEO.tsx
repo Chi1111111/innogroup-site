@@ -172,7 +172,7 @@ export function SEO() {
     document.title = meta.title;
     setMeta('description', meta.description);
     removeMeta('keywords');
-    setMeta('robots', shouldIndex ? 'index, follow' : 'noindex, nofollow');
+    setMeta('robots', shouldIndex && !isPathWithin(location.pathname, '/japan-market') ? 'index, follow' : 'noindex, nofollow');
     setMeta('theme-color', '#c7a24a');
 
     setLink('canonical', canonicalUrl);

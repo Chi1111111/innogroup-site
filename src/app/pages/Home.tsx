@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { Hero } from '../components/Hero';
-import { JapanMarketPreview } from '../components/JapanMarketPreview';
 import { PriceCalculator } from '../components/PriceCalculator';
 import { QuoteFormSection } from '../components/QuoteFormSection';
 import { useLanguage } from '../components/SiteTranslator';
@@ -46,14 +45,6 @@ const sourceMarkets = [
 const startPaths = [
   {
     number: '01',
-    to: '/japan-market',
-    icon: Car,
-    title: { en: 'Browse Japan Market', zh: '浏览日本市场' },
-    text: { en: 'Search thousands of vehicles with estimated New Zealand landed pricing.', zh: '浏览数万台日本车辆，并查看新西兰预计落地价。' },
-    action: { en: 'Explore vehicles', zh: '开始浏览' },
-  },
-  {
-    number: '02',
     to: '/weekly-report',
     icon: Sparkles,
     title: { en: 'See This Week’s Picks', zh: '查看本周精选' },
@@ -61,7 +52,7 @@ const startPaths = [
     action: { en: 'Open weekly report', zh: '打开本周周报' },
   },
   {
-    number: '03',
+    number: '02',
     to: '/vehicles/find-my-car',
     icon: MessageSquareText,
     title: { en: 'Ask Inno to Find It', zh: '请 Inno 帮我找车' },
@@ -69,7 +60,7 @@ const startPaths = [
     action: { en: 'Send your brief', zh: '提交找车需求' },
   },
   {
-    number: '04',
+    number: '03',
     to: '/vehicles/china#available-models',
     icon: BatteryCharging,
     title: { en: 'Explore Cars from China', zh: '查看中国车型' },
@@ -135,7 +126,7 @@ export function Home() {
             </p>
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
             {startPaths.map((path) => {
               const Icon = path.icon;
 
@@ -161,8 +152,6 @@ export function Home() {
           </div>
         </div>
       </section>
-
-      <JapanMarketPreview />
 
       <section className="bg-white/45 px-4 py-16 sm:py-20">
         <div className="section-shell">

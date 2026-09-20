@@ -7,10 +7,8 @@ export const router = createBrowserRouter([
     Component: Root,
     hydrateFallbackElement: <div className="min-h-screen bg-[#F7F4EE]" aria-label="Loading page" />,
     children: [
+      { path: 'japan-market/*', lazy: async () => ({ Component: (await import('./pages/JapanMarketUnavailable')).JapanMarketUnavailable }) },
       { index: true, lazy: async () => ({ Component: (await import('./pages/Home')).Home }) },
-      { path: 'japan-market', lazy: async () => ({ Component: (await import('./pages/JapanMarket')).JapanMarket }) },
-      { path: 'japan-market/:segment', lazy: async () => ({ Component: (await import('./pages/JapanMarketEntry')).JapanMarketEntry }) },
-      { path: 'japan-market/:make/:model', lazy: async () => ({ Component: (await import('./pages/JapanMarketEntry')).JapanMarketModelEntry }) },
       { path: 'vehicles/china', lazy: async () => ({ Component: (await import('./pages/ChinaVehicles')).ChinaVehicles }) },
       { path: 'vehicles/japan-special-order', Component: () => <Navigate to="/weekly-report" replace /> },
       { path: 'vehicles/find-my-car', lazy: async () => ({ Component: (await import('./pages/FindMyCar')).FindMyCar }) },
