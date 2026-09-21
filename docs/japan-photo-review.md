@@ -74,3 +74,5 @@ At 10,000 genuinely new photos/day and an assumed 100 KB final file, final image
 - Public publication remains blocked pending explicit approval after automatic approval review rejected anonymous catalog deployment. The deployed catalog requires authentication; Japan Market redirects stay closed. The ready count in Admin is not a published count. Draft public-loader changes are retained locally under ignored `tmp/public-draft-*` files and are not deployed.
 
 Validation: Python compression tests; full typecheck, lint, 105 Vitest tests and production build; database rollback fixture verifying missing/pending/rejected photos block readiness and all-approved photos enable it. Real cloud candidate verification and unauthorized endpoint checks are performed during deployment. No user photos are approved by automated tests.
+
+Public launch approved by user: Japan Market is restored with the approved-only catalog. Anonymous callers can read only fully approved, verified vehicles; administrative actions still require authentication. There is no fallback to the original static photo inventory. The earlier publication hold is resolved.

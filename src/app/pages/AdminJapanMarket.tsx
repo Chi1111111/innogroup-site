@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowUpRight, CarFront, Check, Clock3, Download, Images, LayoutDashboard, RefreshCw, Search, type LucideIcon } from 'lucide-react';
 import { loadCollectionReport, type CollectionReport, type CollectionRun, type CollectionVehicleChange } from '../../data/japanMarketSync';
-import { formatNzd, japanMarketVehiclePath, loadJapanMarketData, type JapanMarketVehicleSummary } from '../../data/japanMarket';
+import { formatNzd, japanMarketVehiclePath, loadJapanMarketInventory, type JapanMarketVehicleSummary } from '../../data/japanMarket';
 import { invokeAdminFunction } from '../lib/adminApi';
 import '../../styles/admin-japan-market.css';
 
@@ -98,7 +98,7 @@ export function AdminJapanMarket() {
   const [page,setPage]=useState(1);
   useEffect(()=>{
     let active=true; setLoading(true); setError('');
-    Promise.all([loadCollectionReport(),loadJapanMarketData(true)]).then(([next,inventory])=>{
+    Promise.all([loadCollectionReport(),loadJapanMarketInventory()]).then(([next,inventory])=>{
       if(active) {setReport(next);setVehicles(inventory.vehicles);}
     }).catch((e:unknown)=>{if(active)setError(e instanceof Error ? e.message : '读取失败，请重试。');})
       .finally(()=>{if(active)setLoading(false);});

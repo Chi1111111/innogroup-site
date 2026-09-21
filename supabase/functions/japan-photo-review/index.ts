@@ -18,14 +18,6 @@ Deno.serve(async req => {
     if (length > 15_000_000) return respond(413, { error: 'Request too large' });
     const body = await req.json();
     const action = body.action;
-    const setting = checked(await client.from('japan_photo_settings').select('key_hash,used_bytes,budget_bytes,processing_enabled').eq('id',1).single());
-    const sessionSecret = Deno.env.get('ADMIN_SESSION_SECRET');
-    admin = Boolean(sessionSecret && await verifyAdminSession(req, sessionSecret));
-    if (!admin) {
-      const token = req.headers.get('X-Photo-Token') || '';
-      if (!/^[a-f0-9]{64}$/.test(token) || setting.key_hash !== await hash(new TextEncoder().encode(token))) return respond(401,{error:'Authentication required'});
-    }
-    if (admin && !['list','decide','decide-batch','retry','control','catalog'].includes(action)) return respond(403,{error:'Worker action unavailable from browser'});
     if (action === 'catalog') {
       let query = client.from('japan_photo_ready_vehicles').select('id,payload,photo_ids').order('id').limit(1000);
       if (body.id) query = query.eq('id', String(body.id).toUpperCase());
@@ -46,6 +38,14 @@ Deno.serve(async req => {
       }
       return respond(200,{vehicles,count:vehicles.length,refreshedAt:new Date().toISOString(),pricing:{nzdPerJpy:0,serviceFeeNzd:0,shippingNzd:0,complianceNzd:0,registrationNzd:0,emissionsNzd:0,gstRate:0.15},hasMore:!body.id&&ready.length===500});
     }
+    const setting = checked(await client.from('japan_photo_settings').select('key_hash,used_bytes,budget_bytes,processing_enabled').eq('id',1).single());
+    const sessionSecret = Deno.env.get('ADMIN_SESSION_SECRET');
+    admin = Boolean(sessionSecret && await verifyAdminSession(req, sessionSecret));
+    if (!admin) {
+      const token = req.headers.get('X-Photo-Token') || '';
+      if (!/^[a-f0-9]{64}$/.test(token) || setting.key_hash !== await hash(new TextEncoder().encode(token))) return respond(401,{error:'Authentication required'});
+    }
+    if (admin && !['list','decide','decide-batch','retry','control','catalog'].includes(action)) return respond(403,{error:'Worker action unavailable from browser'});
     if (action === 'control') {
       if (!admin || typeof body.enabled !== 'boolean') return respond(403,{error:'Admin required'});
       checked(await client.from('japan_photo_settings').update({processing_enabled:body.enabled}).eq('id',1));

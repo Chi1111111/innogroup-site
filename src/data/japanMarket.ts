@@ -91,10 +91,6 @@ export interface JapanMarketCostBreakdown {
   estimatedTotalNzd: number;
 }
 
-let marketPromise: Promise<JapanMarketPayload> | null = null;
-let featuredPromise: Promise<JapanMarketPayload> | null = null;
-const detailPromises = new Map<string, Promise<JapanMarketDetailPayload>>();
-
 // Imported dealer estimates are not confirmed FOB quotes. Apply at the shared
 // read boundary so cards, detail pages, enquiries, filters and Admin exports agree.
 export function publicJapanMarketPrice<T extends JapanMarketVehicleSummary>(vehicle: T): T {
@@ -115,40 +111,27 @@ async function fetchMarketPayload(path: string) {
   return { ...payload, vehicles, count: path.endsWith('/index.json') ? vehicles.length : payload.count };
 }
 
-export function loadJapanMarketData(refresh = false) {
-  if (refresh) marketPromise = null;
-  marketPromise ??= fetchMarketPayload('/data/japan-market/index.json').catch((error: unknown) => {
-    marketPromise = null;
-    throw error;
-  });
-  return marketPromise;
+async function approvedCatalog(body: Record<string,unknown> = {}) {
+  const base=import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if(!base) throw new Error('Japan Market is temporarily unavailable.');
+  const response=await fetch(`${base}/functions/v1/japan-photo-review`,{method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_ANON_KEY as string},body:JSON.stringify({action:'catalog',...body})});
+  if(!response.ok)throw new Error('Japan Market is temporarily unavailable.');
+  return response.json() as Promise<JapanMarketDetailPayload & {hasMore:boolean}>;
 }
-
-export function loadJapanMarketFeatured() {
-  featuredPromise ??= fetchMarketPayload('/data/japan-market/featured.json');
-  return featuredPromise;
+export async function loadJapanMarketData(): Promise<JapanMarketPayload> {
+  const first=await approvedCatalog();
+  const vehicles=[...first.vehicles];
+  let more=first.hasMore,offset=500;
+  while(more){const next=await approvedCatalog({offset});vehicles.push(...next.vehicles);more=next.hasMore;offset+=500;}
+  const valid=vehicles.filter(v=>!vehicleQualityIssue(v)).map(publicJapanMarketPrice);
+  return {...first,vehicles:valid,count:valid.length};
 }
-
-function detailShardFor(id: string) {
-  let hash = 0;
-  for (const character of id.toUpperCase()) hash = (hash * 31 + character.charCodeAt(0)) % 128;
-  return String(hash).padStart(3, '0');
-}
-
-export async function loadJapanMarketVehicle(id: string): Promise<JapanMarketVehicleResult | null> {
-  const normalizedId = id.toUpperCase();
-  const shard = detailShardFor(normalizedId);
-  let promise = detailPromises.get(shard);
-  if (!promise) {
-    promise = fetch(`/data/japan-market/details/${shard}.json`, { headers: { Accept: 'application/json' } }).then((response) => {
-      if (!response.ok) throw new Error('This vehicle is temporarily unavailable.');
-      return response.json() as Promise<JapanMarketDetailPayload>;
-    });
-    detailPromises.set(shard, promise);
-  }
-  const payload = await promise;
-  const vehicle = payload.vehicles.find((item) => item.id.toUpperCase() === normalizedId);
-  return vehicle && !vehicleQualityIssue(vehicle) ? { refreshedAt: payload.refreshedAt, pricing: payload.pricing, vehicle: publicJapanMarketPrice(vehicle) } : null;
+export function loadJapanMarketInventory() { return fetchMarketPayload('/data/japan-market/index.json'); }
+export function loadJapanMarketFeatured() { return loadJapanMarketData(); }
+export async function loadJapanMarketVehicle(id:string):Promise<JapanMarketVehicleResult|null>{
+ const result=await approvedCatalog({id});
+ const vehicle=result.vehicles[0];
+ return vehicle&&!vehicleQualityIssue(vehicle)?{refreshedAt:result.refreshedAt,pricing:result.pricing,vehicle:publicJapanMarketPrice(vehicle)}:null;
 }
 
 export function vehicleName(vehicle: JapanMarketVehicleSummary) {

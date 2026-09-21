@@ -5,6 +5,7 @@ import { logoImage } from '../../data/pic';
 import { LanguageSwitcher, useLanguage } from './SiteTranslator';
 
 const vehicleLinks = [
+  {to:'/japan-market',label:{en:'Japan Market',zh:'日本车源'},note:{en:'Available vehicles from Japan',zh:'已审核的日本车源'}},
   {
     to: '/vehicles/find-my-car',
     label: { en: 'Find My Car', zh: '告诉 Inno 帮我找车' },
