@@ -41,5 +41,3 @@ def repair(image, detection):
     if not np.array_equal(output[mask == 0], image[mask == 0]):
         raise ValueError('Outside-mask pixels changed')
     return output, mask
-
-

@@ -197,7 +197,10 @@ def main():
             print(json.dumps({'registeredVehicles': total}), flush=True)
     elif args.command == 'enqueue':
         payload = json.loads(Path(args.input).read_text(encoding='utf8') if args.input else sys.stdin.read())
-        print(json.dumps(enqueue(cloud, payload if isinstance(payload, list) else payload['vehicles'])))
+        vehicles = payload if isinstance(payload, list) else payload['vehicles']
+        for offset in range(0, len(vehicles), 20):
+            cloud.call('register-vehicles', vehicles=vehicles[offset:offset+20])
+        print(json.dumps(enqueue(cloud, vehicles)))
     elif args.command == 'work':
         work(cloud, args.limit, args.max_seconds)
     elif args.command == 'review':
