@@ -32,3 +32,4 @@
 @supports not (backdrop-filter:blur(1px)){.admin-workspace .admin-sidebar,.admin-workspace .admin-topbar,.admin-workspace .photo-bulk{background:#f7f9fd}}
 }
 @media(prefers-reduced-motion:reduce){.admin-workspace *,.admin-login-card{animation:none!important;transition:none!important;scroll-behavior:auto!important}.admin-workspace .admin-content :is(a,button):hover{transform:none}}
+@media screen{.admin-workspace .photo-local-help{margin:16px 0;padding:14px 18px;border:1px solid #fff;border-radius:16px;background:#ffffff90;color:#63728a;font-size:12px;line-height:1.8}.photo-local-help summary{cursor:pointer;font-weight:600}.photo-local-badge{font-size:11px;color:#72849c;padding:8px 12px;border-radius:20px;background:#ffffff80}}

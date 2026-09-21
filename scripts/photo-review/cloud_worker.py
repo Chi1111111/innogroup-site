@@ -1,4 +1,4 @@
-"""Cloud-backed photo processing: image bytes stay in memory until private upload."""
+"""Local in-memory photo processor with private cloud upload; no photo files written."""
 import argparse
 import base64
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -12,6 +12,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen, HTTPRedirectHandler, build_opener
 from image_processing import detect, repair
+from contextlib import contextmanager
 
 HOSTS = {'vimg.gabs.biz', 'www.919919.jp', 'www.japancars.co.jp', 'site.gabs.biz', 'bidimg.gabs.biz'}
 
@@ -111,27 +112,71 @@ def process(cloud, job):
         return {'status': 'failed', 'error': message}
 
 
-def work(cloud, limit, max_seconds=2400):
+@contextmanager
+def single_worker(config_path):
+    """OS lock released even after a crash; prevents double-click duplicate workers."""
+    lock_path = Path(config_path).resolve().with_suffix('.worker.lock')
+    with open(lock_path, 'a+b') as handle:
+        if handle.tell() == 0:
+            handle.write(b'0')
+            handle.flush()
+        handle.seek(0)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (OSError, BlockingIOError):
+            raise RuntimeError('A local photo worker is already running.') from None
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def work(cloud, limit, max_seconds=2400, interval=2, daemon=False):
     import cv2  # Ensure dependencies exist before claiming any cloud jobs.
+    if interval < 2:
+        raise ValueError('Source interval must be at least 2 seconds')
     count = 0
-    deadline = time.monotonic() + max_seconds
+    deadline = time.monotonic() + max_seconds if max_seconds else float('inf')
     while time.monotonic() < deadline and (limit == 0 or count < limit):
-        result = cloud.call('claim')
+        try:
+            result = cloud.call('claim')
+        except Exception as error:
+            print(json.dumps({'waiting': 'cloud connection', 'error': str(error)}), flush=True)
+            if not daemon:
+                raise
+            time.sleep(30)
+            continue
         if not result['job']:
+            if daemon:
+                time.sleep(15)
+                continue
             print(json.dumps({'processed': count, 'capacityReached': result.get('capacityReached', False)}), flush=True)
             break
         outcome = process(cloud, result['job'])
         count += 1
         print(json.dumps({'processed': count, **outcome}), flush=True)
-        if str(outcome.get('error', '')).startswith(('SOURCE_HTTP_403:', 'SOURCE_HTTP_401:')):
+        if str(outcome.get('error', '')).startswith(('SOURCE_HTTP_403:', 'SOURCE_HTTP_401:', 'SOURCE_HTTP_429:')):
             cloud.call('pause-source')
-            print(json.dumps({'paused': True, 'reason': 'Source denied download; queue retained.'}), flush=True)
-            break
-        if outcome.get('error') == 'PHOTO_CAPACITY_LIMIT':
+            print(json.dumps({'paused': True, 'reason': 'Source denied or rate-limited download; resume manually from Admin.'}), flush=True)
+            if not daemon:
+                break
+        if outcome.get('error') == 'PHOTO_CAPACITY_LIMIT' and not daemon:
             break
         if count % 100 == 0:
             print(json.dumps(cloud.call('cleanup-approved')), flush=True)
-        time.sleep(1)
+        # Wait AFTER completion too: download starts are always >= 2 seconds apart.
+        time.sleep(interval)
 
 
 def review(cloud, port):
@@ -185,10 +230,12 @@ def main():
     parser.add_argument('--input')
     parser.add_argument('--limit', type=int, default=20)
     parser.add_argument('--max-seconds', type=int, default=2400)
+    parser.add_argument('--interval', type=float, default=2)
+    parser.add_argument('--daemon', action='store_true')
     parser.add_argument('--port', type=int, default=17832)
     args = parser.parse_args()
-    if args.limit < 0:
-        parser.error('limit must be nonnegative')
+    if args.limit < 0 or args.max_seconds < 0 or args.interval < 2:
+        parser.error('limit and max-seconds must be nonnegative; interval must be at least 2')
     cloud = Cloud(args.config)
     if args.command == 'snapshot':
         root = Path(args.input or 'public/data/japan-market/details')
@@ -207,7 +254,8 @@ def main():
             cloud.call('register-vehicles', vehicles=vehicles[offset:offset+20])
         print(json.dumps(enqueue(cloud, vehicles)))
     elif args.command == 'work':
-        work(cloud, args.limit, args.max_seconds)
+        with single_worker(args.config):
+            work(cloud, args.limit, args.max_seconds, args.interval, args.daemon)
     elif args.command == 'review':
         review(cloud, args.port)
     else:

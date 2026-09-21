@@ -146,7 +146,7 @@ export function AdminJapanMarket() {
       </header>
       {onlineDetails && <section id="online-scan-details" className="ajm-panel" aria-label="线上扫描详情">
         <h2>线上扫描详情</h2>
-        <p>线上采集已停用。以后新增车源使用本地采集；图片处理在独立云端队列运行。</p>
+        <p>线上采集已停用。以后新增车源使用本地采集；图片也由本地程序处理，成品存入 Supabase。</p>
         <div className="ajm-actions"><a className="ajm-button" href={scanUrl} target="_blank" rel="noreferrer">查看线上任务与实时日志</a><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}>刷新线上详情</button></div>
         <p>运行中的进度查看上方日志；以下为已发布的线上采集结果，包含新增车辆、照片变更及停止原因。</p>
         {report?.runs.some(run=>run.trigger==='schedule' || run.trigger==='workflow_dispatch') ? report.runs.filter(run=>run.trigger==='schedule' || run.trigger==='workflow_dispatch').slice(0,5).map((run,index)=><RunDetails key={run.id} run={run} initiallyOpen={index===0}/>) : <p>尚无已发布的线上扫描记录。任务结束并发布后，点击“刷新线上详情”查看。</p>}

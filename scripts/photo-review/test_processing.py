@@ -1,9 +1,10 @@
 import unittest
+import tempfile
 import numpy as np
 import cv2
 from pathlib import Path
 from image_processing import detect, repair
-from cloud_worker import safe_url, enqueue, process
+from cloud_worker import safe_url, enqueue, process, work, single_worker
 from unittest.mock import patch
 
 
@@ -33,12 +34,37 @@ class ProcessingTests(unittest.TestCase):
                 self.calls.append((action, data))
                 return {'status': 'needs_inspection'}
         cloud = Cloud()
-        with patch('cloud_worker.download', return_value=source):
+        with patch('cloud_worker.download', return_value=source), patch('builtins.open', side_effect=AssertionError('Photo processing must not write files')), patch.object(Path, 'write_bytes', side_effect=AssertionError('Photo processing must not write files')):
             process(cloud, {'id': 'test', 'lease': 'lease', 'url': 'https://vimg.gabs.biz/a.jpg'})
         self.assertEqual([c[0] for c in cloud.calls], ['original', 'candidate', 'finish'])
         self.assertEqual(cloud.calls[1][1]['mime'], 'image/webp')
         self.assertFalse(cloud.calls[2][1]['detection']['detected'])
         self.assertTrue(cloud.calls[2][1]['detection']['lossyCompression'])
+
+    def test_rate_limit_waits_two_seconds_between_photos(self):
+        class Cloud:
+            def call(self, action, **data): return {'job': {'id': 'test'}}
+        with patch('cloud_worker.process', return_value={'status': 'needs_inspection'}), patch('cloud_worker.time.sleep') as sleep:
+            work(Cloud(), 2, interval=2)
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], [2, 2])
+
+    def test_source_429_pauses_without_claiming_next_photo(self):
+        class Cloud:
+            def __init__(self): self.actions = []
+            def call(self, action, **data):
+                self.actions.append(action)
+                return {'job': {'id': 'test'}}
+        cloud = Cloud()
+        with patch('cloud_worker.process', return_value={'status':'failed','error':'SOURCE_HTTP_429: www.japancars.co.jp'}):
+            work(cloud, 10)
+        self.assertEqual(cloud.actions, ['claim','pause-source'])
+
+    def test_single_worker_lock(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = str(Path(directory)/'config.json')
+            with single_worker(config):
+                with self.assertRaises(RuntimeError):
+                    with single_worker(config): pass
 
     def test_rejects_non_source_urls(self):
         for url in ('http://127.0.0.1/a', 'https://vimg.gabs.biz.evil.test/a', 'https://user:pw@vimg.gabs.biz/a', 'https://vimg.gabs.biz:444/a', 'file:///etc/passwd'):
