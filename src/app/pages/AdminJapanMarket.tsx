@@ -142,11 +142,11 @@ export function AdminJapanMarket() {
     <nav className="admin-market-tabs" aria-label="采集管理导航">{([['overview','采集总览',LayoutDashboard],['inventory','车源与报价',CarFront],['history','运行记录',Clock3]] as const).map(([id,label,Icon])=><button type="button" key={id} className={tab===id?'active':''} aria-current={tab===id?'page':undefined} onClick={()=>setTab(id)}><Icon size={19}/>{label}{id==='inventory' && report && <small>{number(vehicles.length)}</small>}</button>)}</nav>
     <div className="ajm-main">
       <header className="ajm-header"><div><p className="ajm-eyebrow">INVENTORY OPERATIONS</p><h1>{tab==='overview'?'Japan Market 采集中心':tab==='inventory'?'车源与 FOB 报价':'采集运行记录'}</h1><p>增量采集 · 每次最多 {number(target)} 辆 · 保留现有库存</p></div>
-        <div className="ajm-actions"><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}><RefreshCw size={16} className={loading?'ajm-spin':''}/>{loading?'读取中…':'刷新记录'}</button><button className="ajm-button primary" type="button" disabled={scanning} onClick={()=>void scan()}><RefreshCw size={16} className={scanning?'ajm-spin':''}/>{scanning?'正在提交…':'线上扫描'}</button><button className="ajm-button" type="button" aria-expanded={onlineDetails} aria-controls="online-scan-details" onClick={()=>setOnlineDetails(v=>!v)}>详情</button></div>
+        <div className="ajm-actions"><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}><RefreshCw size={16} className={loading?'ajm-spin':''}/>{loading?'读取中…':'刷新记录'}</button><button className="ajm-button primary" type="button" disabled onClick={()=>void scan()}><RefreshCw size={16} className={scanning?'ajm-spin':''}/>线上采集已停用</button><button className="ajm-button" type="button" aria-expanded={onlineDetails} aria-controls="online-scan-details" onClick={()=>setOnlineDetails(v=>!v)}>详情</button></div>
       </header>
       {onlineDetails && <section id="online-scan-details" className="ajm-panel" aria-label="线上扫描详情">
         <h2>线上扫描详情</h2>
-        <p>GitHub 云端执行 · 每车型每轮 5 辆 · 间隔 3 秒 · 累计最多新增 5,000 辆 · 云端断点续采</p>
+        <p>线上采集已停用。以后新增车源使用本地采集；图片处理在独立云端队列运行。</p>
         <div className="ajm-actions"><a className="ajm-button" href={scanUrl} target="_blank" rel="noreferrer">查看线上任务与实时日志</a><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}>刷新线上详情</button></div>
         <p>运行中的进度查看上方日志；以下为已发布的线上采集结果，包含新增车辆、照片变更及停止原因。</p>
         {report?.runs.some(run=>run.trigger==='schedule' || run.trigger==='workflow_dispatch') ? report.runs.filter(run=>run.trigger==='schedule' || run.trigger==='workflow_dispatch').slice(0,5).map((run,index)=><RunDetails key={run.id} run={run} initiallyOpen={index===0}/>) : <p>尚无已发布的线上扫描记录。任务结束并发布后，点击“刷新线上详情”查看。</p>}

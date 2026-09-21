@@ -1,4 +1,5 @@
 import { retryPublication, createCheckpointGate } from './lib/japan-market-retry.mjs';
+import { queuePhotoReview } from './lib/japan-market-photo-review.mjs';
 import { restorePending } from './lib/japan-market-resume.mjs';
 import { rotateGroups, readMakes, readModels, groupListingUrl, matchesGroup, missingGroupAction, hasMissingModelSlug } from './lib/japan-market-rotation.mjs';
 import fs from 'node:fs';
@@ -154,6 +155,12 @@ async function publishWithRetry(vehicles,rates) {
 async function publish(vehicles, rates) {
   metrics.stage = 'validation'; checkpoint();
   if (!vehicles.length) throw new Error('No validated vehicles; previous inventory preserved.');
+  try {
+    const photoReview = args.input ? { enabled: false } : await queuePhotoReview(vehicles);
+    if (photoReview.enabled) console.log('Photo links queued for private cloud backup and review; no processed photos are published.');
+  } catch (error) {
+    console.warn(`Photo review queue unavailable: ${error.message}. Vehicle inventory sync continues; retry photo backfill separately.`);
+  }
   metrics.accepted = vehicles.length;
   metrics.withFobPrice = vehicles.filter(v => v.fobPriceNzd != null).length;
   metrics.withoutFobPrice = vehicles.length - metrics.withFobPrice;

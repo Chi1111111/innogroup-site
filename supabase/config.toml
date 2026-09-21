@@ -1,6 +1,9 @@
 [functions.admin-api]
 verify_jwt = false
 
+[functions.japan-photo-review]
+verify_jwt = false
+
 [functions.japan-market-scan]
 verify_jwt = false
 

@@ -9,3 +9,7 @@ Thumbs.db
 .DS_Store
 supabase/.temp/
 tmp/
+__pycache__/
+private-config/
+private-data/
+tmp-supabase-*.md

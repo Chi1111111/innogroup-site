@@ -2,10 +2,7 @@ name: Japan Market daily Japan Cars sync
 
 on:
   workflow_dispatch:
-  schedule:
-    # Midnight Auckland: 11:00 UTC in NZDT, 12:00 UTC in NZST.
-    - cron: '0 11 * * *'
-    - cron: '0 12 * * *'
+  # Online collection disabled; use the local collector.
 
 permissions:
   contents: write
