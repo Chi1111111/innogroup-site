@@ -106,8 +106,9 @@ def process(cloud, job):
         cloud.call('candidate', **identity, data=base64.b64encode(encoded.tobytes()).decode(), mime='image/webp')
         return cloud.call('finish', **identity, detection=detection)
     except Exception as error:
-        cloud.call('fail', **identity, error=str(error)[:500])
-        return {'status': 'failed', 'error': str(error)}
+        message = f'SOURCE_HTTP_{error.code}: {urlsplit(job["url"]).hostname}' if isinstance(error, HTTPError) else str(error)
+        cloud.call('fail', **identity, error=message[:500])
+        return {'status': 'failed', 'error': message}
 
 
 def work(cloud, limit, max_seconds=2400):
@@ -122,6 +123,10 @@ def work(cloud, limit, max_seconds=2400):
         outcome = process(cloud, result['job'])
         count += 1
         print(json.dumps({'processed': count, **outcome}), flush=True)
+        if str(outcome.get('error', '')).startswith(('SOURCE_HTTP_403:', 'SOURCE_HTTP_401:')):
+            cloud.call('pause-source')
+            print(json.dumps({'paused': True, 'reason': 'Source denied download; queue retained.'}), flush=True)
+            break
         if outcome.get('error') == 'PHOTO_CAPACITY_LIMIT':
             break
         if count % 100 == 0:

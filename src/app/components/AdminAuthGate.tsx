@@ -1,3 +1,4 @@
+import '../../styles/admin-glass.css';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Eye, EyeOff, KeyRound, ShieldCheck } from 'lucide-react';
 import { Link, Outlet } from 'react-router';
@@ -86,8 +87,8 @@ export function AdminAuthGate() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#f8f4ec_0,#eef3f8_38%,#f8fafc_100%)] px-4 py-12">
-      <div className="w-full max-w-md rounded-[32px] border border-white/70 bg-white/90 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5 backdrop-blur-xl">
+    <div className="admin-login-surface flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#f8f4ec_0,#eef3f8_38%,#f8fafc_100%)] px-4 py-12">
+      <div className="admin-login-card w-full max-w-md rounded-[32px] border border-white/70 bg-white/90 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/5 backdrop-blur-xl">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
           <ShieldCheck size={24} />
         </div>

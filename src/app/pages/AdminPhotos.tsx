@@ -8,16 +8,35 @@ const labels:Record<string,string>={queued:'排队中',processing:'处理中',pe
 const api=<T,>(action:string,body:Record<string,unknown>={})=>invokeAdminFunction<T>('japan-photo-review',{action,...body});
 export function AdminPhotos(){
  const [data,setData]=useState<Listing|null>(null),[filter,setFilter]=useState('pending_review'),[size,setSize]=useState(50),[offset,setOffset]=useState(0),[selected,setSelected]=useState<Set<string>>(new Set()),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[zoom,setZoom]=useState<Photo|null>(null),[decision,setDecision]=useState<string|null>(null),[ack,setAck]=useState(false);
+ const [progressError,setProgressError]=useState(false),[progressAt,setProgressAt]=useState<Date|null>(null);
  const sequence=useRef(0);
  const load=useCallback(async()=>{const request=++sequence.current;setBusy(true);setError('');try{const result=await api<Listing>('list',{status:filter,pageSize:size,offset});if(request===sequence.current){setData(result);setSelected(new Set());}}catch(e){if(request===sequence.current)setError(e instanceof Error?e.message:'读取失败');}finally{if(request===sequence.current)setBusy(false);}},[filter,size,offset]);
  useEffect(()=>{void load();const currentSequence=sequence;return()=>{currentSequence.current++;};},[load]);
+ useEffect(()=>{
+  if(busy)return;
+  let active=true,inFlight=false;
+  const refresh=async()=>{if(document.hidden||inFlight)return;inFlight=true;try{const stats=await api<Omit<Listing,'items'>>('status');if(active){setData(previous=>previous?{...previous,...stats}:previous);setProgressError(false);setProgressAt(new Date());}}catch{if(active)setProgressError(true);}finally{inFlight=false;}};
+  const timer=window.setInterval(()=>void refresh(),10000);
+  return()=>{active=false;window.clearInterval(timer);};
+ },[busy]);
  const toggle=(id:string)=>setSelected(previous=>{const next=new Set(previous);if(next.has(id))next.delete(id);else next.add(id);return next;});
  const eligible=(p:Photo)=>['pending_review','needs_inspection','approved','rejected'].includes(p.status);
  const chosen=data?.items.filter(p=>selected.has(p.id))||[];
  const run=async(action:string,body:Record<string,unknown>,message:string)=>{setBusy(true);setError('');try{await api(action,body);setDecision(null);setNotice(message);await load();}catch(e){setError(e instanceof Error?e.message:'操作失败');setBusy(false);}};
  const count=filter?(data?.counts[filter]||0):Object.values(data?.counts||{}).reduce((a,b)=>a+b,0);
+ const totals=data?.counts||{};
+ const total=Object.values(totals).reduce((a,b)=>a+b,0);
+ const completed=['pending_review','needs_inspection','approved','rejected'].reduce((sum,key)=>sum+(totals[key]||0),0);
+ const percent=total?Math.min(100,completed/total*100):0;
+ const pipelineState=!data?'读取中':!data.processingEnabled?'已暂停':totals.processing?'正在处理':totals.queued?'等待云端下一批':total&&completed===total?'处理完成':'等待任务';
  return <section className="photo-admin"><h1>图片处理与自动上架</h1><p>云端处理已有库存，电脑关闭也能继续。修补和压缩不调用大模型。车辆全部照片审核通过且文件校验成功后自动上架。</p>
  {error&&<p role="alert" className="photo-error">{error}</p>}{notice&&<p role="status">{notice}</p>}
+ <section className="photo-progress-panel" aria-label="云端处理进度">
+ <div className="photo-progress-heading"><span className={`photo-live-dot ${data?.processingEnabled?'enabled':''}`}/><strong>{pipelineState}</strong><span className="photo-progress-percent">{percent.toFixed(1)}<small>%</small></span></div>
+ <div className="photo-progress-track" role="progressbar" aria-label="照片处理进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Number(percent.toFixed(1))} aria-valuetext={`已处理 ${completed} 张，共 ${total} 张`}><div style={{width:`${percent}%`}}/></div>
+ <div className="photo-progress-numbers"><span>已处理 <b>{completed.toLocaleString()}</b> / {total.toLocaleString()} 张</span><span>排队 <b>{(totals.queued||0).toLocaleString()}</b></span><span>处理中 <b>{totals.processing||0}</b></span><span className={totals.failed?'photo-error':''}>失败 <b>{totals.failed||0}</b></span>{!!totals.capacity_blocked&&<span>容量暂停 {totals.capacity_blocked}</span>}</div>
+ <p className="photo-progress-caption">{progressError?'进度刷新失败，保留上次结果；稍后自动重试。':`每 10 秒更新进度${progressAt?' · '+progressAt.toLocaleTimeString('zh-CN'):''}`} · 按已入队照片计算，登记期间总数会增加。处理完成不等于审核通过。</p>
+ </section>
  <div className="photo-stats"><strong>{data?.processingEnabled?'云端处理已开启':'云端处理已暂停'}</strong><span>已登记 {data?.registeredVehicles??0} 辆 · 已上架 {data?.publishedVehicles??0} 辆</span><span>预留 {((data?.usedBytes||0)/1e9).toFixed(2)} / {((data?.budgetBytes||0)/1e9).toFixed(1)} GB</span></div>
  <p>{Object.entries(data?.counts||{}).map(([key,value])=>`${labels[key]||key} ${value}`).join(' · ')}</p>
  <div className="photo-controls"><button disabled={busy||!data} onClick={()=>void run('control',{enabled:!data?.processingEnabled},data?.processingEnabled?'已暂停领取新图片，正在处理的图片会完成。':'已继续，云端工作程序会在下一轮领取任务。')}>{data?.processingEnabled?'暂停处理':'继续处理'}</button><button disabled={busy} onClick={()=>void run('retry',{},'失败任务已重新排队。')}>重试失败项</button><button disabled={busy} onClick={()=>void load()}>刷新进度</button><a href="https://github.com/Chi1111111/innogroup-site/actions/workflows/japan-photo-process.yml" target="_blank" rel="noreferrer">云端运行日志</a></div>

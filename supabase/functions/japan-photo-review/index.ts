@@ -45,7 +45,11 @@ Deno.serve(async req => {
       const token = req.headers.get('X-Photo-Token') || '';
       if (!/^[a-f0-9]{64}$/.test(token) || setting.key_hash !== await hash(new TextEncoder().encode(token))) return respond(401,{error:'Authentication required'});
     }
-    if (admin && !['list','decide','decide-batch','retry','control','catalog'].includes(action)) return respond(403,{error:'Worker action unavailable from browser'});
+    if (admin && !['list','status','decide','decide-batch','retry','control','catalog'].includes(action)) return respond(403,{error:'Worker action unavailable from browser'});
+    if (action === 'pause-source') {
+      checked(await client.from('japan_photo_settings').update({processing_enabled:false}).eq('id',1));
+      return respond(200,{paused:true});
+    }
     if (action === 'control') {
       if (!admin || typeof body.enabled !== 'boolean') return respond(403,{error:'Admin required'});
       checked(await client.from('japan_photo_settings').update({processing_enabled:body.enabled}).eq('id',1));
@@ -105,6 +109,15 @@ Deno.serve(async req => {
     if (action === 'claim') {
       const jobs = checked(await client.rpc('claim_japan_photo'));
       return respond(200, { job: jobs?.[0] || null, processingEnabled:setting.processing_enabled, capacityReached: Number(setting.used_bytes) >= Number(setting.budget_bytes) });
+    }
+    if (action === 'status') {
+      const [counts, registered, published] = await Promise.all([
+        client.rpc('japan_photo_counts'),
+        client.from('japan_photo_vehicles').select('id',{count:'exact',head:true}),
+        client.from('japan_photo_ready_vehicles').select('id',{count:'exact',head:true}),
+      ]);
+      checked(registered); checked(published);
+      return respond(200,{counts:checked(counts),processingEnabled:setting.processing_enabled,registeredVehicles:registered.count,publishedVehicles:published.count,usedBytes:setting.used_bytes,budgetBytes:setting.budget_bytes});
     }
     if (action === 'list') {
       const offset = Math.max(0, Math.min(1_000_000, Number(body.offset) || 0));
