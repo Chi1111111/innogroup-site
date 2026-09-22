@@ -24,7 +24,7 @@ export async function queuePhotoReview(vehicles, { config = configPath, launch =
   });
   const log = fs.openSync(path.join(path.dirname(config), 'photo-worker.log'), 'a');
   try {
-    const child = launch(python, [worker, 'work', '--config', config, '--limit', '0', '--max-seconds', '0', '--interval', '2', '--daemon'], { detached: true, windowsHide: true, stdio: ['ignore', log, log] });
+    const child = launch(python, [worker, 'work', '--config', config, '--limit', '0', '--max-seconds', '0', '--interval', '1.5', '--daemon'], { detached: true, windowsHide: true, stdio: ['ignore', log, log] });
     child.on('error', error => console.warn(`Photo worker did not start: ${error.message}. Cloud queue retained.`));
     child.unref();
   } finally { fs.closeSync(log); }

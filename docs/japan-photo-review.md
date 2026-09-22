@@ -2,7 +2,7 @@
 
 ## 当前运行方式
 
-图片由本地 Python 程序以最多两张在途的流水线下载、检测、修补与压缩。下载单路串行，来源请求开始时间至少间隔 2 秒，上传与另一张下载可以重叠；不调用大模型或消耗模型 token。图片只经过内存，不写本地照片文件或临时图片。检测到水印时保留原图；未检测到水印只上传 WebP 85 成品。照片上传 Supabase 私有桶 `japan-photo-review`，队列、审核记录与车辆关联也存 Supabase。本机只保存程序、连接配置、进程锁与运行日志。
+图片由本地 Python 程序以最多两张在途的流水线下载、检测、修补与压缩。下载单路串行，来源请求开始时间至少间隔 1.5 秒，上传与另一张下载可以重叠；不调用大模型或消耗模型 token。图片只经过内存，不写本地照片文件或临时图片。检测到水印时保留原图；未检测到水印只上传 WebP 85 成品。照片上传 Supabase 私有桶 `japan-photo-review`，队列、审核记录与车辆关联也存 Supabase。本机只保存程序、连接配置、进程锁与运行日志。
 
 GitHub 图片处理工作流已关闭并从仓库移除，车辆自动新增任务也保持关闭。电脑关机停止处理；重启本地程序后从云端队列继续。关闭浏览器不影响后台程序。
 
@@ -17,7 +17,7 @@ python -m pip install -r scripts/photo-review/requirements.txt
 右键 `scripts/photo-review/start-local.ps1`，选择“使用 PowerShell 运行”，再到 `/admin/photos` 点击“允许继续”。重复启动会被操作系统锁阻止，不会增加并发。前台试跑：
 
 ```powershell
-python scripts/photo-review/cloud_worker.py work --limit 5 --interval 2
+python scripts/photo-review/cloud_worker.py work --limit 5 --interval 1.5
 ```
 
 管理员暂停只停止新任务领取，正在处理的图片会完成。后台每 15 秒检查队列，Admin 每 10 秒更新进度，不清空已选图片。最近两分钟收到程序联络才显示已连接。中断任务的十分钟租约过期后可以续跑。来源返回 401、403 或 429 自动暂停，需检查原因后手动恢复；不会通过代理绕过限制。
@@ -42,4 +42,4 @@ The owner explicitly authorized automatic approval and vehicle publication for p
 
 Owner policy update: only confirmed template matches (score >= 0.88) require manual review. Version-2 full-image scans with detected=false and score < 0.88, including the former uncertain category, are automatically approved after candidate verification. Existing verified uncertain results are migrated to approved; manual rejections are preserved.
 
-Pipeline optimization: claim plus complete replaces claim/original/candidate/finish for photos eligible for automatic approval. Complete uploads, reads back and hashes the candidate before saving candidate path, verified flag and final status together. Confirmed watermark photos require an original before completing. At most two leased jobs are in flight, bounded in memory; source downloads share a lock and a two-second start gap. Source 401/403/429 stops subsequent downloads immediately, including waiting workers, then pauses the cloud queue. The existing single-process OS lock is retained.
+Pipeline optimization: claim plus complete replaces claim/original/candidate/finish for photos eligible for automatic approval. Complete uploads, reads back and hashes the candidate before saving candidate path, verified flag and final status together. Confirmed watermark photos require an original before completing. At most two leased jobs are in flight, bounded in memory; source downloads share a lock and a 1.5-second start gap. Source 401/403/429 stops subsequent downloads immediately, including waiting workers, then pauses the cloud queue. The existing single-process OS lock is retained.

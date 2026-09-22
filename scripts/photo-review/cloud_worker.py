@@ -168,10 +168,10 @@ class SourceGate:
                 raise
 
 
-def work(cloud, limit, max_seconds=2400, interval=2, daemon=False):
+def work(cloud, limit, max_seconds=2400, interval=1.5, daemon=False):
     import cv2
-    if interval < 2:
-        raise ValueError('Source interval must be at least 2 seconds')
+    if interval < 1.5:
+        raise ValueError('Source interval must be at least 1.5 seconds')
     source = SourceGate(interval)
     started = time.monotonic()
     deadline = started + max_seconds if max_seconds else float('inf')
@@ -288,12 +288,12 @@ def main():
     parser.add_argument('--input')
     parser.add_argument('--limit', type=int, default=20)
     parser.add_argument('--max-seconds', type=int, default=2400)
-    parser.add_argument('--interval', type=float, default=2)
+    parser.add_argument('--interval', type=float, default=1.5)
     parser.add_argument('--daemon', action='store_true')
     parser.add_argument('--port', type=int, default=17832)
     args = parser.parse_args()
-    if args.limit < 0 or args.max_seconds < 0 or args.interval < 2:
-        parser.error('limit and max-seconds must be nonnegative; interval must be at least 2')
+    if args.limit < 0 or args.max_seconds < 0 or args.interval < 1.5:
+        parser.error('limit and max-seconds must be nonnegative; interval must be at least 1.5')
     cloud = Cloud(args.config)
     if args.command == 'snapshot':
         root = Path(args.input or 'public/data/japan-market/details')

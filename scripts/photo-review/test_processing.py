@@ -49,12 +49,12 @@ class ProcessingTests(unittest.TestCase):
         self.assertFalse(cloud.calls[0][1]['detection']['detected'])
         self.assertTrue(cloud.calls[0][1]['detection']['lossyCompression'])
 
-    def test_rate_limit_waits_two_seconds_between_photos(self):
-        gate = SourceGate(2)
-        with patch('cloud_worker.download', return_value=b'photo'), patch('cloud_worker.time.monotonic', side_effect=[0, .5, 2]), patch('cloud_worker.time.sleep') as sleep:
+    def test_rate_limit_waits_one_point_five_seconds_between_photos(self):
+        gate = SourceGate(1.5)
+        with patch('cloud_worker.download', return_value=b'photo'), patch('cloud_worker.time.monotonic', side_effect=[0, .5, 1.5]), patch('cloud_worker.time.sleep') as sleep:
             gate.fetch('https://vimg.gabs.biz/a.jpg')
             gate.fetch('https://vimg.gabs.biz/b.jpg')
-        sleep.assert_called_once_with(1.5)
+        sleep.assert_called_once_with(1.0)
 
     def test_source_429_blocks_other_downloads_and_pauses(self):
         class Cloud:
