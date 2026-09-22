@@ -176,11 +176,16 @@ Deno.serve(async req => {
       checked(await client.from('japan_photo_jobs').update({ [`${action}_path`]: file, ...(action==='candidate'?{candidate_verified:true}:{}) }).eq('id', job.id).eq('lease', job.lease));
       return respond(200, { path: file, sha256: fileHash });
     }
-    const status = action === 'fail' ? (body.error === 'PHOTO_CAPACITY_LIMIT' ? 'capacity_blocked' : 'failed') : job.candidate_path && body.detection?.detected ? 'pending_review' : 'needs_inspection';
+    const autoApproved = action === 'finish' && job.candidate_verified && !!job.candidate_path &&
+      body.detection?.version === 'japancars-template-2' && body.detection?.classification === 'no_known_watermark' &&
+      body.detection?.scanScope === 'full_image' && body.detection?.detected === false &&
+      typeof body.detection?.score === 'number' && body.detection.score >= 0 && body.detection.score < .40 &&
+      body.detection.width >= 320 && body.detection.height >= 240;
+    const status = autoApproved ? 'approved' : action === 'fail' ? (body.error === 'PHOTO_CAPACITY_LIMIT' ? 'capacity_blocked' : 'failed') : job.candidate_path && body.detection?.detected ? 'pending_review' : 'needs_inspection';
     if (action === 'finish' && job.candidate_path && !job.candidate_verified) throw new Error('Candidate not verified');
     if (action === 'finish' && !job.original_path) throw new Error('Original not backed up');
-    checked(await client.from('japan_photo_jobs').update({ status, detection: body.detection || {}, error: action === 'fail' ? String(body.error || 'Worker failed').slice(0, 500) : null, lease: null, lease_until: null, updated_at: new Date().toISOString() }).eq('id', job.id).eq('lease', job.lease));
-    return respond(200, { status, published: false });
+    checked(await client.from('japan_photo_jobs').update({ status, detection: {...(body.detection || {}), ...(autoApproved ? {autoApproved:true,approvalReason:'No supported watermark found in full-image scan',approvedAt:new Date().toISOString()} : {})}, error: action === 'fail' ? String(body.error || 'Worker failed').slice(0, 500) : null, lease: null, lease_until: null, updated_at: new Date().toISOString() }).eq('id', job.id).eq('lease', job.lease));
+    return respond(200, { status, autoApproved, autoPublish: true });
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'Photo review error');
     return respond(400, { error: error instanceof Error ? error.message : 'Photo review error' });

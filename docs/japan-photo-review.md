@@ -35,3 +35,7 @@ Admin 支持每页 20/50/100 张、本页全选、批量审核和原图成品对
 当前功能保守预留上限 20 GB，不等于 Supabase 账户剩余额度。失败上传和删除原图不自动退还预留，显示量可能大于实际 Storage 用量。单张下载限 10 MB。达到预算暂停领取，不能自动开通超额。
 
 失败任务可在 Admin 重试；重试不会自动打开暂停开关。URL 去重防止重复入队，审核状态保留。所有图片审核动作使用数据库事务与审计记录。Admin 使用已有登录会话，浏览器不包含 worker 令牌。表开启 RLS，服务端校验授权后访问。
+
+## Automatic approval enabled by owner
+
+The owner explicitly authorized automatic approval and vehicle publication for photos without a detected known JAPANCARS watermark. Version 2 scans the full image: scores below 0.40 with dimensions at least 320×240 are eligible; scores 0.40–0.88 and smaller photos require inspection; matches at or above 0.88 require review after repair. This does not detect every possible watermark. Server approval requires a verified candidate and versioned classification metadata; the decision reason and timestamp are stored in detection metadata. All vehicle photos must still be approved before publication. Legacy unreviewed version-1 photos were requeued for the new detection; existing manual approvals and rejections were preserved.

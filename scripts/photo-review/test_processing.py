@@ -3,7 +3,7 @@ import tempfile
 import numpy as np
 import cv2
 from pathlib import Path
-from image_processing import detect, repair
+from image_processing import detect, repair, classify
 from cloud_worker import safe_url, enqueue, process, work, single_worker
 from unittest.mock import patch
 
@@ -20,6 +20,12 @@ class ProcessingTests(unittest.TestCase):
         saved = cv2.imdecode(cv2.imencode('.png', result)[1], cv2.IMREAD_COLOR)
         self.assertEqual(saved.shape, original.shape)
         self.assertTrue(np.array_equal(original[mask == 0], saved[mask == 0]))
+
+    def test_classification_is_conservative(self):
+        self.assertEqual(classify(.39,640,480), 'no_known_watermark')
+        self.assertEqual(classify(.40,640,480), 'uncertain')
+        self.assertEqual(classify(.88,640,480), 'watermark')
+        self.assertEqual(classify(.1,200,200), 'uncertain')
 
     def test_no_watermark_does_not_match(self):
         plain = np.full((480, 640, 3), 110, dtype=np.uint8)

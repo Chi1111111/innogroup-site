@@ -94,7 +94,7 @@ def process(cloud, job):
             output, mask = repair(im, detection)
             detection['outsideMaskUnchangedBeforeEncoding'] = True
         else:
-            detection['note'] = 'No confident match; compressed only. Check for other watermarks.'
+            detection['note'] = 'No supported watermark found; eligible for automatic approval.' if detection['classification'] == 'no_known_watermark' else 'Uncertain watermark match; manual inspection required.'
         ok, encoded = cv2.imencode('.webp', output, [cv2.IMWRITE_WEBP_QUALITY, 85])
         if not ok:
             raise ValueError('WebP encoding failed')
@@ -163,7 +163,16 @@ def work(cloud, limit, max_seconds=2400, interval=2, daemon=False):
                 continue
             print(json.dumps({'processed': count, 'capacityReached': result.get('capacityReached', False)}), flush=True)
             break
-        outcome = process(cloud, result['job'])
+        try:
+            outcome = process(cloud, result['job'])
+        except Exception as error:
+            if not daemon:
+                raise
+            # Leave the lease to expire instead of losing the whole worker on a
+            # transient cloud failure while reporting a failed upload.
+            print(json.dumps({'waiting': 'cloud recovery', 'error': str(error)}), flush=True)
+            time.sleep(30)
+            continue
         count += 1
         print(json.dumps({'processed': count, **outcome}), flush=True)
         if str(outcome.get('error', '')).startswith(('SOURCE_HTTP_403:', 'SOURCE_HTTP_401:', 'SOURCE_HTTP_429:')):
@@ -174,7 +183,10 @@ def work(cloud, limit, max_seconds=2400, interval=2, daemon=False):
         if outcome.get('error') == 'PHOTO_CAPACITY_LIMIT' and not daemon:
             break
         if count % 100 == 0:
-            print(json.dumps(cloud.call('cleanup-approved')), flush=True)
+            try:
+                print(json.dumps(cloud.call('cleanup-approved')), flush=True)
+            except Exception as error:
+                print(json.dumps({'cleanupDeferred': True, 'error': str(error)}), flush=True)
         # Wait AFTER completion too: download starts are always >= 2 seconds apart.
         time.sleep(interval)
 

@@ -1,6 +1,15 @@
 """Deterministic local image operations for the private cloud review worker."""
 from pathlib import Path
-VERSION = "japancars-template-1"
+VERSION = "japancars-template-2"
+
+def classify(score, width, height):
+    # Absence refers only to the supported watermark template.
+    if width < 320 or height < 240:
+        return 'uncertain'
+    if score >= .88:
+        return 'watermark'
+    return 'no_known_watermark' if score < .40 else 'uncertain'
+
 
 def detect(image):
     import cv2
@@ -10,7 +19,7 @@ def detect(image):
     if template is None:
         raise ValueError('Watermark template is missing')
     # Match actual logo pixels, never infer a watermark from the hostname alone.
-    x0, y0 = int(w * .55), int(h * .70)
+    x0, y0 = 0, 0
     region = image[y0:, x0:]
     best = {'score': 0.0, 'box': None, 'version': VERSION}
     for scale in np.linspace(.7, 1.4, 29) * w / 640:
@@ -25,6 +34,8 @@ def detect(image):
             pad = max(2, round(w / 320))
             best = {'score': float(score), 'box': [max(0, x-pad), max(0, y-pad), min(w, x+tw+pad), min(h, y+th+pad)], 'version': VERSION}
     best['detected'] = best['score'] >= .88
+    best['classification'] = classify(best['score'], w, h)
+    best['scanScope'] = 'full_image'
     return best
 
 
