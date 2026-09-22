@@ -104,3 +104,7 @@ macOS 睡眠设置：https://support.apple.com/en-asia/guide/mac-help/mchle41a6c
 数据库任务锁定：https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE
 
 Windows 侧已完成代码与服务端验证；Mac 的真实安装、依赖下载、LaunchAgent 与公司网络访问必须由这台 Mac 上的 Codex 完成验收。
+
+## 运行详情更新
+
+此包包含 worker-details-1 诊断上报。若之前已安装，请使用本包重新执行安装命令，安装器会停旧服务并替换程序，再重新启动。不要只替换文件而不重启旧进程。Admin 的“运行详情”展开后显示机器、来源、当前照片、采样步骤、最后完成时间、错误记录和排查提示。状态采样每 15 秒，快速步骤可能不出现在采样中；云端断网期间无法实时上报，连接恢复后才补报最近错误。旧版仍能显示机器心跳与服务端失败记录，但详细阶段会标记未上报。重试不会删除诊断启用后记录的错误历史。

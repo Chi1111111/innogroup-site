@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { invokeAdminFunction } from '../lib/adminApi';
 import '../../styles/admin-photos.css';
+import { PhotoWorkerDetails } from '../components/PhotoWorkerDetails';
 
 type Photo = {id:string;vehicle:string;status:string;original_url:string|null;candidate_url:string|null;candidate_bytes:number;candidate_verified:boolean;error?:string;detection:{detected?:boolean;format?:string}};
 type Listing = {sourceAssignment?:{splitEnabled:boolean;windowsSeenAt:string|null;macSeenAt:string|null};workerSeenAt?:string|null;items:Photo[];counts:Record<string,number>;usedBytes:number;budgetBytes:number;processingEnabled:boolean;registeredVehicles:number;publishedVehicles:number};
@@ -45,6 +46,7 @@ export function AdminPhotos(){
  <p>{Object.entries(data?.counts||{}).map(([key,value])=>`${labels[key]||key} ${value}`).join(' · ')}</p>
  <div className="photo-controls"><button disabled={busy||!data} onClick={()=>void run('control',{enabled:!data?.processingEnabled},data?.processingEnabled?'已暂停领取新图片，正在处理的图片会完成。':'队列已允许继续；本地程序运行时会领取下一张。')}>{data?.processingEnabled?'暂停处理':'允许继续'}</button><button disabled={busy} onClick={()=>void run('retry',{},'失败任务已重新排队。')}>重试失败项</button><button disabled={busy} onClick={()=>void load()}>刷新照片列表</button><span className="photo-local-badge">本地执行 · Supabase 存储 · 无模型 token</span></div>
  <p>本地程序需要保持运行。遇到来源 403／429 会自动暂停，不会反复请求；检查原因后再继续。通过审核的成品验证成功后，本地程序会清理云端对应原图；容量显示为保守预留量。拒绝任意照片会使对应车辆停止上架；已签发的图片链接最长一小时失效。</p>
+ <PhotoWorkerDetails/>
  <details className="photo-local-help"><summary>本地启动与断点续跑</summary><p>在这台电脑打开 INNOGROUP → japan-photo-watermarks → scripts → photo-review，双击 <strong>start-local.ps1</strong>（右键“使用 PowerShell 运行”）。程序会在后台运行，再到这里点击“允许继续”。</p><p>关闭浏览器不会停止程序；关闭电脑会停止。下次启动会跳过已完成照片。重复启动不会增加并发。下载、修补和压缩均在内存中完成；原图与成品只存 Supabase，电脑仅保留程序、配置和运行日志。</p><p>已连接表示最近两分钟内收到程序联络；“允许继续”只开放队列，不会远程开启已关机的电脑。</p></details>
  <div className="photo-controls"><span>已检测到水印（{data?.counts.pending_review||0}）</span><select aria-label="每页数量" disabled={busy} value={size} onChange={e=>{setSize(Number(e.target.value));setOffset(0);}}>{[20,50,100].map(n=><option key={n} value={n}>每页 {n} 张</option>)}</select></div>
  <div className="photo-grid">{data?.items.map(p=><article key={p.id}><label><input type="checkbox" checked={selected.has(p.id)} disabled={busy||!eligible(p)} onChange={()=>toggle(p.id)}/>{p.vehicle}</label><small>{labels[p.status]} · {Math.round(p.candidate_bytes/1000)} KB</small><button className="photo-pair photo-preview" onClick={()=>setZoom(p)} aria-label={`对比 ${p.vehicle}`}><span>{p.candidate_url?<img loading="lazy" decoding="async" src={p.candidate_url} alt="待审核成品"/>:'暂无成品'}<small>{p.detection?.detected?'修补结果 · 点击对比原图':'疑似水印 · 点击检查原图'}</small></span></button>{p.error&&<p className="photo-error">{p.error}</p>}</article>)}</div>

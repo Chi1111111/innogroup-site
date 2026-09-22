@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 from pathlib import Path
 from image_processing import detect, repair, classify
-from cloud_worker import safe_url, enqueue, process, work, single_worker, SourceGate, Cloud
+from cloud_worker import safe_url, enqueue, process, work, single_worker, SourceGate, Cloud, WorkerTrace
 from unittest.mock import patch
 
 
@@ -130,6 +130,17 @@ class ProcessingTests(unittest.TestCase):
         self.assertEqual(args[args.index('--interval')+1],'1.5')
         self.assertEqual(args[args.index('--config')+1],str(root/'connection.json'))
         self.assertTrue(config['RunAtLoad'])
+
+    def test_worker_trace_tracks_stage_and_redacts_secret(self):
+        trace=WorkerTrace()
+        job={'id':'a','vehicle':'Toyota','url':'https://www.japancars.co.jp/a.jpg'}
+        trace.stage(job,'upload_verify')
+        self.assertEqual(trace.snapshot()['active'][0]['stage'],'upload_verify')
+        trace.error('upload_verify',RuntimeError('secret-token failed'),job,secret='secret-token')
+        self.assertNotIn('secret-token',trace.snapshot()['lastError']['message'])
+        trace.done(job)
+        self.assertEqual(trace.snapshot()['active'],[])
+        self.assertEqual(trace.snapshot()['lastError']['jobId'],'a')
 
     def test_single_worker_lock(self):
         with tempfile.TemporaryDirectory() as directory:

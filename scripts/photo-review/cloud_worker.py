@@ -16,6 +16,7 @@ from image_processing import detect, repair
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 import threading
+from datetime import datetime, timezone
 
 HOSTS = {'vimg.gabs.biz', 'www.919919.jp', 'www.japancars.co.jp', 'site.gabs.biz', 'bidimg.gabs.biz'}
 
@@ -42,10 +43,47 @@ def download(url):
         return data
 
 
+class WorkerTrace:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.active = {}
+        self.last_error = None
+
+    def stage(self, job, stage):
+        with self.lock:
+            self.active[job['id']] = {'id': job['id'], 'vehicle': job.get('vehicle',''),
+                'host': urlsplit(job['url']).hostname, 'stage': stage,
+                'since': datetime.now(timezone.utc).isoformat()}
+
+    def error(self, stage, error, job=None, secret=''):
+        message = str(error)
+        if secret:
+            message = message.replace(secret, '[redacted]')
+        if isinstance(error, HTTPError) and stage == 'download':
+            message = f'SOURCE_HTTP_{error.code}: {urlsplit(job["url"]).hostname if job else "source"}'
+        message = message[:500]
+        detail = {'stage': stage, 'message': message, 'occurredAt': datetime.now(timezone.utc).isoformat(),
+                  'httpStatus': error.code if isinstance(error, HTTPError) else None}
+        if job:
+            detail.update({'jobId': job['id'], 'host': urlsplit(job['url']).hostname})
+        with self.lock:
+            self.last_error = detail
+        return detail
+
+    def done(self, job):
+        with self.lock:
+            self.active.pop(job['id'], None)
+
+    def snapshot(self):
+        with self.lock:
+            return {'version': 'worker-details-1', 'active': list(self.active.values())[:3], 'lastError': self.last_error}
+
+
 class Cloud:
     def __init__(self, config_path):
         self.config = json.loads(Path(config_path).read_text(encoding='utf8'))
         self.connections = threading.local()
+        self.trace = WorkerTrace()
         p = urlsplit(self.config['endpoint'])
         if p.scheme != 'https' or not p.hostname.endswith('.supabase.co') or p.path != '/functions/v1/japan-photo-review':
             raise ValueError('Unexpected photo endpoint')
@@ -55,6 +93,13 @@ class Cloud:
         # connection so concurrent uploads never share request/response state.
         if action == 'claim':
             payload['sourceGroup'] = self.config.get('sourceGroup', 'windows')
+            if hasattr(self, 'trace') and time.monotonic() >= getattr(self, '_next_report', 0):
+                payload['runtime'] = self.trace.snapshot()
+                self._next_report = time.monotonic() + 15
+        if action == 'pause-source':
+            payload['sourceGroup'] = self.config.get('sourceGroup', 'windows')
+            if hasattr(self, 'trace'):
+                payload['diagnostic'] = self.trace.snapshot().get('lastError')
         endpoint = urlsplit(self.config['endpoint'])
         connection = getattr(self.connections, 'connection', None)
         if connection is None:
@@ -72,7 +117,9 @@ class Cloud:
             if response.status >= 400:
                 raise RuntimeError(result.get('error', f'Cloud HTTP {response.status}') if isinstance(result, dict) else f'Cloud HTTP {response.status}')
             return result
-        except Exception:
+        except Exception as error:
+            if hasattr(self, 'trace'):
+                self.trace.error('cloud_'+action,error,secret=self.config.get('token',''))
             connection.close()
             self.connections.connection = None
             # Do not blindly replay mutations after an uncertain network result.
@@ -100,20 +147,32 @@ def process(cloud, job, source=None):
     import cv2
     import numpy as np
     identity = {'id': job['id'], 'lease': job['lease']}
+    stage = 'download'
+    trace = getattr(cloud, 'trace', None)
+    def mark(value):
+        nonlocal stage
+        stage = value
+        if trace: trace.stage(job, value)
     try:
+        mark('download')
         data = source.fetch(job['url']) if source else download(job['url'])
+        mark('decode')
         im = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
         if im is None or im.shape[0]*im.shape[1] > 40_000_000:
             raise ValueError('Invalid or oversized photo')
         mime = 'image/jpeg' if data[:2] == b'\xff\xd8' else 'image/png' if data[:4] == b'\x89PNG' else 'image/webp'
+        mark('detect')
         detection = detect(im)
         output = im
         if detection['detected']:
+            mark('upload_original')
             cloud.call('original', **identity, data=base64.b64encode(data).decode(), mime=mime)
+            mark('repair')
             output, mask = repair(im, detection)
             detection['outsideMaskUnchangedBeforeEncoding'] = True
         else:
             detection['note'] = 'No confirmed known watermark; eligible for automatic approval under owner policy.'
+        mark('encode')
         ok, encoded = cv2.imencode('.webp', output, [cv2.IMWRITE_WEBP_QUALITY, 85])
         if not ok:
             raise ValueError('WebP encoding failed')
@@ -123,11 +182,15 @@ def process(cloud, job, source=None):
         detection.update({'format': 'webp', 'quality': 85, 'lossyCompression': True,
                           'width': im.shape[1], 'height': im.shape[0],
                           'originalBytes': len(data), 'candidateBytes': len(encoded)})
+        mark('upload_verify')
         return cloud.call('complete', **identity, data=base64.b64encode(encoded.tobytes()).decode(), mime='image/webp', detection=detection)
     except Exception as error:
         message = f'SOURCE_HTTP_{error.code}: {urlsplit(job["url"]).hostname}' if isinstance(error, HTTPError) else str(error)
-        cloud.call('fail', **identity, error=message[:500])
+        diagnostic = trace.error(stage,error,job,secret=getattr(cloud,'config',{}).get('token','')) if trace else {'stage':stage}
+        cloud.call('fail', **identity, error=message[:500], diagnostic=diagnostic)
         return {'status': 'failed', 'error': message}
+    finally:
+        if trace: trace.done(job)
 
 
 @contextmanager

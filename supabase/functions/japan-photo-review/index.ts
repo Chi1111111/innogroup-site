@@ -42,21 +42,21 @@ Deno.serve(async req => {
       }
       return respond(200,{vehicles,count:vehicles.length,refreshedAt:new Date().toISOString(),pricing:{nzdPerJpy:0,serviceFeeNzd:0,shippingNzd:0,complianceNzd:0,registrationNzd:0,emissionsNzd:0,gstRate:0.15},hasMore:!body.id&&ready.length===500});
     }
-    const setting = checked(await client.from('japan_photo_settings').select('key_hash,used_bytes,budget_bytes,processing_enabled,worker_seen_at,mac_worker_enabled,windows_seen_at,mac_seen_at').eq('id',1).single());
+    const setting = checked(await client.from('japan_photo_settings').select('key_hash,used_bytes,budget_bytes,processing_enabled,worker_seen_at,mac_worker_enabled,windows_seen_at,mac_seen_at,windows_runtime,mac_runtime,pause_details').eq('id',1).single());
     const sessionSecret = Deno.env.get('ADMIN_SESSION_SECRET');
     admin = Boolean(sessionSecret && await verifyAdminSession(req, sessionSecret));
     if (!admin) {
       const token = req.headers.get('X-Photo-Token') || '';
       if (!/^[a-f0-9]{64}$/.test(token) || setting.key_hash !== await hash(new TextEncoder().encode(token))) return respond(401,{error:'Authentication required'});
     }
-    if (admin && !['list','status','decide','decide-batch','retry','control','catalog'].includes(action)) return respond(403,{error:'Worker action unavailable from browser'});
+    if (admin && !['list','status','details','decide','decide-batch','retry','control','catalog'].includes(action)) return respond(403,{error:'Worker action unavailable from browser'});
     if (action === 'pause-source') {
-      checked(await client.from('japan_photo_settings').update({processing_enabled:false}).eq('id',1));
+      checked(await client.from('japan_photo_settings').update({processing_enabled:false,pause_details:{by:['windows','mac'].includes(body.sourceGroup)?body.sourceGroup:'unknown',at:new Date().toISOString(),reason:'source_denied',stage:String(body.diagnostic?.stage||'unknown').slice(0,60),message:String(body.diagnostic?.message||'Source access denied; exact error not reported').slice(0,500)}}).eq('id',1));
       return respond(200,{paused:true});
     }
     if (action === 'control') {
       if (!admin || typeof body.enabled !== 'boolean') return respond(403,{error:'Admin required'});
-      checked(await client.from('japan_photo_settings').update({processing_enabled:body.enabled}).eq('id',1));
+      checked(await client.from('japan_photo_settings').update({processing_enabled:body.enabled,pause_details:body.enabled?null:{by:'admin',at:new Date().toISOString(),reason:'manual'}}).eq('id',1));
       return respond(200,{enabled:body.enabled});
     }
     if (action === 'register-vehicles') {
@@ -110,9 +110,30 @@ Deno.serve(async req => {
       if (rows.length) checked(await client.from('japan_photo_jobs').upsert(rows, { onConflict: 'id', ignoreDuplicates: true }));
       return respond(200, { received: rows.length });
     }
+    if (action === 'details') {
+      const [totals, errors, active, legacy] = await Promise.all([
+        client.rpc('japan_photo_worker_totals'),
+        client.from('japan_photo_errors').select('*').order('created_at',{ascending:false}).limit(30),
+        client.from('japan_photo_jobs').select('id,vehicle,url,worker_source_group,lease_until,updated_at').eq('status','processing').order('updated_at',{ascending:false}).limit(10),
+        client.from('japan_photo_jobs').select('id,vehicle,url,worker_source_group,error,updated_at').in('status',['failed','capacity_blocked']).order('updated_at',{ascending:false}).limit(20),
+      ]);
+      return respond(200,{checkedAt:new Date().toISOString(),processingEnabled:setting.processing_enabled,splitEnabled:setting.mac_worker_enabled,
+        pause:setting.pause_details,workers:[
+          {id:'windows',seenAt:setting.windows_seen_at,runtime:setting.windows_runtime},
+          {id:'mac',seenAt:setting.mac_seen_at,runtime:setting.mac_runtime}],
+        totals:checked(totals),errors:checked(errors),
+        active:checked(active).map(j=>({...j,url:undefined,host:new URL(j.url).hostname})),
+        failures:checked(legacy).map(j=>({...j,url:undefined,host:new URL(j.url).hostname}))});
+    }
     if (action === 'claim') {
       const sourceGroup = body.sourceGroup || 'windows';
       if (!['windows','mac'].includes(sourceGroup)) return respond(400,{error:'Invalid source group'});
+      if (body.runtime && typeof body.runtime === 'object') {
+        const r=body.runtime;
+        const lastError=r.lastError?{stage:String(r.lastError.stage||'unknown').slice(0,60),message:String(r.lastError.message||'').slice(0,500),occurredAt:String(r.lastError.occurredAt||'').slice(0,40),httpStatus:Number(r.lastError.httpStatus)||null,jobId:String(r.lastError.jobId||'').slice(0,64),host:String(r.lastError.host||'').slice(0,100)}:null;
+        const active=Array.isArray(r.active)?r.active.slice(0,3).map((j:Record<string,unknown>)=>({id:String(j.id||'').slice(0,64),vehicle:String(j.vehicle||'').slice(0,300),host:String(j.host||'').slice(0,100),stage:String(j.stage||'').slice(0,60),since:String(j.since||'').slice(0,40)})):[];
+        checked(await client.from('japan_photo_settings').update({[sourceGroup+'_runtime']:{version:String(r.version||'').slice(0,60),active,lastError}}).eq('id',1));
+      }
       const jobs = checked(await client.rpc('claim_japan_photo_for_source',{source_group:sourceGroup}));
       return respond(200, { job: jobs?.[0] || null, workerSeenAt:setting.worker_seen_at,sourceAssignment:{splitEnabled:setting.mac_worker_enabled,windowsSeenAt:setting.windows_seen_at,macSeenAt:setting.mac_seen_at},processingEnabled:setting.processing_enabled, capacityReached: Number(setting.used_bytes) >= Number(setting.budget_bytes) });
     }
@@ -185,6 +206,11 @@ Deno.serve(async req => {
       }
       job.candidate_path = file;
       job.candidate_verified = true;
+    }
+    if(action==='fail') {
+      checked(await client.from('japan_photo_errors').insert({worker_source_group:job.worker_source_group,photo_id:job.id,vehicle:job.vehicle,
+        source_host:new URL(job.url).hostname,stage:String(body.diagnostic?.stage||'unknown').slice(0,60),
+        message:String(body.error||'Worker failed').slice(0,500),http_status:Number(body.diagnostic?.httpStatus)||null}));
     }
     const finishing = action === 'finish' || completing;
     const autoApproved = finishing && job.candidate_verified && !!job.candidate_path && autoEligible(body.detection);
