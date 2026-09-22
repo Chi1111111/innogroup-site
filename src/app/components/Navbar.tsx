@@ -5,7 +5,6 @@ import { logoImage } from '../../data/pic';
 import { LanguageSwitcher, useLanguage } from './SiteTranslator';
 
 const vehicleLinks = [
-  {to:'/japan-market',label:{en:'Japan Market',zh:'日本车源'},note:{en:'Available vehicles from Japan',zh:'已审核的日本车源'}},
   {
     to: '/vehicles/find-my-car',
     label: { en: 'Find My Car', zh: '告诉 Inno 帮我找车' },
@@ -61,6 +60,7 @@ export function Navbar() {
               </div>
             </div>
           </div>
+          <Link to="/japan-market" className={`border-b-2 px-1 py-2 text-[13px] font-bold ${isActive('/japan-market') ? 'border-primary text-foreground' : 'border-transparent text-foreground/60 hover:text-foreground'}`}>{text({ en: 'Japan Market', zh: '日本车源' })}</Link>
           <div className="group relative">
             <button type="button" className={`flex items-center gap-1 border-b-2 px-1 py-2 text-[13px] font-bold ${vehiclesActive ? 'border-primary text-foreground' : 'border-transparent text-foreground/60 hover:text-foreground'}`} aria-haspopup="true">
               {text({ en: 'Find a Car', zh: '找车' })}<ChevronDown className="h-4 w-4" />
@@ -100,6 +100,7 @@ export function Navbar() {
               <Link to="/weekly-report" onClick={() => setIsOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-semibold">{text({ en: 'Weekly Reports & Arrivals', zh: '每周周报与到港动态' })}</Link>
               <Link to="/selected-vehicles" onClick={() => setIsOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-semibold">{text({ en: 'Selected Vehicle Collection', zh: '甄选车型库' })}</Link>
             </div>
+            <Link to="/japan-market" onClick={() => setIsOpen(false)} className={`block rounded-xl px-4 py-3 text-sm font-semibold ${isActive('/japan-market') ? 'bg-primary/12 text-foreground' : ''}`}>{text({ en: 'Japan Market', zh: '日本车源' })}</Link>
             <button type="button" onClick={() => setVehiclesOpen((value) => !value)} className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-semibold" aria-expanded={vehiclesOpen}>{text({ en: 'Find a Car', zh: '找车' })}<ChevronDown className={`nav-chevron h-4 w-4 ${vehiclesOpen ? 'rotate-180' : ''}`} /></button>
             <div className="nav-reveal" data-open={vehiclesOpen} aria-hidden={!vehiclesOpen} {...(!vehiclesOpen ? { inert: '' } : {})}><div><div className="ml-3 border-l border-primary/25 pl-3">{vehicleLinks.map((item) => <Link key={item.to} to={item.to} onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 capitalize"><span className="block text-sm font-bold">{text(item.label)}</span><span className="mt-1 block text-xs text-foreground/50">{text(item.note)}</span></Link>)}</div></div></div>
             {navigationLinks.slice(1).map((item) => <Link key={item.to} to={item.to} onClick={() => setIsOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold">{text(item.label)}</Link>)}
