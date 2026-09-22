@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 from pathlib import Path
 from image_processing import detect, repair, classify
-from cloud_worker import safe_url, enqueue, process, work, single_worker, SourceGate
+from cloud_worker import safe_url, enqueue, process, work, single_worker, SourceGate, Cloud
 from unittest.mock import patch
 
 
@@ -68,16 +68,16 @@ class ProcessingTests(unittest.TestCase):
         self.assertEqual(download.call_count, 1)
         self.assertIn('pause-source', cloud.actions)
 
-    def test_two_stage_overlap_is_bounded(self):
-        started = threading.Barrier(2)
+    def test_three_stage_overlap_is_bounded(self):
+        started = threading.Barrier(3)
         class Cloud:
             def call(self, action, **data): return {'job': {'id': 'test'}}
         def fake_process(*args):
             started.wait(timeout=2)
             return {'status':'approved'}
         with patch('cloud_worker.process', side_effect=fake_process) as process_mock:
-            work(Cloud(), 2)
-        self.assertEqual(process_mock.call_count, 2)
+            work(Cloud(), 3)
+        self.assertEqual(process_mock.call_count, 3)
 
     def test_watermarked_photo_keeps_original(self):
         image=np.full((480,640,3),110,dtype=np.uint8)
@@ -89,6 +89,23 @@ class ProcessingTests(unittest.TestCase):
         with patch('cloud_worker.download',return_value=source), patch('cloud_worker.detect',return_value={'detected':True,'box':[500,440,630,470]}):
             process(cloud,{'id':'a','lease':'l','url':'https://vimg.gabs.biz/a.jpg'})
         self.assertEqual(cloud.actions,['original','complete'])
+
+    def test_cloud_reuses_connection_and_discards_on_failure(self):
+        cloud=Cloud.__new__(Cloud)
+        cloud.config={'endpoint':'https://example.supabase.co/functions/v1/japan-photo-review','token':'test'}
+        cloud.connections=threading.local()
+        with patch('cloud_worker.http.client.HTTPSConnection') as factory:
+            connection=factory.return_value
+            response=connection.getresponse.return_value
+            response.status=200
+            response.read.return_value=b'{"ok":true}'
+            cloud.call('status'); cloud.call('status')
+            self.assertEqual(factory.call_count,1)
+            connection.request.side_effect=ConnectionResetError('reset')
+            with self.assertRaises(ConnectionResetError): cloud.call('claim')
+            connection.close.assert_called_once()
+            self.assertIsNone(cloud.connections.connection)
+            self.assertEqual(connection.request.call_count,3)
 
     def test_single_worker_lock(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,6 +1,7 @@
 """Local in-memory photo processor with private cloud upload; no photo files written."""
 import argparse
 import base64
+import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -44,22 +45,36 @@ def download(url):
 class Cloud:
     def __init__(self, config_path):
         self.config = json.loads(Path(config_path).read_text(encoding='utf8'))
+        self.connections = threading.local()
         p = urlsplit(self.config['endpoint'])
         if p.scheme != 'https' or not p.hostname.endswith('.supabase.co') or p.path != '/functions/v1/japan-photo-review':
             raise ValueError('Unexpected photo endpoint')
 
     def call(self, action, **payload):
-        req = Request(self.config['endpoint'], data=json.dumps({'action': action, **payload}).encode(), headers={
-            'Content-Type': 'application/json', 'X-Photo-Token': self.config['token']})
+        # HTTPSConnection reuses TLS/TCP connections. Each worker owns its own
+        # connection so concurrent uploads never share request/response state.
+        endpoint = urlsplit(self.config['endpoint'])
+        connection = getattr(self.connections, 'connection', None)
+        if connection is None:
+            connection = http.client.HTTPSConnection(endpoint.hostname, timeout=90)
+            self.connections.connection = connection
         try:
-            with urlopen(req, timeout=90) as response:
-                return json.load(response)
-        except HTTPError as error:
+            connection.request('POST', endpoint.path, body=json.dumps({'action': action, **payload}).encode(), headers={
+                'Content-Type': 'application/json', 'X-Photo-Token': self.config['token']})
+            response = connection.getresponse()
+            raw = response.read()
             try:
-                message = json.load(error).get('error', f'Cloud HTTP {error.code}')
-            except (ValueError, AttributeError):
-                message = f'Cloud HTTP {error.code}'
-            raise RuntimeError(message) from None
+                result = json.loads(raw)
+            except (ValueError, UnicodeError):
+                raise RuntimeError(f'Cloud HTTP {response.status}: invalid response') from None
+            if response.status >= 400:
+                raise RuntimeError(result.get('error', f'Cloud HTTP {response.status}') if isinstance(result, dict) else f'Cloud HTTP {response.status}')
+            return result
+        except Exception:
+            connection.close()
+            self.connections.connection = None
+            # Do not blindly replay mutations after an uncertain network result.
+            raise
 
 
 def enqueue(cloud, vehicles):
@@ -180,7 +195,7 @@ def work(cloud, limit, max_seconds=2400, interval=1.5, daemon=False):
     drained = False
     pause_pending = False
     paused = False
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    with ThreadPoolExecutor(max_workers=3) as pool:
         while pending or source.stopped.is_set() or pause_pending or (not drained and time.monotonic() < deadline and (limit == 0 or submitted < limit)):
             if source.stopped.is_set() and not paused:
                 pause_pending = True
@@ -199,7 +214,7 @@ def work(cloud, limit, max_seconds=2400, interval=1.5, daemon=False):
                 source = SourceGate(interval)
                 paused = False
                 time.sleep(15)
-            can_claim = not pause_pending and not source.stopped.is_set() and not drained and len(pending) < 2 and time.monotonic() < deadline and (limit == 0 or submitted < limit)
+            can_claim = not pause_pending and not source.stopped.is_set() and not drained and len(pending) < 3 and time.monotonic() < deadline and (limit == 0 or submitted < limit)
             if can_claim:
                 try:
                     result = cloud.call('claim')
