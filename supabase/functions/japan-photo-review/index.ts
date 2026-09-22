@@ -124,7 +124,8 @@ Deno.serve(async req => {
       const offset = Math.max(0, Math.min(1_000_000, Number(body.offset) || 0));
       const pageSize = [20, 50, 100].includes(body.pageSize) ? body.pageSize : 50;
       let query = client.from('japan_photo_jobs').select('*').order('created_at', { ascending: false }).order('id').range(offset, offset + pageSize - 1);
-      if (body.status) query = query.eq('status', body.status);
+      if (body.status === 'awaiting_review') query = query.in('status', ['pending_review', 'needs_inspection']);
+      else if (body.status) query = query.eq('status', body.status);
       const items = checked(await query);
       const paths = [...new Set(items.flatMap(item => [item.original_path, item.candidate_path]).filter(Boolean))];
       const signed = paths.length ? checked(await client.storage.from(BUCKET).createSignedUrls(paths, 600)) : [];
