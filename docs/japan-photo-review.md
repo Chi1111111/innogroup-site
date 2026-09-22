@@ -39,3 +39,5 @@ Admin 支持每页 20/50/100 张、本页全选、批量审核和原图成品对
 ## Automatic approval enabled by owner
 
 The owner explicitly authorized automatic approval and vehicle publication for photos without a detected known JAPANCARS watermark. Version 2 scans the full image: scores below 0.40 with dimensions at least 320×240 are eligible; scores 0.40–0.88 and smaller photos require inspection; matches at or above 0.88 require review after repair. This does not detect every possible watermark. Server approval requires a verified candidate and versioned classification metadata; the decision reason and timestamp are stored in detection metadata. All vehicle photos must still be approved before publication. Legacy unreviewed version-1 photos were requeued for the new detection; existing manual approvals and rejections were preserved.
+
+Owner policy update: only confirmed template matches (score >= 0.88) require manual review. Version-2 full-image scans with detected=false and score < 0.88, including the former uncertain category, are automatically approved after candidate verification. Existing verified uncertain results are migrated to approved; manual rejections are preserved.
