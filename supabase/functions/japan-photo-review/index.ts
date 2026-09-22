@@ -8,6 +8,10 @@ const hosts = new Set(['vimg.gabs.biz', 'www.919919.jp', 'www.japancars.co.jp', 
 const hash = async (bytes: Uint8Array) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map(v => v.toString(16).padStart(2, '0')).join('');
 const checked = <T>(result: { data: T; error: { message: string } | null }) => { if (result.error) throw new Error(result.error.message); return result.data; };
 
+const autoEligible = (d: Record<string, unknown> | undefined) =>
+  d?.version === 'japancars-template-2' && ['no_known_watermark','uncertain'].includes(String(d.classification)) &&
+  d.scanScope === 'full_image' && d.detected === false && typeof d.score === 'number' && d.score >= 0 && d.score < .88;
+
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) });
   let admin = false;
@@ -154,11 +158,12 @@ Deno.serve(async req => {
       checked(await client.from('japan_photo_jobs').update({ status: 'queued', error: null }).in('status', ['failed', 'capacity_blocked']));
       return respond(200, { queued: true });
     }
-    if (!['original', 'candidate', 'finish', 'fail'].includes(action)) return respond(400, { error: 'Unknown action' });
+    if (!['original', 'candidate', 'complete', 'finish', 'fail'].includes(action)) return respond(400, { error: 'Unknown action' });
     const job = checked(await client.from('japan_photo_jobs').select('*').eq('id', body.id).eq('lease', body.lease).eq('status', 'processing').gt('lease_until', new Date().toISOString()).single());
-    if (action === 'original' || action === 'candidate') {
+    const completing = action === 'complete';
+    if (action === 'original' || action === 'candidate' || completing) {
       if (typeof body.data !== 'string' || body.data.length > 13_400_000) return respond(413, { error: 'Image too large' });
-      if (action === 'candidate' && (!job.original_path || !['image/png', 'image/webp'].includes(body.mime))) return respond(400, { error: 'Original and PNG/WebP candidate required' });
+      if (action !== 'original' && ((!job.original_path && !(completing && autoEligible(body.detection))) || !['image/png', 'image/webp'].includes(body.mime))) return respond(400, { error: 'Original and PNG/WebP candidate required' });
       const binary = atob(body.data);
       const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
       const png = bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71;
@@ -168,22 +173,24 @@ Deno.serve(async req => {
       const fileHash = await hash(bytes);
       const file = `${action === 'original' ? 'originals' : 'candidates'}/${fileHash}.${png ? 'png' : jpeg ? 'jpg' : 'webp'}`;
       // Atomic reservation prevents concurrent workers exceeding the pilot budget.
-      const allowed = checked(await client.rpc('reserve_japan_photo_bytes', { photo_id: job.id, photo_lease: job.lease, kind: action, byte_count: bytes.length }));
+      const allowed = checked(await client.rpc('reserve_japan_photo_bytes', { photo_id: job.id, photo_lease: job.lease, kind: action === 'original' ? 'original' : 'candidate', byte_count: bytes.length }));
       if (!allowed) return respond(409, { error: 'PHOTO_CAPACITY_LIMIT' });
       const upload = await client.storage.from(BUCKET).upload(file, bytes, { contentType: body.mime, upsert: false });
       if (upload.error && !['409', 'Duplicate'].includes(String((upload.error as { statusCode?: string }).statusCode)) && !upload.error.message.toLowerCase().includes('already exists')) throw upload.error;
-      if(action==='candidate'){const stored=checked(await client.storage.from(BUCKET).download(file));if(await hash(new Uint8Array(await stored.arrayBuffer()))!==fileHash)throw new Error('Uploaded candidate checksum mismatch');}
-      checked(await client.from('japan_photo_jobs').update({ [`${action}_path`]: file, ...(action==='candidate'?{candidate_verified:true}:{}) }).eq('id', job.id).eq('lease', job.lease));
-      return respond(200, { path: file, sha256: fileHash });
+      if(action!=='original'){const stored=checked(await client.storage.from(BUCKET).download(file));if(await hash(new Uint8Array(await stored.arrayBuffer()))!==fileHash)throw new Error('Uploaded candidate checksum mismatch');}
+      if (!completing) {
+        checked(await client.from('japan_photo_jobs').update({ [`${action}_path`]: file, ...(action==='candidate'?{candidate_verified:true}:{}) }).eq('id', job.id).eq('lease', job.lease));
+        return respond(200, { path: file, sha256: fileHash });
+      }
+      job.candidate_path = file;
+      job.candidate_verified = true;
     }
-    const autoApproved = action === 'finish' && job.candidate_verified && !!job.candidate_path &&
-      body.detection?.version === 'japancars-template-2' && ['no_known_watermark','uncertain'].includes(body.detection?.classification) &&
-      body.detection?.scanScope === 'full_image' && body.detection?.detected === false &&
-      typeof body.detection?.score === 'number' && body.detection.score >= 0 && body.detection.score < .88;
+    const finishing = action === 'finish' || completing;
+    const autoApproved = finishing && job.candidate_verified && !!job.candidate_path && autoEligible(body.detection);
     const status = autoApproved ? 'approved' : action === 'fail' ? (body.error === 'PHOTO_CAPACITY_LIMIT' ? 'capacity_blocked' : 'failed') : job.candidate_path && body.detection?.detected ? 'pending_review' : 'needs_inspection';
-    if (action === 'finish' && job.candidate_path && !job.candidate_verified) throw new Error('Candidate not verified');
-    if (action === 'finish' && !job.original_path) throw new Error('Original not backed up');
-    checked(await client.from('japan_photo_jobs').update({ status, detection: {...(body.detection || {}), ...(autoApproved ? {autoApproved:true,approvalReason:'Owner policy: approve unless known watermark detected',note:'No confirmed known watermark; automatically approved under owner policy',approvedAt:new Date().toISOString()} : {})}, error: action === 'fail' ? String(body.error || 'Worker failed').slice(0, 500) : null, lease: null, lease_until: null, updated_at: new Date().toISOString() }).eq('id', job.id).eq('lease', job.lease));
+    if (finishing && (!job.candidate_path || !job.candidate_verified)) throw new Error('Candidate not verified');
+    if (finishing && !job.original_path && !autoApproved) throw new Error('Original not backed up');
+    checked(await client.from('japan_photo_jobs').update({ ...(completing?{candidate_path:job.candidate_path,candidate_verified:true}:{}), status, detection: {...(body.detection || {}), ...(autoApproved ? {autoApproved:true,approvalReason:'Owner policy: approve unless known watermark detected',note:'No confirmed known watermark; automatically approved under owner policy',approvedAt:new Date().toISOString()} : {})}, error: action === 'fail' ? String(body.error || 'Worker failed').slice(0, 500) : null, lease: null, lease_until: null, updated_at: new Date().toISOString() }).eq('id', job.id).eq('lease', job.lease));
     return respond(200, { status, autoApproved, autoPublish: true });
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'Photo review error');

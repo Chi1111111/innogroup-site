@@ -1,10 +1,12 @@
 import unittest
 import tempfile
+import threading
+from urllib.error import HTTPError
 import numpy as np
 import cv2
 from pathlib import Path
 from image_processing import detect, repair, classify
-from cloud_worker import safe_url, enqueue, process, work, single_worker
+from cloud_worker import safe_url, enqueue, process, work, single_worker, SourceGate
 from unittest.mock import patch
 
 
@@ -42,28 +44,51 @@ class ProcessingTests(unittest.TestCase):
         cloud = Cloud()
         with patch('cloud_worker.download', return_value=source), patch('builtins.open', side_effect=AssertionError('Photo processing must not write files')), patch.object(Path, 'write_bytes', side_effect=AssertionError('Photo processing must not write files')):
             process(cloud, {'id': 'test', 'lease': 'lease', 'url': 'https://vimg.gabs.biz/a.jpg'})
-        self.assertEqual([c[0] for c in cloud.calls], ['original', 'candidate', 'finish'])
-        self.assertEqual(cloud.calls[1][1]['mime'], 'image/webp')
-        self.assertFalse(cloud.calls[2][1]['detection']['detected'])
-        self.assertTrue(cloud.calls[2][1]['detection']['lossyCompression'])
+        self.assertEqual([c[0] for c in cloud.calls], ['complete'])
+        self.assertEqual(cloud.calls[0][1]['mime'], 'image/webp')
+        self.assertFalse(cloud.calls[0][1]['detection']['detected'])
+        self.assertTrue(cloud.calls[0][1]['detection']['lossyCompression'])
 
     def test_rate_limit_waits_two_seconds_between_photos(self):
-        class Cloud:
-            def call(self, action, **data): return {'job': {'id': 'test'}}
-        with patch('cloud_worker.process', return_value={'status': 'needs_inspection'}), patch('cloud_worker.time.sleep') as sleep:
-            work(Cloud(), 2, interval=2)
-        self.assertEqual([c.args[0] for c in sleep.call_args_list], [2, 2])
+        gate = SourceGate(2)
+        with patch('cloud_worker.download', return_value=b'photo'), patch('cloud_worker.time.monotonic', side_effect=[0, .5, 2]), patch('cloud_worker.time.sleep') as sleep:
+            gate.fetch('https://vimg.gabs.biz/a.jpg')
+            gate.fetch('https://vimg.gabs.biz/b.jpg')
+        sleep.assert_called_once_with(1.5)
 
-    def test_source_429_pauses_without_claiming_next_photo(self):
+    def test_source_429_blocks_other_downloads_and_pauses(self):
         class Cloud:
             def __init__(self): self.actions = []
             def call(self, action, **data):
                 self.actions.append(action)
-                return {'job': {'id': 'test'}}
+                return {'job': {'id':'a','lease':'l','url':'https://vimg.gabs.biz/a.jpg'}}
         cloud = Cloud()
-        with patch('cloud_worker.process', return_value={'status':'failed','error':'SOURCE_HTTP_429: www.japancars.co.jp'}):
-            work(cloud, 10)
-        self.assertEqual(cloud.actions, ['claim','pause-source'])
+        with patch('cloud_worker.download', side_effect=HTTPError('https://vimg.gabs.biz/a.jpg',429,'Rate limit',{},None)) as download:
+            work(cloud, 2)
+        self.assertEqual(download.call_count, 1)
+        self.assertIn('pause-source', cloud.actions)
+
+    def test_two_stage_overlap_is_bounded(self):
+        started = threading.Barrier(2)
+        class Cloud:
+            def call(self, action, **data): return {'job': {'id': 'test'}}
+        def fake_process(*args):
+            started.wait(timeout=2)
+            return {'status':'approved'}
+        with patch('cloud_worker.process', side_effect=fake_process) as process_mock:
+            work(Cloud(), 2)
+        self.assertEqual(process_mock.call_count, 2)
+
+    def test_watermarked_photo_keeps_original(self):
+        image=np.full((480,640,3),110,dtype=np.uint8)
+        source=cv2.imencode('.jpg',image)[1].tobytes()
+        class Cloud:
+            def __init__(self): self.actions=[]
+            def call(self,action,**data): self.actions.append(action); return {'status':'pending_review'}
+        cloud=Cloud()
+        with patch('cloud_worker.download',return_value=source), patch('cloud_worker.detect',return_value={'detected':True,'box':[500,440,630,470]}):
+            process(cloud,{'id':'a','lease':'l','url':'https://vimg.gabs.biz/a.jpg'})
+        self.assertEqual(cloud.actions,['original','complete'])
 
     def test_single_worker_lock(self):
         with tempfile.TemporaryDirectory() as directory:

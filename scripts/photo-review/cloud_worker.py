@@ -13,6 +13,8 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen, HTTPRedirectHandler, build_opener
 from image_processing import detect, repair
 from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
+import threading
 
 HOSTS = {'vimg.gabs.biz', 'www.919919.jp', 'www.japancars.co.jp', 'site.gabs.biz', 'bidimg.gabs.biz'}
 
@@ -77,24 +79,24 @@ def enqueue(cloud, vehicles):
     return {'submitted': len(values)}
 
 
-def process(cloud, job):
+def process(cloud, job, source=None):
     import cv2
     import numpy as np
     identity = {'id': job['id'], 'lease': job['lease']}
     try:
-        data = download(job['url'])
+        data = source.fetch(job['url']) if source else download(job['url'])
         im = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
         if im is None or im.shape[0]*im.shape[1] > 40_000_000:
             raise ValueError('Invalid or oversized photo')
         mime = 'image/jpeg' if data[:2] == b'\xff\xd8' else 'image/png' if data[:4] == b'\x89PNG' else 'image/webp'
-        cloud.call('original', **identity, data=base64.b64encode(data).decode(), mime=mime)
         detection = detect(im)
         output = im
         if detection['detected']:
+            cloud.call('original', **identity, data=base64.b64encode(data).decode(), mime=mime)
             output, mask = repair(im, detection)
             detection['outsideMaskUnchangedBeforeEncoding'] = True
         else:
-            detection['note'] = 'No supported watermark found; eligible for automatic approval.' if detection['classification'] == 'no_known_watermark' else 'Uncertain watermark match; manual inspection required.'
+            detection['note'] = 'No confirmed known watermark; eligible for automatic approval under owner policy.'
         ok, encoded = cv2.imencode('.webp', output, [cv2.IMWRITE_WEBP_QUALITY, 85])
         if not ok:
             raise ValueError('WebP encoding failed')
@@ -104,8 +106,7 @@ def process(cloud, job):
         detection.update({'format': 'webp', 'quality': 85, 'lossyCompression': True,
                           'width': im.shape[1], 'height': im.shape[0],
                           'originalBytes': len(data), 'candidateBytes': len(encoded)})
-        cloud.call('candidate', **identity, data=base64.b64encode(encoded.tobytes()).decode(), mime='image/webp')
-        return cloud.call('finish', **identity, detection=detection)
+        return cloud.call('complete', **identity, data=base64.b64encode(encoded.tobytes()).decode(), mime='image/webp', detection=detection)
     except Exception as error:
         message = f'SOURCE_HTTP_{error.code}: {urlsplit(job["url"]).hostname}' if isinstance(error, HTTPError) else str(error)
         cloud.call('fail', **identity, error=message[:500])
@@ -142,53 +143,98 @@ def single_worker(config_path):
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+class SourceGate:
+    """One source download at a time; cloud uploads may overlap it."""
+    def __init__(self, interval):
+        self.interval = interval
+        self.lock = threading.Lock()
+        self.last_start = None
+        self.stopped = threading.Event()
+
+    def fetch(self, url):
+        with self.lock:
+            if self.stopped.is_set():
+                raise RuntimeError('SOURCE_PAUSED')
+            if self.last_start is not None:
+                time.sleep(max(0, self.interval - (time.monotonic() - self.last_start)))
+            if self.stopped.is_set():
+                raise RuntimeError('SOURCE_PAUSED')
+            self.last_start = time.monotonic()
+            try:
+                return download(url)
+            except HTTPError as error:
+                if error.code in (401, 403, 429):
+                    self.stopped.set()
+                raise
+
+
 def work(cloud, limit, max_seconds=2400, interval=2, daemon=False):
-    import cv2  # Ensure dependencies exist before claiming any cloud jobs.
+    import cv2
     if interval < 2:
         raise ValueError('Source interval must be at least 2 seconds')
-    count = 0
-    deadline = time.monotonic() + max_seconds if max_seconds else float('inf')
-    while time.monotonic() < deadline and (limit == 0 or count < limit):
-        try:
-            result = cloud.call('claim')
-        except Exception as error:
-            print(json.dumps({'waiting': 'cloud connection', 'error': str(error)}), flush=True)
-            if not daemon:
-                raise
-            time.sleep(30)
-            continue
-        if not result['job']:
-            if daemon:
+    source = SourceGate(interval)
+    started = time.monotonic()
+    deadline = started + max_seconds if max_seconds else float('inf')
+    count = submitted = 0
+    pending = set()
+    drained = False
+    pause_pending = False
+    paused = False
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        while pending or source.stopped.is_set() or pause_pending or (not drained and time.monotonic() < deadline and (limit == 0 or submitted < limit)):
+            if source.stopped.is_set() and not paused:
+                pause_pending = True
+            if pause_pending:
+                try:
+                    cloud.call('pause-source')
+                    pause_pending = False
+                    paused = True
+                    print(json.dumps({'paused': True, 'reason': 'Source denied or rate-limited download.'}), flush=True)
+                except Exception as error:
+                    print(json.dumps({'pausePending': True, 'error': str(error)}), flush=True)
+                    time.sleep(5)
+            if paused and not pending:
+                if not daemon:
+                    break
+                source = SourceGate(interval)
+                paused = False
                 time.sleep(15)
+            can_claim = not pause_pending and not source.stopped.is_set() and not drained and len(pending) < 2 and time.monotonic() < deadline and (limit == 0 or submitted < limit)
+            if can_claim:
+                try:
+                    result = cloud.call('claim')
+                    if result.get('job'):
+                        pending.add(pool.submit(process, cloud, result['job'], source))
+                        submitted += 1
+                        continue
+                    if not daemon:
+                        drained = True
+                    elif not pending:
+                        time.sleep(15)
+                except Exception as error:
+                    print(json.dumps({'waiting': 'cloud connection', 'error': str(error)}), flush=True)
+                    if not daemon:
+                        raise
+                    time.sleep(5)
+            if not pending:
                 continue
-            print(json.dumps({'processed': count, 'capacityReached': result.get('capacityReached', False)}), flush=True)
-            break
-        try:
-            outcome = process(cloud, result['job'])
-        except Exception as error:
-            if not daemon:
-                raise
-            # Leave the lease to expire instead of losing the whole worker on a
-            # transient cloud failure while reporting a failed upload.
-            print(json.dumps({'waiting': 'cloud recovery', 'error': str(error)}), flush=True)
-            time.sleep(30)
-            continue
-        count += 1
-        print(json.dumps({'processed': count, **outcome}), flush=True)
-        if str(outcome.get('error', '')).startswith(('SOURCE_HTTP_403:', 'SOURCE_HTTP_401:', 'SOURCE_HTTP_429:')):
-            cloud.call('pause-source')
-            print(json.dumps({'paused': True, 'reason': 'Source denied or rate-limited download; resume manually from Admin.'}), flush=True)
-            if not daemon:
-                break
-        if outcome.get('error') == 'PHOTO_CAPACITY_LIMIT' and not daemon:
-            break
-        if count % 100 == 0:
-            try:
-                print(json.dumps(cloud.call('cleanup-approved')), flush=True)
-            except Exception as error:
-                print(json.dumps({'cleanupDeferred': True, 'error': str(error)}), flush=True)
-        # Wait AFTER completion too: download starts are always >= 2 seconds apart.
-        time.sleep(interval)
+            done, pending = wait(pending, timeout=1, return_when=FIRST_COMPLETED)
+            for future in done:
+                count += 1
+                try:
+                    outcome = future.result()
+                except Exception as error:
+                    outcome = {'status': 'lease_retry', 'error': str(error)}
+                print(json.dumps({'processed': count, 'elapsedSeconds': round(time.monotonic()-started, 2), **outcome}), flush=True)
+                if str(outcome.get('error', '')).startswith(('SOURCE_HTTP_403:', 'SOURCE_HTTP_401:', 'SOURCE_HTTP_429:')):
+                    source.stopped.set()
+                if outcome.get('error') == 'PHOTO_CAPACITY_LIMIT' and not daemon:
+                    drained = True
+                if count % 100 == 0:
+                    try:
+                        print(json.dumps(cloud.call('cleanup-approved')), flush=True)
+                    except Exception as error:
+                        print(json.dumps({'cleanupDeferred': True, 'error': str(error)}), flush=True)
 
 
 def review(cloud, port):

@@ -31,7 +31,7 @@ export function AdminPhotos(){
  const percent=total?Math.min(100,completed/total*100):0;
  const localConnected=!!data?.workerSeenAt&&Date.now()-Date.parse(data.workerSeenAt)<120000;
  const pipelineState=!data?'读取中':!data.processingEnabled?'已暂停':!localConnected?'等待本地程序连接':totals.processing?'本地处理中':total&&completed===total?'处理完成':'本地程序在线';
- return <section className="photo-admin"><h1>图片处理与自动上架</h1><p>本地单线程处理已有库存，每张完成后间隔 2 秒再下载下一张。照片仅在内存中处理并上传 Supabase，不保存到本地硬盘；关机后暂停，重新启动后续跑。不调用大模型。处理后的照片自动上传；未检测到已知 JAPANCARS 水印的照片自动通过，原先的“疑似”结果也按此规则自动通过，这里仅展示明确检测到水印的照片。车辆全部照片通过且文件校验成功后自动上架。</p>
+ return <section className="photo-admin"><h1>图片处理与自动上架</h1><p>本地流水线处理已有库存，同时最多处理 2 张；来源下载保持单路，请求开始时间至少间隔 2 秒。照片仅在内存中处理并上传 Supabase，不保存到本地硬盘；关机后暂停，重新启动后续跑。不调用大模型。处理后的照片自动上传；未检测到水印的只存成品，检测到水印的保留原图供审核。未检测到已知 JAPANCARS 水印的照片自动通过，原先的“疑似”结果也按此规则自动通过，这里仅展示明确检测到水印的照片。车辆全部照片通过且文件校验成功后自动上架。</p>
  {error&&<p role="alert" className="photo-error">{error}</p>}{notice&&<p role="status">{notice}</p>}
  <section className="photo-progress-panel" aria-label="本地处理进度">
  <div className="photo-progress-heading"><span className={`photo-live-dot ${data?.processingEnabled&&localConnected?'enabled':''}`}/><strong>{pipelineState}</strong><span className="photo-progress-percent">{percent.toFixed(1)}<small>%</small></span></div>
