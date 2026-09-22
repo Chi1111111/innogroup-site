@@ -107,6 +107,30 @@ class ProcessingTests(unittest.TestCase):
             self.assertIsNone(cloud.connections.connection)
             self.assertEqual(connection.request.call_count,3)
 
+    def test_mac_claim_includes_source_group(self):
+        import json
+        cloud=Cloud.__new__(Cloud)
+        cloud.config={'endpoint':'https://example.supabase.co/functions/v1/japan-photo-review','token':'test','sourceGroup':'mac'}
+        cloud.connections=threading.local()
+        with patch('cloud_worker.http.client.HTTPSConnection') as factory:
+            response=factory.return_value.getresponse.return_value
+            response.status=200
+            response.read.return_value=b'{"job":null}'
+            cloud.call('claim')
+            payload=json.loads(factory.return_value.request.call_args.kwargs['body'])
+            self.assertEqual(payload['sourceGroup'],'mac')
+
+    def test_mac_launch_agent_paths_and_limits(self):
+        import plistlib
+        from mac_setup import make_plist
+        root=Path('/Users/example/Library/Application Support/INNO Photo Worker')
+        config=plistlib.loads(plistlib.dumps(make_plist(root)))
+        args=config['ProgramArguments']
+        self.assertEqual(args[0],'/usr/bin/caffeinate')
+        self.assertEqual(args[args.index('--interval')+1],'1.5')
+        self.assertEqual(args[args.index('--config')+1],str(root/'connection.json'))
+        self.assertTrue(config['RunAtLoad'])
+
     def test_single_worker_lock(self):
         with tempfile.TemporaryDirectory() as directory:
             config = str(Path(directory)/'config.json')

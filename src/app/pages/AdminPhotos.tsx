@@ -3,7 +3,7 @@ import { invokeAdminFunction } from '../lib/adminApi';
 import '../../styles/admin-photos.css';
 
 type Photo = {id:string;vehicle:string;status:string;original_url:string|null;candidate_url:string|null;candidate_bytes:number;candidate_verified:boolean;error?:string;detection:{detected?:boolean;format?:string}};
-type Listing = {workerSeenAt?:string|null;items:Photo[];counts:Record<string,number>;usedBytes:number;budgetBytes:number;processingEnabled:boolean;registeredVehicles:number;publishedVehicles:number};
+type Listing = {sourceAssignment?:{splitEnabled:boolean;windowsSeenAt:string|null;macSeenAt:string|null};workerSeenAt?:string|null;items:Photo[];counts:Record<string,number>;usedBytes:number;budgetBytes:number;processingEnabled:boolean;registeredVehicles:number;publishedVehicles:number};
 const labels:Record<string,string>={queued:'排队中',processing:'处理中',pending_review:'修复待审',needs_inspection:'疑似水印，需检查',approved:'已通过',rejected:'已拒绝',failed:'失败',capacity_blocked:'容量暂停'};
 const api=<T,>(action:string,body:Record<string,unknown>={})=>invokeAdminFunction<T>('japan-photo-review',{action,...body});
 export function AdminPhotos(){
@@ -30,6 +30,7 @@ export function AdminPhotos(){
  const completed=['pending_review','needs_inspection','approved','rejected'].reduce((sum,key)=>sum+(totals[key]||0),0);
  const percent=total?Math.min(100,completed/total*100):0;
  const localConnected=!!data?.workerSeenAt&&Date.now()-Date.parse(data.workerSeenAt)<120000;
+ const connected=(seen?:string|null)=>!!seen&&Date.now()-Date.parse(seen)<120000;
  const pipelineState=!data?'读取中':!data.processingEnabled?'已暂停':!localConnected?'等待本地程序连接':totals.processing?'本地处理中':total&&completed===total?'处理完成':'本地程序在线';
  return <section className="photo-admin"><h1>图片处理与自动上架</h1><p>本地流水线处理已有库存，同时最多处理 3 张；来源下载保持单路，请求开始时间至少间隔 1.5 秒。照片仅在内存中处理并上传 Supabase，不保存到本地硬盘；关机后暂停，重新启动后续跑。不调用大模型。处理后的照片自动上传；未检测到水印的只存成品，检测到水印的保留原图供审核。未检测到已知 JAPANCARS 水印的照片自动通过，原先的“疑似”结果也按此规则自动通过，这里仅展示明确检测到水印的照片。车辆全部照片通过且文件校验成功后自动上架。</p>
  {error&&<p role="alert" className="photo-error">{error}</p>}{notice&&<p role="status">{notice}</p>}
@@ -40,6 +41,7 @@ export function AdminPhotos(){
  <p className="photo-progress-caption">{progressError?'进度刷新失败，保留上次结果；稍后自动重试。':`每 10 秒更新进度${progressAt?' · '+progressAt.toLocaleTimeString('zh-CN'):''}`} · 按已入队照片计算，登记期间总数会增加。处理完成不等于审核通过。</p>
  </section>
  <div className="photo-stats"><strong>{localConnected?'本地程序已连接':'本地程序未连接'}</strong><span>已登记 {data?.registeredVehicles??0} 辆 · 已上架 {data?.publishedVehicles??0} 辆</span><span>预留 {((data?.usedBytes||0)/1e9).toFixed(2)} / {((data?.budgetBytes||0)/1e9).toFixed(1)} GB</span></div>
+ {data?.sourceAssignment&&<p>Windows：{connected(data.sourceAssignment.windowsSeenAt)?'在线':'未连接'} · Mac mini：{connected(data.sourceAssignment.macSeenAt)?'在线':'未连接'} · {data.sourceAssignment.splitEnabled?'已分工：Windows 处理 919919 / GABS，Mac 处理 Japan Cars。':'等待 Mac 接入，Windows 暂时处理全部来源。'}</p>}
  <p>{Object.entries(data?.counts||{}).map(([key,value])=>`${labels[key]||key} ${value}`).join(' · ')}</p>
  <div className="photo-controls"><button disabled={busy||!data} onClick={()=>void run('control',{enabled:!data?.processingEnabled},data?.processingEnabled?'已暂停领取新图片，正在处理的图片会完成。':'队列已允许继续；本地程序运行时会领取下一张。')}>{data?.processingEnabled?'暂停处理':'允许继续'}</button><button disabled={busy} onClick={()=>void run('retry',{},'失败任务已重新排队。')}>重试失败项</button><button disabled={busy} onClick={()=>void load()}>刷新照片列表</button><span className="photo-local-badge">本地执行 · Supabase 存储 · 无模型 token</span></div>
  <p>本地程序需要保持运行。遇到来源 403／429 会自动暂停，不会反复请求；检查原因后再继续。通过审核的成品验证成功后，本地程序会清理云端对应原图；容量显示为保守预留量。拒绝任意照片会使对应车辆停止上架；已签发的图片链接最长一小时失效。</p>

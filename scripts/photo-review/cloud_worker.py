@@ -53,6 +53,8 @@ class Cloud:
     def call(self, action, **payload):
         # HTTPSConnection reuses TLS/TCP connections. Each worker owns its own
         # connection so concurrent uploads never share request/response state.
+        if action == 'claim':
+            payload['sourceGroup'] = self.config.get('sourceGroup', 'windows')
         endpoint = urlsplit(self.config['endpoint'])
         connection = getattr(self.connections, 'connection', None)
         if connection is None:

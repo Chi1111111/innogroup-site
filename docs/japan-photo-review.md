@@ -45,3 +45,7 @@ Owner policy update: only confirmed template matches (score >= 0.88) require man
 Pipeline optimization: claim plus complete replaces claim/original/candidate/finish for photos eligible for automatic approval. Complete uploads, reads back and hashes the candidate before saving candidate path, verified flag and final status together. Confirmed watermark photos require an original before completing. At most three leased jobs are in flight, bounded in memory; source downloads share a lock and a 1.5-second start gap. Source 401/403/429 stops subsequent downloads immediately, including waiting workers, then pauses the cloud queue. The existing single-process OS lock is retained.
 
 Upload connection reuse: three in-flight jobs maximum, with one persistent HTTPS connection per cloud-calling thread. Source downloads stay serial with a minimum 1.5-second start gap. Failed cloud connections are discarded; mutations are not replayed blindly.
+
+## Mac mini handoff
+
+The private Mac handoff includes MAC-CODEX-README.md and mac_setup.py. The first Mac claim enables sticky source assignment: mac receives www.japancars.co.jp; windows receives 919919 and GABS. Until then, Windows keeps all sources. Handover drains active Windows Japan Cars jobs. A global pause still pauses both workers. Per-worker heartbeat timestamps are exposed in Admin. Mac logout stops its user LaunchAgent; login starts it again. See the packaged README for recovery and returning all sources to Windows.

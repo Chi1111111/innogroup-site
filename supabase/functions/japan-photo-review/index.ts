@@ -42,7 +42,7 @@ Deno.serve(async req => {
       }
       return respond(200,{vehicles,count:vehicles.length,refreshedAt:new Date().toISOString(),pricing:{nzdPerJpy:0,serviceFeeNzd:0,shippingNzd:0,complianceNzd:0,registrationNzd:0,emissionsNzd:0,gstRate:0.15},hasMore:!body.id&&ready.length===500});
     }
-    const setting = checked(await client.from('japan_photo_settings').select('key_hash,used_bytes,budget_bytes,processing_enabled,worker_seen_at').eq('id',1).single());
+    const setting = checked(await client.from('japan_photo_settings').select('key_hash,used_bytes,budget_bytes,processing_enabled,worker_seen_at,mac_worker_enabled,windows_seen_at,mac_seen_at').eq('id',1).single());
     const sessionSecret = Deno.env.get('ADMIN_SESSION_SECRET');
     admin = Boolean(sessionSecret && await verifyAdminSession(req, sessionSecret));
     if (!admin) {
@@ -111,9 +111,10 @@ Deno.serve(async req => {
       return respond(200, { received: rows.length });
     }
     if (action === 'claim') {
-      checked(await client.from('japan_photo_settings').update({worker_seen_at:new Date().toISOString()}).eq('id',1));
-      const jobs = checked(await client.rpc('claim_japan_photo'));
-      return respond(200, { job: jobs?.[0] || null, workerSeenAt:setting.worker_seen_at,processingEnabled:setting.processing_enabled, capacityReached: Number(setting.used_bytes) >= Number(setting.budget_bytes) });
+      const sourceGroup = body.sourceGroup || 'windows';
+      if (!['windows','mac'].includes(sourceGroup)) return respond(400,{error:'Invalid source group'});
+      const jobs = checked(await client.rpc('claim_japan_photo_for_source',{source_group:sourceGroup}));
+      return respond(200, { job: jobs?.[0] || null, workerSeenAt:setting.worker_seen_at,sourceAssignment:{splitEnabled:setting.mac_worker_enabled,windowsSeenAt:setting.windows_seen_at,macSeenAt:setting.mac_seen_at},processingEnabled:setting.processing_enabled, capacityReached: Number(setting.used_bytes) >= Number(setting.budget_bytes) });
     }
     if (action === 'status') {
       const [counts, registered, published] = await Promise.all([
@@ -122,7 +123,7 @@ Deno.serve(async req => {
         client.from('japan_photo_ready_vehicles').select('id',{count:'exact',head:true}),
       ]);
       checked(registered); checked(published);
-      return respond(200,{counts:checked(counts),workerSeenAt:setting.worker_seen_at,processingEnabled:setting.processing_enabled,registeredVehicles:registered.count,publishedVehicles:published.count,usedBytes:setting.used_bytes,budgetBytes:setting.budget_bytes});
+      return respond(200,{counts:checked(counts),workerSeenAt:setting.worker_seen_at,sourceAssignment:{splitEnabled:setting.mac_worker_enabled,windowsSeenAt:setting.windows_seen_at,macSeenAt:setting.mac_seen_at},processingEnabled:setting.processing_enabled,registeredVehicles:registered.count,publishedVehicles:published.count,usedBytes:setting.used_bytes,budgetBytes:setting.budget_bytes});
     }
     if (action === 'list') {
       const offset = Math.max(0, Math.min(1_000_000, Number(body.offset) || 0));
@@ -141,7 +142,7 @@ Deno.serve(async req => {
         }
       }
       const counts = checked(await client.rpc('japan_photo_counts'));
-      return respond(200, { items, counts, pageSize, workerSeenAt:setting.worker_seen_at,processingEnabled:setting.processing_enabled, registeredVehicles: (await client.from('japan_photo_vehicles').select('id',{count:'exact',head:true})).count, publishedVehicles:(await client.from('japan_photo_ready_vehicles').select('id',{count:'exact',head:true})).count, usedBytes: setting.used_bytes, budgetBytes: setting.budget_bytes, bucket: BUCKET });
+      return respond(200, { items, counts, pageSize, workerSeenAt:setting.worker_seen_at,sourceAssignment:{splitEnabled:setting.mac_worker_enabled,windowsSeenAt:setting.windows_seen_at,macSeenAt:setting.mac_seen_at},processingEnabled:setting.processing_enabled, registeredVehicles: (await client.from('japan_photo_vehicles').select('id',{count:'exact',head:true})).count, publishedVehicles:(await client.from('japan_photo_ready_vehicles').select('id',{count:'exact',head:true})).count, usedBytes: setting.used_bytes, budgetBytes: setting.budget_bytes, bucket: BUCKET });
     }
     if (action === 'decide-batch') {
       if (!Array.isArray(body.ids) || !body.ids.length || body.ids.length > 100 || body.ids.some((id: unknown) => typeof id !== 'string' || !/^[a-f0-9]{64}$/.test(id))) return respond(400, { error: 'Select 1–100 photos' });
