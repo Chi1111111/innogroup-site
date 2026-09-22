@@ -28,14 +28,20 @@ Deno.serve(async req => {
       else query = query.range(Math.max(0, Number(body.offset)||0), Math.max(0, Number(body.offset)||0)+499);
       const ready = checked(await query);
       const ids=[...new Set(ready.flatMap(v=>body.id?v.photo_ids:v.photo_ids.slice(0,1)))];
-      const jobs=ids.length?checked(await client.from('japan_photo_jobs').select('id,candidate_path').in('id',ids).eq('status','approved').eq('candidate_verified',true)):[];
+      // Each ID is a 64-character hash. A full catalog page exceeds the
+      // gateway's GET URL limit, so keep each PostgREST lookup below 8 KB.
+      const jobs: {id:string;candidate_path:string|null}[]=[];
+      for(let start=0;start<ids.length;start+=100){
+        jobs.push(...checked(await client.from('japan_photo_jobs').select('id,candidate_path').in('id',ids.slice(start,start+100)).eq('status','approved').eq('candidate_verified',true)));
+      }
       const paths=[...new Set(jobs.map(j=>j.candidate_path).filter(Boolean))];
       const signed=paths.length?checked(await client.storage.from(BUCKET).createSignedUrls(paths,3600)):[];
       const urls=new Map(signed.map(i=>[i.path,i.signedUrl]));
+      const photoPaths=new Map(jobs.map(j=>[j.id,j.candidate_path]));
       const vehicles=[];
       for (const v of ready) {
         const selectedIds=body.id?v.photo_ids:v.photo_ids.slice(0,1);
-        const images=selectedIds.map((id:string)=>urls.get(jobs.find(j=>j.id===id)?.candidate_path)).filter(Boolean);
+        const images=selectedIds.map((id:string)=>urls.get(photoPaths.get(id))).filter(Boolean);
         if(images.length!==selectedIds.length)continue;
         const { imageUrl: _image, imageUrls: _images, sourceUrl: _source, ...payload } = v.payload;
         vehicles.push({...payload,imageUrl:images[0],imageUrls:body.id?images:undefined,photoCount:v.photo_ids.length});
