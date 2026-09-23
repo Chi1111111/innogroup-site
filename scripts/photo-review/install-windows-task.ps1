@@ -8,7 +8,7 @@ $photoAction = New-ScheduledTaskAction -Execute $photoShell -Argument ('-NoProfi
 $photoLogon = New-ScheduledTaskTrigger -AtLogOn -User $photoUser
 # Also recover if the task exhausts failure retries or was stopped externally.
 # IgnoreNew prevents recurring triggers from interrupting a healthy worker.
-$photoRecovery = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
+$photoRecovery = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
 $photoSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 $photoPrincipal = New-ScheduledTaskPrincipal -UserId $photoUser -LogonType Interactive -RunLevel Limited
 Register-ScheduledTask -TaskName $photoTaskName -Action $photoAction -Trigger @($photoLogon,$photoRecovery) -Settings $photoSettings -Principal $photoPrincipal -Description 'INNO photo processing. Login startup, failure restart, no browser or Codex required. Pause processing from Admin Photos; disable this task to uninstall unattended startup.' -Force | Out-Null

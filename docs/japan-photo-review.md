@@ -48,7 +48,7 @@ Upload connection reuse: three in-flight jobs maximum, with one persistent HTTPS
 
 ## Windows independent startup
 
-Run `scripts/photo-review/install-windows-task.ps1` once as the Windows user who owns the photo configuration. It installs the limited-permission `INNO Photo Worker` scheduled task. The task starts at user login, restarts an exited worker after one minute, and has a five-minute recovery trigger with IgnoreNew and no execution time limit. No browser or Codex process is required. The existing desktop launcher uses this task when installed. Windows must remain logged in, awake and connected; locking the screen is fine.
+Run `scripts/photo-review/install-windows-task.ps1` once as the Windows user who owns the photo configuration. It installs the limited-permission `INNO Photo Worker` scheduled task. The task starts at user login, restarts an exited worker after one minute, and has a one-minute recovery trigger with IgnoreNew and no execution time limit. No browser or Codex process is required. The existing desktop launcher uses this task when installed. Windows must remain logged in, awake and connected; locking the screen is fine.
 
 Logs are written to `private-config/photo-local-*.log` and `photo-task.log`; photos remain in memory/cloud. The single-worker OS lock prevents overlapping processing. Admin pause remains authoritative and is not overridden by restart. To permanently stop unattended startup, disable `INNO Photo Worker` in Task Scheduler and end its running task. An interrupted photo becomes available again when its lease expires.
 
