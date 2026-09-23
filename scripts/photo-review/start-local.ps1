@@ -1,5 +1,11 @@
 # Starts one hidden local processor. The Python OS lock prevents duplicate workers.
 $ErrorActionPreference = 'Stop'
+$photoTask = Get-ScheduledTask -TaskName 'INNO Photo Worker' -ErrorAction SilentlyContinue
+if ($photoTask) {
+    Start-ScheduledTask -TaskName 'INNO Photo Worker'
+    Write-Output 'Started the independent INNO Photo Worker scheduled task.'
+    return
+}
 $photoWorkspace = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
 $photoConfig = Join-Path $photoWorkspace 'private-config/japan-photo-review.json'
 if (-not (Test-Path -LiteralPath $photoConfig)) { throw 'Photo configuration is missing. Configure private-config/japan-photo-review.json first.' }

@@ -46,6 +46,12 @@ Pipeline optimization: claim plus complete replaces claim/original/candidate/fin
 
 Upload connection reuse: three in-flight jobs maximum, with one persistent HTTPS connection per cloud-calling thread. Source downloads stay serial with a minimum 1.5-second start gap. Failed cloud connections are discarded; mutations are not replayed blindly.
 
-## Mac mini handoff
+## Windows independent startup
+
+Run `scripts/photo-review/install-windows-task.ps1` once as the Windows user who owns the photo configuration. It installs the limited-permission `INNO Photo Worker` scheduled task. The task starts at user login, restarts an exited worker after one minute, and has a five-minute recovery trigger with IgnoreNew and no execution time limit. No browser or Codex process is required. The existing desktop launcher uses this task when installed. Windows must remain logged in, awake and connected; locking the screen is fine.
+
+Logs are written to `private-config/photo-local-*.log` and `photo-task.log`; photos remain in memory/cloud. The single-worker OS lock prevents overlapping processing. Admin pause remains authoritative and is not overridden by restart. To permanently stop unattended startup, disable `INNO Photo Worker` in Task Scheduler and end its running task. An interrupted photo becomes available again when its lease expires.
+
+## Mac installation
 
 The private Mac handoff includes MAC-CODEX-README.md and mac_setup.py. The first Mac claim enables sticky source assignment: mac receives www.japancars.co.jp; windows receives 919919 and GABS. Until then, Windows keeps all sources. Handover drains active Windows Japan Cars jobs. A global pause still pauses both workers. Per-worker heartbeat timestamps are exposed in Admin. Mac logout stops its user LaunchAgent; login starts it again. See the packaged README for recovery and returning all sources to Windows.
