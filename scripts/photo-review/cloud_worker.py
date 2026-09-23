@@ -21,16 +21,17 @@ from datetime import datetime, timezone
 HOSTS = {'vimg.gabs.biz', 'www.919919.jp', 'www.japancars.co.jp', 'site.gabs.biz', 'bidimg.gabs.biz'}
 
 
-def safe_url(url):
+def safe_url(url, *, redirect=False):
     p = urlsplit(url)
-    if p.scheme != 'https' or p.hostname not in HOSTS or p.username or p.password or p.port not in (None, 443):
+    allowed_hosts = HOSTS | {'tmpimg.gabs.biz'} if redirect else HOSTS
+    if p.scheme != 'https' or p.hostname not in allowed_hosts or p.username or p.password or p.port not in (None, 443):
         raise ValueError('Unsupported image URL')
     return url
 
 
 class CheckedRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return super().redirect_request(req, fp, code, msg, headers, safe_url(newurl))
+        return super().redirect_request(req, fp, code, msg, headers, safe_url(newurl, redirect=True))
 
 
 def download(url):
@@ -76,7 +77,7 @@ class WorkerTrace:
 
     def snapshot(self):
         with self.lock:
-            return {'version': 'worker-details-1', 'active': list(self.active.values())[:3], 'lastError': self.last_error}
+            return {'version': 'worker-redirect-2', 'active': list(self.active.values())[:3], 'lastError': self.last_error}
 
 
 class Cloud:

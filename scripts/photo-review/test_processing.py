@@ -11,6 +11,15 @@ from unittest.mock import patch
 
 
 class ProcessingTests(unittest.TestCase):
+    def test_verified_image_redirect_host_only(self):
+        url = 'https://tmpimg.gabs.biz/aucnet/photo.jpg'
+        self.assertEqual(safe_url(url, redirect=True), url)
+        with self.assertRaises(ValueError):
+            safe_url(url)
+        for url in ['http://tmpimg.gabs.biz/a.jpg', 'https://tmpimg.gabs.biz.evil.test/a.jpg', 'https://127.0.0.1/a.jpg', 'https://user@tmpimg.gabs.biz/a.jpg']:
+            with self.assertRaises(ValueError):
+                safe_url(url, redirect=True)
+
     def test_detection_and_lossless_outside_mask(self):
         rng = np.random.default_rng(5)
         original = rng.integers(30, 200, (480, 640, 3), dtype=np.uint8)
