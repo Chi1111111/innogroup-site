@@ -52,3 +52,29 @@ it('does not fall back to unapproved static inventory when the catalog is empty'
  expect(fetcher.mock.calls[0][0]).toContain('/functions/v1/japan-photo-review');
  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({action:'catalog'});
 });
+
+it('publishes the first batch before later batches fail', async () => {
+  const progress = vi.fn();
+  vi.stubGlobal('fetch', vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ vehicles: [valid], hasMore: true }) })
+    .mockImplementationOnce(async () => {
+      expect(progress).toHaveBeenCalledWith(expect.objectContaining({ count: 1 }));
+      throw new Error('later batch failed');
+    }));
+  const { loadJapanMarketData } = await import('./japanMarket');
+  await expect(loadJapanMarketData(progress)).rejects.toThrow('later batch failed');
+  expect(progress.mock.calls[0][0].vehicles[0].id).toBe(valid.id);
+});
+
+it('aborts a stalled catalog request after 30 seconds', async () => {
+  vi.useFakeTimers();
+  try {
+    vi.stubGlobal('fetch', vi.fn((_url, options) => new Promise((_resolve, reject) => {
+      options.signal.addEventListener('abort', () => reject(new Error('aborted')));
+    })));
+    const { loadJapanMarketData } = await import('./japanMarket');
+    const result = expect(loadJapanMarketData()).rejects.toThrow('aborted');
+    await vi.advanceTimersByTimeAsync(30_000);
+    await result;
+  } finally { vi.useRealTimers(); }
+});

@@ -14,6 +14,7 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
   const [params, setParams] = useSearchParams();
   const [payload, setPayload] = useState<JapanMarketPayload | null>(null);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [retry, setRetry] = useState(0);
   const [layout, setLayout] = useState<'list' | 'grid'>('list');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,12 +23,16 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     setError('');
-    loadJapanMarketData().then((data) => { if (active) setPayload(data); })
-      .catch(() => { if (active) setError('unavailable'); });
-    return () => { active = false; };
+    setIsLoading(true);
+    loadJapanMarketData((data) => { if (active) setPayload(data); }, controller.signal)
+      .then((data) => { if (active) setPayload(data); })
+      .catch(() => { if (active) setError('unavailable'); })
+      .finally(() => { if (active) setIsLoading(false); });
+    return () => { active = false; controller.abort(); };
   }, [retry]);
-  const filters = useMemo(() => readMarketFilters(params, payload?.vehicles, initialMakeSlug, initialModelSlug), [params, payload, initialMakeSlug, initialModelSlug]);
+  const filters = useMemo(() => readMarketFilters(params, payload?.vehicles, initialMakeSlug, initialModelSlug, !isLoading && !error), [params, payload, initialMakeSlug, initialModelSlug, isLoading, error]);
   const deferredQuery = useDeferredValue(filters.q);
   const filtered = useMemo(() => filterMarketVehicles(payload?.vehicles ?? [], { ...filters, q: deferredQuery }), [payload, filters, deferredQuery]);
   const page = marketPage(params.get('page'), filtered.length);
@@ -36,10 +41,10 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
 
   // URL state supports reloads, shareable searches and browser Back.
   useEffect(() => {
-    if (!payload || filters.q !== deferredQuery) return;
+    if (!payload || isLoading || error || filters.q !== deferredQuery) return;
     const clean = marketSearchParams(filters, page);
     if (clean.toString() !== params.toString()) setParams(clean, { replace: true });
-  }, [payload, filters, deferredQuery, page, params, setParams]);
+  }, [payload, isLoading, error, filters, deferredQuery, page, params, setParams]);
   useEffect(() => {
     if (!mobileOpen) return;
     const element = dialog.current;
@@ -90,7 +95,9 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
         </div>
         <div className="jm-results-toolbar"><button type="button" className="jm-filter-trigger" onClick={() => setMobileOpen(true)} aria-haspopup="dialog"><SlidersHorizontal size={18} />{text({ en: 'Filters', zh: '筛选' })}{tags.length > 0 && <span>{tags.length}</span>}</button><p className="jm-price-disclaimer">{text({ en: 'All prices in NZD · FOB', zh: '价格单位：纽币 · FOB 离岸价' })}</p><label className="jm-sort"><span>{text({ en: 'Sort', zh: '排序' })}</span><select aria-label={text({ en: 'Sort by', zh: '排序方式' })} value={filters.sort} onChange={(e) => update({ sort: e.target.value })}>{SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{text(option)}</option>)}</select></label></div>
         {tags.length > 0 && <div className="jm-active-filters" aria-label={text({ en: 'Active filters', zh: '已选筛选条件' })}>{tags.map((tag, i) => <button type="button" key={`${tag.label}-${i}`} onClick={() => update(tag.patch)} aria-label={`${text({ en: 'Remove', zh: '移除' })} ${tag.label}`}>{tag.label}<X size={14} /></button>)}<button type="button" className="jm-clear-all" onClick={clear}>{text({ en: 'Clear all', zh: '全部清除' })}</button></div>}
-        {error ? <div className="jm-empty" role="alert"><RefreshCw size={30} /><h2>{text({ en: 'Listings could not be loaded', zh: '暂时无法加载车源' })}</h2><p>{text({ en: 'Please try again in a moment.', zh: '请稍后重试。' })}</p><button type="button" className="jm-primary" onClick={() => setRetry((n) => n + 1)}>{text({ en: 'Try again', zh: '重新加载' })}</button></div>
+        {isLoading && payload && <p role="status">{text({ en: 'Loading more vehicles… Results are still updating.', zh: '正在加载更多车辆，结果仍在更新…' })}</p>}
+        {error && payload && <p role="alert">{text({ en: 'Some listings could not be loaded. Showing the vehicles received so far.', zh: '部分车源加载失败，当前显示已收到的车辆。' })} <button type="button" onClick={() => setRetry((n) => n + 1)}>{text({ en: 'Try again', zh: '重试' })}</button></p>}
+        {error && !payload ? <div className="jm-empty" role="alert"><RefreshCw size={30} /><h2>{text({ en: 'Listings could not be loaded', zh: '暂时无法加载车源' })}</h2><p>{text({ en: 'Please try again in a moment.', zh: '请稍后重试。' })}</p><button type="button" className="jm-primary" onClick={() => setRetry((n) => n + 1)}>{text({ en: 'Try again', zh: '重新加载' })}</button></div>
           : !payload ? <div aria-label={text({ en: 'Loading vehicles', zh: '正在加载车辆' })} className="jm-loading">{[1, 2, 3].map((n) => <div key={n} />)}</div>
           : filtered.length === 0 ? <div className="jm-empty"><Search size={32} /><h2>{text(payload?.vehicles.length===0?{en:'No vehicles available yet',zh:'暂无已上架车辆'}:{ en: 'No cars match these filters', zh: '没有符合条件的车辆' })}</h2><p>{text(payload?.vehicles.length===0?{en:'New listings will appear here once their photos have been reviewed.',zh:'车辆照片审核完成后，将自动展示在这里。'}:{ en: 'Try a wider budget or remove a filter to see more cars.', zh: '试试扩大预算或移除部分筛选条件。' })}</p><button type="button" className="jm-primary" onClick={clear}>{text({ en: 'Clear filters', zh: '清除筛选' })}</button><Link to="/vehicles/find-my-car#find-car-form">{text({ en: 'Ask Inno to find a car', zh: '让 Inno 帮你找车' })}<ArrowRight size={16} /></Link></div>
           : <><div className={`jm-listings jm-listings-${layout}`} aria-busy={filters.q !== deferredQuery}>{filtered.slice(start, start + PAGE_SIZE).map((vehicle, i) => <JapanMarketListingCard key={vehicle.id} vehicle={vehicle} priority={i === 0} />)}</div>

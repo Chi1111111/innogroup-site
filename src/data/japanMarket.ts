@@ -111,20 +111,34 @@ async function fetchMarketPayload(path: string) {
   return { ...payload, vehicles, count: path.endsWith('/index.json') ? vehicles.length : payload.count };
 }
 
-async function approvedCatalog(body: Record<string,unknown> = {}) {
+async function approvedCatalog(body: Record<string,unknown> = {}, signal?: AbortSignal) {
   const base=import.meta.env.VITE_SUPABASE_URL as string | undefined;
   if(!base) throw new Error('Japan Market is temporarily unavailable.');
-  const response=await fetch(`${base}/functions/v1/japan-photo-review`,{method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_ANON_KEY as string},body:JSON.stringify({action:'catalog',...body})});
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  signal?.addEventListener('abort', abort, { once: true });
+  const timer = setTimeout(abort, 30_000);
+  try {
+  const response=await fetch(`${base}/functions/v1/japan-photo-review`,{signal:controller.signal,method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_ANON_KEY as string},body:JSON.stringify({action:'catalog',...body})});
   if(!response.ok)throw new Error('Japan Market is temporarily unavailable.');
-  return response.json() as Promise<JapanMarketDetailPayload & {hasMore:boolean}>;
+  return await response.json() as JapanMarketDetailPayload & {hasMore:boolean};
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', abort);
+  }
 }
-export async function loadJapanMarketData(): Promise<JapanMarketPayload> {
-  const first=await approvedCatalog();
+export async function loadJapanMarketData(onProgress?: (data: JapanMarketPayload) => void, signal?: AbortSignal): Promise<JapanMarketPayload> {
+  const first=await approvedCatalog({}, signal);
   const vehicles=[...first.vehicles];
+  const snapshot = () => {
+    const valid = vehicles.filter(v=>!vehicleQualityIssue(v)).map(publicJapanMarketPrice);
+    return {...first, vehicles:valid, count:valid.length};
+  };
+  onProgress?.(snapshot());
   let more=first.hasMore,offset=500;
-  while(more){const next=await approvedCatalog({offset});vehicles.push(...next.vehicles);more=next.hasMore;offset+=500;}
-  const valid=vehicles.filter(v=>!vehicleQualityIssue(v)).map(publicJapanMarketPrice);
-  return {...first,vehicles:valid,count:valid.length};
+  while(more){const next=await approvedCatalog({offset}, signal);vehicles.push(...next.vehicles);more=next.hasMore;offset+=500;onProgress?.(snapshot());}
+  return snapshot();
 }
 export function loadJapanMarketInventory() { return fetchMarketPayload('/data/japan-market/index.json'); }
 export function loadJapanMarketFeatured() { return loadJapanMarketData(); }

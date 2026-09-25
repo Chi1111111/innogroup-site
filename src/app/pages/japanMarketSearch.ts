@@ -31,14 +31,14 @@ function year(value: string | null) {
   const n = Number(value);
   return Number.isInteger(n) && n >= 1900 && n <= new Date().getFullYear() + 1 ? String(n) : '';
 }
-export function readMarketFilters(params: URLSearchParams, vehicles?: JapanMarketVehicleSummary[], makeSlug = '', modelSlug = ''): MarketFilters {
+export function readMarketFilters(params: URLSearchParams, vehicles?: JapanMarketVehicleSummary[], makeSlug = '', modelSlug = '', complete = true): MarketFilters {
   const pathMake = vehicles?.find((v) => slugifyVehicleValue(v.make) === makeSlug)?.make ?? '';
   let make = params.get('make') ?? pathMake;
-  const invalidMake = vehicles && make && make !== 'Other' && !vehicles.some((v) => v.make === make);
+  const invalidMake = complete && vehicles && make && make !== 'Other' && !vehicles.some((v) => v.make === make);
   if (invalidMake) make = '';
   const pathModel = vehicles?.find((v) => v.make === make && slugifyVehicleValue(v.model) === modelSlug)?.model ?? '';
   let model = invalidMake ? '' : params.get('model') ?? pathModel;
-  if (vehicles && model && !vehicles.some((v) => v.model === model && (!make || (make === 'Other' ? !primaryMakes.has(v.make) : v.make === make)))) model = '';
+  if (complete && vehicles && model && !vehicles.some((v) => v.model === model && (!make || (make === 'Other' ? !primaryMakes.has(v.make) : v.make === make)))) model = '';
   let yearFrom = year(params.get('yearFrom'));
   let yearTo = year(params.get('yearTo'));
   if (yearFrom && yearTo && Number(yearFrom) > Number(yearTo)) [yearFrom, yearTo] = [yearTo, yearFrom];
