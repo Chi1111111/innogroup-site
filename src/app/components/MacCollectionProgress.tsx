@@ -26,7 +26,7 @@ export function collectionSignal(data: ProgressSnapshot, now: number) {
   const finished = data.latestRun;
   const registeredAt = Date.parse(data.recent?.[0]?.registered_at ?? '');
   const completed = checkpoint && finished && checkpoint.runId === finished.id && Date.parse(finished.finishedAt) >= Date.parse(checkpoint.savedAt) && !(registeredAt > Date.parse(finished.finishedAt));
-  if (completed) return '上一轮找车已结束';
+  if (completed) return finished.status === 'failed' ? '上一轮找车遇到问题' : finished.status === 'partial' ? '上一轮只完成了一部分' : '上一轮找车已结束';
   const signals = [checkpoint?.savedAt, data.recent?.[0]?.registered_at].map(v => Date.parse(v ?? '')).filter(Number.isFinite);
   return signals.some(time => now - time >= 0 && now - time < 180000) ? '最近正在找车' : '暂未收到新的找车消息';
 }

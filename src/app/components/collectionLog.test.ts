@@ -14,4 +14,5 @@ it('explains common failures without claiming an unobserved cause or retry', () 
   expect(explainProblem('PHOTO_CAPACITY_LIMIT')).toContain('空间不足');
   expect(explainProblem('unrecognized')).toContain('原因暂时无法确定');
   expect(photoSteps.repair).toBe('正在去除水印');
+  expect(explainProblem('Update is not a fast forward')).toContain('这一批没有发布成功');
 });
