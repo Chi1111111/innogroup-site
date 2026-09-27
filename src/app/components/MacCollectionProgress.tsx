@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { invokeAdminFunction } from '../lib/adminApi';
 import { explainProblem, inLastDay, photoSteps } from './collectionLog';
 import type { CollectionRun } from '../../data/japanMarketSync';
+import { CollectorLive } from './CollectorLive';
 
 type PhotoRecord = { id:string;vehicle:string;status:string;failure_count?:number;error?:string;updated_at:string };
 type PhotoRuntime = {active?:{id:string;stage:string}[]};
@@ -68,16 +69,16 @@ export function MacCollectionProgress() {
   const steps = [...(data?.settings?.mac_runtime?.active ?? []), ...(data?.settings?.windows_runtime?.active ?? [])];
   const hasPosition = checkpoint && (inLastDay(checkpoint.savedAt,now) || (checkpoint.pending ?? 0)>0);
   const problem = (message:string) => <><p>{explainProblem(message)}</p><details className="ajm-log-raw"><summary>原始错误（供技术同事查看）</summary><pre>{message}</pre></details></>;
-  return <section className="ajm-panel ajm-live" aria-label="采集与图片进度">
+  return <><CollectorLive /><section className="ajm-panel ajm-live" aria-label="采集与图片进度">
     <div className="ajm-panel-heading"><div><h2>现在进行到哪里了？</h2><p>每 15 秒自动更新，找车消息可能晚约 1 分钟。</p></div><button className="ajm-button" disabled={loading} onClick={() => setRevision(v => v + 1)}><RefreshCw size={16} className={loading ? 'ajm-spin' : ''}/>{loading ? '更新中…' : '刷新进度'}</button></div>
     {error && <p role="alert" className="ajm-alert danger">暂时无法读取进度。{data ? '下方是上次收到的消息，系统会自动重试。' : '系统会自动重试；如果一直失败，请重新登录。'}</p>}
     {outdated && <p role="status" className="ajm-alert warning">超过一分钟没有更新，下面的信息可能已经过时。</p>}
     {!data && !error && <p role="status">正在读取进度…</p>}
     {data && <>
       <div className="ajm-live-grid">
-        <article><span className="ajm-eyebrow">第一步 · 找车</span><h3>{error || outdated ? '等待更新' : collectionSignal(data,now)}</h3>
+        <article><span className="ajm-eyebrow">云端保存的找车进度</span><h3>采集断点与历史记录</h3>
           {hasPosition && <><p>上次看到的位置：<b>{cursor?.make} / {cursor?.model}</b>{cursor?.page ? `，第 ${cursor.page} 页` : ''}</p><p><strong>{count(checkpoint?.pending)}</strong> 辆车已保存进度，可继续处理</p></>}
-          <p>没有新消息时，可能在等下一轮，也可能是 Mac 或网络需要检查；不能仅凭此判断已关机。</p>
+          <p>这里是已保存的断点，不代表 Mac 正在运行。实时状态请看上方“Mac 此刻在做什么”。</p>
         </article>
         <article><span className="ajm-eyebrow">第二步 · 处理图片</span><h3>{error || outdated ? '等待更新' : !data.settings ? '暂时无法读取' : !data.settings.processing_enabled ? '图片处理已暂停' : photoRecent ? '图片程序最近有回应' : '暂未收到图片程序的消息'}</h3>
           <dl className="ajm-live-counts">{[['等待处理','queued'],['正在处理','processing'],['等同事检查','pending_review']].map(([label,key]) => <div key={key}><dt>{label}</dt><dd>{count(data.counts ? data.counts[key] ?? 0 : null)} <small>张</small></dd></div>)}</dl>
@@ -94,7 +95,7 @@ export function MacCollectionProgress() {
           {runs.map(run => <article className="ajm-log-item" key={run.id}><time>{time(run.finishedAt)}</time><p>{run.status==='success'?'这一轮找车完成':run.status==='partial'?'这一轮只完成了一部分':run.status==='cancelled'?'这一轮找车已取消':'这一轮找车遇到问题'}，找到 {count(run.metrics.accepted)} 辆符合条件的车。</p>{run.error && problem(run.error)}</article>)}
           {recent.map(vehicle => <article className="ajm-log-item" key={vehicle.id}><time>{time(vehicle.registered_at)}</time><p>已找到 {vehicle.make} {vehicle.model}，已交给图片队列，等待处理。</p></article>)}
           {!runs.length && !recent.length && !(checkpoint && inLastDay(checkpoint.savedAt,now)) && <p>{data.runs === null || data.recent === null ? '找车记录暂时读不到，请稍后刷新。' : '最近 24 小时没有可显示的找车记录。'}</p>}
-          <small>最多显示最近 20 次找车结果和 12 辆新车；Mac 未上传的本地动作暂时看不到。</small>
+          <small>这里保留当时的结果和错误，旧错误不代表现在仍未恢复。最多显示最近 20 次结果和 12 辆新车。</small>
         </section>
         <section><h3>图片记录</h3>
           {active.map(item => <article className="ajm-log-item" key={item.id}><time>{time(data.settings?.worker_seen_at)}</time><p><b>{item.vehicle}</b> · {photoSteps[steps.find(step=>step.id===item.id)?.stage ?? ''] ?? '图片已领取，等待下一步消息'}</p><small>{photoRecent && !outdated && !error ? '这是最近收到的处理步骤。' : '这是上次收到的步骤，当前状态待确认。'}</small></article>)}
@@ -105,5 +106,5 @@ export function MacCollectionProgress() {
         </section>
       </div></section>
     </>}
-  </section>;
+  </section></>;
 }

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { createLocalService } from './japan-market-local-service.mjs';
 // GitHub and desktop use the same batch controller and memory-only collector.
-export async function runCloudCollection({service=createLocalService({maxDurationMs:19800000}), pollMs=2000}={}) {
+export async function runCloudCollection({service=createLocalService({maxDurationMs:19800000}), pollMs=2000, onStatus=()=>{}}={}) {
 const {server,token} = service;
 await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
 const origin=`http://127.0.0.1:${server.address().port}`;
@@ -12,9 +12,11 @@ const call=async(path,method='GET')=>{
 };
 try {
  let status=await call('scan','POST');
+ onStatus(status);
  while(status.status==='running'){
   await new Promise(resolve=>setTimeout(resolve,pollMs));
   status=await call('status');
+  onStatus(status);
  }
  console.log(JSON.stringify({status:status.status,totalAdded:status.metrics?.totalAdded,message:status.message}));
  return status;

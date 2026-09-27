@@ -3,6 +3,7 @@ export const inLastDay = (value: string | undefined, now = Date.now()) => {
   return Number.isFinite(timestamp) && timestamp <= now && timestamp > now - 86400000;
 };
 export function explainProblem(message = '') {
+  if (/Cloud HTTP 503|schema cache|service unavailable/i.test(message)) return '当时云端服务暂时没有响应，这一步被中断。后续是否已经补交或恢复，请看最新实时日志；这条旧记录不会自动改成成功。';
   if (/not a fast forward|git\/refs\/heads\/main.*422/i.test(message)) return '发布车源时，网站上同时有其他更新，这一批没有发布成功。请查看已保存的找车进度；如果一直没有继续，请让负责 Mac 的同事检查。';
   if (/429|rate.?limit|额度|限流/i.test(message)) return '来源网站暂时限制访问，请先等待，不要反复点击重试。';
   if (/403|401|access.?challenge|Authentication|拒绝访问/i.test(message)) return '暂时无法访问来源网站或连接服务，请让负责 Mac 的同事检查连接。';
