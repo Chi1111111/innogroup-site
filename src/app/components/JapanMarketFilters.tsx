@@ -3,7 +3,7 @@ import { useLanguage } from './SiteTranslator';
 import { formatBodyType, formatFuelType, type JapanMarketVehicleSummary } from '../../data/japanMarket';
 import { BODY_TYPES, FUEL_TYPES, PRICE_OPTIONS, type MarketFilters } from '../pages/japanMarketSearch';
 
-interface Props { filters: MarketFilters; vehicles: JapanMarketVehicleSummary[]; update: (patch: Partial<MarketFilters>) => void; }
+interface Props { filters: MarketFilters; vehicles: Pick<JapanMarketVehicleSummary, 'make' | 'model' | 'year'>[]; update: (patch: Partial<MarketFilters>) => void; }
 export function JapanMarketFilters({ filters: f, vehicles, update }: Props) {
   const { language, text } = useLanguage();
   const makes = [...new Set(vehicles.map((v) => v.make))].filter((make) => make !== 'Other').sort();

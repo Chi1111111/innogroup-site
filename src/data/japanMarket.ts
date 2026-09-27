@@ -67,6 +67,14 @@ export interface JapanMarketPayload {
   vehicles: JapanMarketVehicleSummary[];
 }
 
+export interface JapanMarketPage extends JapanMarketPayload {
+  page:number;
+  pageSize:number;
+  totalCount:number;
+  rotationDay:string;
+  facets:{make:string;model:string;year:number}[];
+}
+
 interface JapanMarketDetailPayload {
   source?: string;
   refreshedAt: string;
@@ -122,11 +130,18 @@ async function approvedCatalog(body: Record<string,unknown> = {}, signal?: Abort
   try {
   const response=await fetch(`${base}/functions/v1/japan-photo-review`,{signal:controller.signal,method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_ANON_KEY as string},body:JSON.stringify({action:'catalog',...body})});
   if(!response.ok)throw new Error('Japan Market is temporarily unavailable.');
-  return await response.json() as JapanMarketDetailPayload & {hasMore:boolean};
+  return await response.json() as JapanMarketDetailPayload & JapanMarketPage & {hasMore:boolean};
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', abort);
   }
+}
+export async function loadJapanMarketPage(filters:Record<string,unknown>={},signal?:AbortSignal):Promise<JapanMarketPage> {
+  const result=await approvedCatalog({...filters,action:'catalog-page'},signal);
+  if(!Array.isArray(result.vehicles) || !Number.isSafeInteger(result.count) || result.count<0 || !Array.isArray(result.facets))throw new Error('Invalid catalog page.');
+  const vehicles=result.vehicles.map(publicJapanMarketPrice);
+  if(vehicles.some(vehicle=>vehicleQualityIssue(vehicle)||vehicle.fobPriceNzd==null))throw new Error('Invalid priced vehicle in catalog.');
+  return {...result,vehicles};
 }
 export async function loadJapanMarketData(onProgress?: (data: JapanMarketPayload) => void, signal?: AbortSignal): Promise<JapanMarketPayload> {
   const first=await approvedCatalog({}, signal);
@@ -141,11 +156,11 @@ export async function loadJapanMarketData(onProgress?: (data: JapanMarketPayload
   return snapshot();
 }
 export function loadJapanMarketInventory() { return fetchMarketPayload('/data/japan-market/index.json'); }
-export function loadJapanMarketFeatured() { return loadJapanMarketData(); }
+export function loadJapanMarketFeatured() { return loadJapanMarketPage(); }
 export async function loadJapanMarketVehicle(id:string):Promise<JapanMarketVehicleResult|null>{
  const result=await approvedCatalog({id});
  const vehicle=result.vehicles[0];
- return vehicle&&!vehicleQualityIssue(vehicle)?{refreshedAt:result.refreshedAt,pricing:result.pricing,vehicle:publicJapanMarketPrice(vehicle)}:null;
+ return vehicle&&!vehicleQualityIssue(vehicle)&&publicJapanMarketPrice(vehicle).fobPriceNzd!=null?{refreshedAt:result.refreshedAt,pricing:result.pricing,vehicle:publicJapanMarketPrice(vehicle)}:null;
 }
 
 export function vehicleName(vehicle: JapanMarketVehicleSummary) {

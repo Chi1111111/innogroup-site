@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
-import { loadJapanMarketData, type JapanMarketPayload } from '../../data/japanMarket';
+import { loadJapanMarketPage, type JapanMarketPayload } from '../../data/japanMarket';
 import { dailyFeaturedVehicles, newZealandDay } from '../../data/japanMarketFeatured';
 import { useLanguage } from './SiteTranslator';
 import { JapanMarketVehicleCard } from './JapanMarketVehicleCard';
@@ -23,11 +23,13 @@ export function JapanMarketPreview() {
 
   useEffect(() => {
     let active = true;
-    loadJapanMarketData()
+    setFailed(false);
+    setBrokenImages(new Set());
+    loadJapanMarketPage()
       .then((data) => active && setPayload(data))
       .catch(() => active && setFailed(true));
     return () => { active = false; };
-  }, []);
+  }, [day]);
 
   return (
     <section className="border-y border-black/8 bg-[#111214] px-4 py-16 text-white sm:py-20">

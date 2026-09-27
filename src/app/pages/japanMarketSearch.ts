@@ -31,7 +31,7 @@ function year(value: string | null) {
   const n = Number(value);
   return Number.isInteger(n) && n >= 1900 && n <= new Date().getFullYear() + 1 ? String(n) : '';
 }
-export function readMarketFilters(params: URLSearchParams, vehicles?: JapanMarketVehicleSummary[], makeSlug = '', modelSlug = '', complete = true): MarketFilters {
+export function readMarketFilters(params: URLSearchParams, vehicles?: Pick<JapanMarketVehicleSummary, 'make' | 'model'>[], makeSlug = '', modelSlug = '', complete = true): MarketFilters {
   const pathMake = vehicles?.find((v) => slugifyVehicleValue(v.make) === makeSlug)?.make ?? '';
   let make = params.get('make') ?? pathMake;
   const invalidMake = complete && vehicles && make && make !== 'Other' && !vehicles.some((v) => v.make === make);

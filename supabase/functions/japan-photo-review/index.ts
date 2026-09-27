@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.106.1';
 
 import { corsHeaders, verifyAdminSession } from '../_shared/admin-session.ts';
+import { catalogPage } from '../_shared/japan-market-catalog.ts';
 
 const BUCKET = 'japan-photo-review';
 const client = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -22,6 +23,7 @@ Deno.serve(async req => {
     if (length > 15_000_000) return respond(413, { error: 'Request too large' });
     const body = await req.json();
     const action = body.action;
+    if (action === 'catalog-page') return respond(200,await catalogPage(client,body));
     if (action === 'catalog') {
       let query = client.from('japan_photo_ready_vehicles').select('id,payload,photo_ids').order('id').limit(1000);
       if (body.id) query = query.eq('id', String(body.id).toUpperCase());
