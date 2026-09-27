@@ -81,7 +81,7 @@ export function clearAdminSession() {
   setAdminSessionToken(null);
 }
 
-export async function invokeAdminFunction<T>(functionName: string, body: Record<string, unknown>) {
+export async function invokeAdminFunction<T>(functionName: string, body: Record<string, unknown>, signal?: AbortSignal) {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Admin 服务尚未配置。');
   }
@@ -90,6 +90,7 @@ export async function invokeAdminFunction<T>(functionName: string, body: Record<
   if (!token) throw new Error('管理员会话已过期，请重新登录。');
 
   const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+    signal,
     method: 'POST',
     headers: {
       apikey: supabaseAnonKey,

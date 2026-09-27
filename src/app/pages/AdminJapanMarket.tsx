@@ -1,13 +1,11 @@
-import { LocalJapanMarketRunner } from '../components/LocalJapanMarketRunner';
+import { MacCollectionProgress } from '../components/MacCollectionProgress';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowUpRight, CarFront, Check, Clock3, Download, Images, LayoutDashboard, RefreshCw, Search, type LucideIcon } from 'lucide-react';
 import { loadCollectionReport, type CollectionReport, type CollectionRun, type CollectionVehicleChange } from '../../data/japanMarketSync';
 import { formatNzd, japanMarketVehiclePath, loadJapanMarketInventory, type JapanMarketVehicleSummary } from '../../data/japanMarket';
-import { invokeAdminFunction } from '../lib/adminApi';
 import '../../styles/admin-japan-market.css';
 
-const WORKFLOW = 'https://github.com/Chi1111111/innogroup-site/actions/workflows/japan-market-daily-sync.yml';
 const statuses = { success: ['成功', 'success'], partial: ['部分完成', 'warning'], failed: ['采集失败', 'danger'], cancelled: ['已取消', 'muted'] } as const;
 const reasons: Record<string,string> = { invalid_record:'记录格式异常', missing_id:'缺少编号', invalid_make:'品牌异常', invalid_model:'车型异常', invalid_year:'年份异常', invalid_mileage:'里程异常', invalid_detail:'详情格式异常', outside_japan:'非日本库存', unavailable:'已售或不可用', missing_photos:'无可用相册', missing_model_slug:'来源详情链接缺少车型', group_mismatch:'车型目录不匹配' };
 const number = (v: number | null | undefined) => v == null ? '—' : v.toLocaleString('en-NZ');
@@ -78,20 +76,6 @@ export function AdminJapanMarket() {
   const [error,setError]=useState('');
   const [revision,setRevision]=useState(0);
   const [tab,setTab]=useState<'overview'|'inventory'|'history'>('overview');
-  const [scanning,setScanning]=useState(false);
-  const [scanMessage,setScanMessage]=useState('');
-  const [onlineDetails,setOnlineDetails]=useState(false);
-  const [scanUrl,setScanUrl]=useState(WORKFLOW);
-  const scan=async()=>{
-    if(scanning)return;
-    setScanning(true);setScanMessage('');setOnlineDetails(true);
-    try {
-      const result=await invokeAdminFunction<{started:boolean;message:string;workflowUrl:string}>('japan-market-scan',{});
-      setScanMessage(result.message);
-      if(result.workflowUrl?.startsWith('https://github.com/Chi1111111/innogroup-site/'))setScanUrl(result.workflowUrl);
-    } catch(e) {setScanMessage(e instanceof Error?e.message:'扫描启动失败，请重试。');}
-    finally {setScanning(false);}
-  };
   const [query,setQuery]=useState('');
   const [quality,setQuality]=useState('all');
   const [sort,setSort]=useState('newest');
@@ -142,17 +126,9 @@ export function AdminJapanMarket() {
     <nav className="admin-market-tabs" aria-label="采集管理导航">{([['overview','采集总览',LayoutDashboard],['inventory','车源与报价',CarFront],['history','运行记录',Clock3]] as const).map(([id,label,Icon])=><button type="button" key={id} className={tab===id?'active':''} aria-current={tab===id?'page':undefined} onClick={()=>setTab(id)}><Icon size={19}/>{label}{id==='inventory' && report && <small>{number(vehicles.length)}</small>}</button>)}</nav>
     <div className="ajm-main">
       <header className="ajm-header"><div><p className="ajm-eyebrow">INVENTORY OPERATIONS</p><h1>{tab==='overview'?'Japan Market 采集中心':tab==='inventory'?'车源与 FOB 报价':'采集运行记录'}</h1><p>增量采集 · 每次最多 {number(target)} 辆 · 保留现有库存</p></div>
-        <div className="ajm-actions"><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}><RefreshCw size={16} className={loading?'ajm-spin':''}/>{loading?'读取中…':'刷新记录'}</button><button className="ajm-button primary" type="button" disabled onClick={()=>void scan()}><RefreshCw size={16} className={scanning?'ajm-spin':''}/>线上采集已停用</button><button className="ajm-button" type="button" aria-expanded={onlineDetails} aria-controls="online-scan-details" onClick={()=>setOnlineDetails(v=>!v)}>详情</button></div>
+        <div className="ajm-actions"><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}><RefreshCw size={16} className={loading?'ajm-spin':''}/>{loading?'读取中…':'刷新记录'}</button></div>
       </header>
-      {onlineDetails && <section id="online-scan-details" className="ajm-panel" aria-label="线上扫描详情">
-        <h2>线上扫描详情</h2>
-        <p>线上采集已停用。以后新增车源使用本地采集；图片也由本地程序处理，成品存入 Supabase。</p>
-        <div className="ajm-actions"><a className="ajm-button" href={scanUrl} target="_blank" rel="noreferrer">查看线上任务与实时日志</a><button className="ajm-button" type="button" disabled={loading} onClick={()=>setRevision(v=>v+1)}>刷新线上详情</button></div>
-        <p>运行中的进度查看上方日志；以下为已发布的线上采集结果，包含新增车辆、照片变更及停止原因。</p>
-        {report?.runs.some(run=>run.trigger==='schedule' || run.trigger==='workflow_dispatch') ? report.runs.filter(run=>run.trigger==='schedule' || run.trigger==='workflow_dispatch').slice(0,5).map((run,index)=><RunDetails key={run.id} run={run} initiallyOpen={index===0}/>) : <p>尚无已发布的线上扫描记录。任务结束并发布后，点击“刷新线上详情”查看。</p>}
-      </section>}
-      <LocalJapanMarketRunner/>
-      {scanMessage && <p role="status" className="ajm-alert warning">{scanMessage} <a href={scanUrl} target="_blank" rel="noreferrer">查看任务进度</a></p>}
+      {tab==='overview' && <MacCollectionProgress/>}
       {error && <p role="alert" className="ajm-alert danger">{error}{report ? ' 当前仍显示上次读取的数据。' : ''}</p>}
       {loading && !report && <div role="status" className="ajm-empty">正在读取车源和采集记录…</div>}
       {report && <>
@@ -172,7 +148,7 @@ export function AdminJapanMarket() {
               <button className="ajm-quality-row" type="button" onClick={()=>selectQuality('ready')}><span>报价与照片齐全<small>可浏览的已采集车源</small></span><strong>{number(vehicles.filter(v=>v.fobPriceNzd!=null && (v.photoCount ?? 0)>0).length)}</strong><ArrowUpRight size={17}/></button>
             </section>
           </div>
-          <section className="ajm-panel ajm-policy"><div><p className="ajm-eyebrow">COLLECTION POLICY</p><h2>每日采集配置，异常保留旧数据</h2></div><dl><div><dt>计划时间</dt><dd>每天 00:00 · 新西兰时间</dd></div><div><dt>发布条件</dt><dd>验证通过即合并，旧库存保留</dd></div><div><dt>价格口径</dt><dd>FOB · NZD，进口费用另计</dd></div><div><dt>照片方式</dt><dd>保存源站完整相册链接</dd></div></dl></section>
+          <section className="ajm-panel ajm-policy"><div><p className="ajm-eyebrow">COLLECTION POLICY</p><h2>Mac 持续采集，异常保留旧数据</h2></div><dl><div><dt>计划时间</dt><dd>由 Mac 常驻程序安排下一轮</dd></div><div><dt>发布条件</dt><dd>验证通过即合并，旧库存保留</dd></div><div><dt>价格口径</dt><dd>FOB · NZD，进口费用另计</dd></div><div><dt>照片方式</dt><dd>采集后自动排队处理，合格图片上架</dd></div></dl></section>
         </>}
         {tab==='inventory' && <section className="ajm-panel ajm-inventory">
           <div className="ajm-inventory-tools"><label className="ajm-search"><Search size={18}/><input aria-label="搜索车源" placeholder="搜索品牌、车型、库存编号…" value={query} onChange={e=>{setQuery(e.target.value);setPage(1);}}/></label><select aria-label="车源完整度" value={quality} onChange={e=>{setQuality(e.target.value);setPage(1);}}><option value="all">全部车源</option><option value="ready">报价与照片齐全</option><option value="price">FOB 待确认</option><option value="photos">相册待补充</option></select><select aria-label="车源排序" title="按报价核对时间排序，缺失时使用车源更新时间" value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}}><option value="newest">从新到旧</option><option value="oldest">从旧到新</option><option value="original">原始顺序</option></select><button className="ajm-button" type="button" onClick={exportCsv}><Download size={16}/>导出 {number(filtered.length)} 辆</button></div>
@@ -182,7 +158,7 @@ export function AdminJapanMarket() {
         </section>}
         {tab==='history' && <section className="ajm-history"><p>最近保留 90 次运行记录。时间均为新西兰时间；记录随网站发布更新。</p>{report.runs.map(run=><RunDetails key={run.id} run={run}/>)}{!report.runs.length && <div className="ajm-empty">尚无采集详情。首次采集完成并发布后显示。</div>}</section>}
       </>}
-      <footer className="ajm-footer"><span>这里显示已发布快照，并非实时进度。线上扫描直接提交 GitHub 任务；每日新西兰时间 00:00 自动扫描，调度可能有延迟。</span><Link to="/japan-market" target="_blank">查看 Japan Market <ArrowUpRight size={15}/></Link></footer>
+      <footer className="ajm-footer"><span>上方进展自动读取云端；车源列表与历史统计为网站发布快照，可通过“刷新记录”更新。</span><Link to="/japan-market" target="_blank">查看 Japan Market <ArrowUpRight size={15}/></Link></footer>
     </div>
   </main>;
 }
