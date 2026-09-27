@@ -45,7 +45,7 @@ export const router = createBrowserRouter([
             },
           },
           { path: 'crm', lazy: async () => ({ Component: (await import('./pages/AdminCrm')).AdminCrm }) },
-          { path: 'photos', lazy: async () => ({ Component: (await import('./pages/AdminPhotos')).AdminPhotos }) },
+          { path: 'photos', Component: () => <Navigate to="/admin/japan-market" replace /> },
           { path: 'japan-market', lazy: async () => ({ Component: (await import('./pages/AdminJapanMarket')).AdminJapanMarket }) },
           { path: 'contracts', lazy: async () => ({ Component: (await import('./pages/AdminContracts')).AdminContracts }) },
           { path: 'invoices', lazy: async () => ({ Component: (await import('./pages/AdminInvoices')).AdminInvoices }) },

@@ -4,3 +4,5 @@
 
 .photo-worker-details{margin:20px 0;padding:20px;border:1px solid #ffffffb3;border-radius:20px;background:#ffffffa6;backdrop-filter:blur(20px)}
 .photo-worker-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.photo-worker-cards article{padding:18px;border:1px solid #dce4ef;border-radius:16px;background:#ffffffa6}.photo-worker-fault,.photo-worker-job{padding:12px;margin:12px 0;border-radius:12px;background:#eef3f9;overflow-wrap:anywhere}.photo-worker-details h3{font-size:16px;margin:12px 0}.photo-worker-details p{font-size:13px;line-height:1.7}.photo-worker-fault summary{cursor:pointer}@media(max-width:700px){.photo-worker-cards{grid-template-columns:1fr}}
+
+.photo-review-panel{padding:24px;margin-bottom:24px}.photo-review-panel h2{font-size:20px}.photo-review-panel>p{max-width:900px;line-height:1.8}.photo-review-panel .photo-controls>span{font-size:13px;color:#617168}

@@ -8,7 +8,8 @@ function setup({ authorized = true, githubFailure = false, databaseFailure = fal
   let handler;
   const query = (table) => {
     const result = { data: table === 'japan_photo_settings' ? { processing_enabled: true, worker_seen_at: '2026-09-27T10:00:00Z' } : [{ id: '1', make: 'Toyota', model: 'Aqua', registered_at: '2026-09-27T10:00:00Z' }], error: databaseFailure ? new Error('private database failure') : null };
-    return { select: () => ({ eq: () => ({ single: () => Promise.resolve(result) }), order: () => ({ limit: () => Promise.resolve(result) }) }) };
+    const chain = { select: () => chain, eq: () => chain, in: () => chain, gte: () => chain, order: () => chain, single: () => Promise.resolve(result), limit: () => Promise.resolve(result) };
+    return chain;
   };
   const client = { from: vi.fn(query), rpc: vi.fn(async (name) => ({ data: name === 'japan_market_dispatch_credential' ? 'private-token-fixture' : { queued: 7 }, error: null })) };
   const fetch = vi.fn(async (url) => {
@@ -45,7 +46,7 @@ it('preserves checkpoint progress when database queries fail', async () => {
   expect(result.data.checkpoint.pending).toBe(2);
   expect(result.data.settings).toBeNull();
   expect(result.data.recent).toBeNull();
-  expect(result.data.warnings).toHaveLength(2);
+  expect(result.data.warnings).toHaveLength(6);
 });
 it('rejects unsupported methods without contacting providers', async () => {
   const test = setup();
