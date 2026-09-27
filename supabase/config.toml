@@ -18,3 +18,7 @@ verify_jwt = false
 
 [functions.capture-lead]
 verify_jwt = false
+
+[functions.japan-market-progress]
+# Authenticated by the same signed Admin session as the other Admin functions.
+verify_jwt = false
