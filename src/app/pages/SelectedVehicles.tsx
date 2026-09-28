@@ -1,3 +1,4 @@
+import { WeeklyVehicleFacts } from '../components/WeeklyVehicleFacts';
 import { ArrowRight, Search, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
@@ -148,7 +149,7 @@ export function SelectedVehicles() {
                     <div className="p-5">
                       <p className="text-xs text-foreground/45">{text({ en: `Featured in Issue ${issueNumber}`, zh: `收录于第 ${issueNumber} 期` })} · {publishedAt}</p>
                       <h3 className="mt-2 text-xl">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</h3>
-                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/55"><span>{vehicle.year}</span><span>{vehicle.mileage}</span><span>{vehicle.landedEstimate || vehicle.price}</span></div>
+                      <WeeklyVehicleFacts vehicle={vehicle} />
                       <p className="mt-4 line-clamp-2 text-sm leading-7 text-foreground/68">{text({ en: vehicle.recommendation || vehicle.summary, zh: vehicle.zhRecommendation || vehicle.zhSummary })}</p>
                       <Link to={`/weekly-report/issue-${issueNumber}/${vehicle.slug}`} className="mt-5 inline-flex items-center gap-2 text-sm font-bold">{text({ en: 'View vehicle analysis', zh: '查看车辆分析' })}<ArrowRight className="h-4 w-4" /></Link>
                     </div>

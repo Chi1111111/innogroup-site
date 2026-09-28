@@ -1,3 +1,5 @@
+import { formatWeeklyMileage, formatWeeklyPrice } from '../lib/weeklyVehicleDisplay';
+import { WeeklyVehicleFacts } from '../components/WeeklyVehicleFacts';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, MapPin, Newspaper, Search, Ship, Sparkles, TrendingUp, X } from 'lucide-react';
 import { Link } from 'react-router';
@@ -116,14 +118,14 @@ function WeeklyVehicleCard({
   const { text } = useLanguage();
 
   return (
-    <button type="button" onClick={onOpen} className="group relative aspect-[16/10] overflow-hidden rounded-[24px] border border-black/8 bg-black text-left shadow-[0_18px_55px_rgba(0,0,0,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(0,0,0,0.14)]">
+    <button type="button" onClick={onOpen} className="group relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden rounded-[24px] border border-black/8 bg-black text-left shadow-[0_18px_55px_rgba(0,0,0,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(0,0,0,0.14)]">
         <img src={getJapanSpecialOrderImages(vehicle)[0]} alt={text({ en: vehicle.title, zh: vehicle.zhTitle })} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] group-hover:opacity-85" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/5 to-black/20" />
         <span className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] ${arrived ? 'bg-sky-700 text-white' : 'bg-[#101113]/90 text-primary'}`}>
           {arrived ? text({ en: 'CUSTOMER ORDER · ARRIVED', zh: '客户已订 · 已到港' }) : vehicleStatus(vehicle, index, zh)}
         </span>
         <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-4">
-          <div><p className="!text-lg !font-bold !leading-6 !text-white">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</p><p className="mt-1 !text-xs !text-white/60">{vehicle.year} · {vehicle.mileage}</p></div>
+          <div className="min-w-0"><p className="!text-lg !font-bold !leading-6 !text-white">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</p><p className="mt-2 !text-base !font-bold !text-white !normal-case">{text({ en: 'Year', zh: '年份' })} {vehicle.year} · {formatWeeklyMileage(vehicle.mileage)}</p>{!arrived ? <p className="mt-2 !text-2xl !font-extrabold !leading-tight !text-primary">{formatWeeklyPrice(vehicle.landedEstimate || vehicle.price)}</p> : null}</div>
           <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-white text-black shadow-lg transition group-hover:bg-primary"><ArrowRight className="h-4 w-4" /></span>
         </div>
     </button>
@@ -172,11 +174,7 @@ function LibraryVehicleCard({
           {text({ en: `Featured in Issue ${issueNumber}`, zh: `收录于第 ${issueNumber} 期` })} · {publishedAt}
         </p>
         <h3 className="mt-2 text-xl">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</h3>
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/55">
-          <span>{vehicle.year}</span>
-          <span>{vehicle.mileage}</span>
-          <span>{vehicle.landedEstimate || vehicle.price}</span>
-        </div>
+        <WeeklyVehicleFacts vehicle={vehicle} />
         <p className="mt-4 line-clamp-2 text-sm leading-7 text-foreground/68">
           {text({
             en: vehicle.recommendation || vehicle.summary,
@@ -226,15 +224,15 @@ function VehicleDetailModal({
   const details = arrived
     ? [
         [text({ en: 'Year', zh: '年份' }), vehicle.year],
-        [text({ en: 'Mileage', zh: '里程' }), vehicle.mileage],
+        [text({ en: 'Mileage', zh: '里程' }), formatWeeklyMileage(vehicle.mileage)],
         [text({ en: 'Current status', zh: '当前状态' }), text({ en: 'Customer order · compliance in progress', zh: '客户已订／合规处理中' })],
         [text({ en: 'Location', zh: '所在地' }), vehicle.location],
       ]
     : [
         [text({ en: 'Year', zh: '年份' }), vehicle.year],
-        [text({ en: 'Mileage', zh: '里程' }), vehicle.mileage],
-        [text({ en: 'Japan price', zh: '日本价格' }), vehicle.japanPrice || vehicle.price],
-        [text({ en: 'Est. landed', zh: '预计落地价' }), vehicle.landedEstimate || text({ en: 'Confirm with Inno', zh: '联系确认' })],
+        [text({ en: 'Mileage', zh: '里程' }), formatWeeklyMileage(vehicle.mileage)],
+        [text({ en: vehicle.japanPrice ? 'Japan price' : 'Price', zh: vehicle.japanPrice ? '日本价格' : '车辆价格' }), formatWeeklyPrice(vehicle.japanPrice || vehicle.price, vehicle.japanPrice ? 'JPY' : 'NZD')],
+        [text({ en: 'Est. landed', zh: '预计落地价' }), vehicle.landedEstimate ? formatWeeklyPrice(vehicle.landedEstimate) : text({ en: 'Confirm with Inno', zh: '联系确认' })],
       ];
 
   return (
@@ -264,7 +262,7 @@ function VehicleDetailModal({
             <div className="min-w-0 bg-[#fbf8f2] p-6 sm:p-8 lg:p-9">
             <p className="flex items-center gap-2 !text-xs !text-foreground/50"><MapPin className={`h-4 w-4 ${arrived ? 'text-sky-700' : 'text-primary'}`} />{vehicle.location}</p>
             <h2 className="mt-3 !text-3xl sm:!text-4xl">{text({ en: vehicle.title, zh: vehicle.zhTitle })}</h2>
-            <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-black/8 text-sm">{details.map(([label, value], index) => <div key={label} className={arrived && index === 2 ? 'bg-sky-50 p-4' : !arrived && index === 3 ? 'bg-primary/12 p-4' : 'bg-white p-4'}><span className="block text-xs text-foreground/45">{label}</span><strong>{value}</strong></div>)}</div>
+            <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-black/8 text-sm">{details.map(([label, value], index) => <div key={label} className={`${index >= 2 ? 'col-span-2 ' : ''}${arrived && index === 2 ? 'bg-sky-50 p-4' : !arrived && index === (vehicle.landedEstimate ? 3 : 2) ? 'bg-[#fcf8ef] p-4' : 'bg-white p-4'}`}><span className="block text-xs text-foreground/60">{label}</span><strong className={`mt-2 block break-words leading-snug text-[#171716] tabular-nums !normal-case ${index < 2 ? '!text-xl sm:!text-2xl' : !arrived && (index === 2 || vehicle.landedEstimate) ? '!text-2xl sm:!text-[28px]' : '!text-base'}`}>{value}</strong></div>)}</div>
             <div className="mt-6">
               <p className={`!text-[10px] font-bold uppercase tracking-[0.14em] ${arrived ? '!text-sky-700' : '!text-primary'}`}>{text({ en: arrived ? 'Customer order update' : 'Why we picked it', zh: arrived ? '客户订单进度' : '推荐理由' })}</p>
               <p className="mt-2 !text-sm !leading-7">{arrived ? text({ en: `This customer-ordered ${vehicle.title} has arrived in New Zealand and is now moving through local compliance and handover preparation.`, zh: `这台客户订购的 ${vehicle.zhTitle || vehicle.title} 已抵达新西兰，目前正在进行本地合规及交付准备。` }) : text({ en: vehicle.recommendation || vehicle.summary, zh: vehicle.zhRecommendation || vehicle.zhSummary })}</p>

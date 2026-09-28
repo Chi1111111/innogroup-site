@@ -1,3 +1,4 @@
+import { formatWeeklyMileage, formatWeeklyPrice } from '../lib/weeklyVehicleDisplay';
 import {
   ArrowLeft,
   ArrowRight,
@@ -38,9 +39,9 @@ export function WeeklyVehicleDetail() {
   const activeImage = images[activeImageIndex] ?? images[0];
   const details = [
     [text({ en: 'Year', zh: '年份' }), vehicle.year],
-    [text({ en: 'Mileage', zh: '公里数' }), vehicle.mileage],
-    [text({ en: 'Japan price', zh: '日本价格' }), vehicle.japanPrice || vehicle.price],
-    [text({ en: 'Estimated landed', zh: '预计落地价' }), vehicle.landedEstimate || text({ en: 'Confirm with Inno', zh: '联系 Inno 确认' })],
+    [text({ en: 'Mileage', zh: '公里数' }), formatWeeklyMileage(vehicle.mileage)],
+    [text({ en: vehicle.japanPrice ? 'Japan price' : 'Price', zh: vehicle.japanPrice ? '日本价格' : '车辆价格' }), formatWeeklyPrice(vehicle.japanPrice || vehicle.price, vehicle.japanPrice ? 'JPY' : 'NZD')],
+    [text({ en: 'Estimated landed', zh: '预计落地价' }), vehicle.landedEstimate ? formatWeeklyPrice(vehicle.landedEstimate) : text({ en: 'Confirm with Inno', zh: '联系 Inno 确认' })],
   ];
 
   const changeImage = (direction: -1 | 1) => {
@@ -75,11 +76,11 @@ export function WeeklyVehicleDetail() {
               </p>
             </div>
 
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {details.map(([label, value]) => (
-                <div key={label} className="min-w-0 rounded-2xl border border-black/7 bg-white/85 px-4 py-5">
-                  <dt className="text-[10px] font-bold uppercase tracking-[0.17em] text-black/45">{label}</dt>
-                  <dd className="mt-2 break-words text-sm font-bold leading-5 sm:text-base">{value}</dd>
+            <dl className="grid grid-cols-2 gap-3">
+              {details.map(([label, value], index) => (
+                <div key={label} className={`min-w-0 rounded-2xl border px-4 py-4 ${index >= 2 ? 'col-span-2' : ''} ${index === (vehicle.landedEstimate ? 3 : 2) ? 'border-[#c7a24a]/30 bg-[#fcf8ef]' : 'border-black/7 bg-white/85'}`}>
+                  <dt className="text-xs font-semibold text-black/60">{label}</dt>
+                  <dd className={`mt-2 break-words font-bold leading-tight text-[#171716] tabular-nums !normal-case ${index < 2 ? '!text-xl sm:!text-2xl' : index === 2 || vehicle.landedEstimate ? '!text-[28px]' : '!text-base'}`}>{value}</dd>
                 </div>
               ))}
             </dl>

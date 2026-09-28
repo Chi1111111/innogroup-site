@@ -53,7 +53,6 @@ export function InvoiceDocument({ invoice }: { invoice: CommercialInvoice }) {
             {COMPANY_DETAILS.name}
           </h1>
           <p className="mt-3 text-[11px] leading-[1.55] text-black">
-            {COMPANY_DETAILS.address}<br />
             Tel: {COMPANY_DETAILS.phone} · Email: {COMPANY_DETAILS.email}
           </p>
           <p className="mt-2 text-[11px] font-semibold text-black">GST NUMBER: {COMPANY_DETAILS.gstNumber}</p>
@@ -121,7 +120,6 @@ export function InvoiceDocument({ invoice }: { invoice: CommercialInvoice }) {
               <p className="font-bold underline">Bank Details: New Zealand Dollar Account</p>
               <p className="mt-1 leading-[1.55] text-black">
                 {COMPANY_DETAILS.bankName}<br />
-                {COMPANY_DETAILS.bankAddress}<br />
                 A/C No: {COMPANY_DETAILS.accountNumber}<br />
                 A/C Name: {COMPANY_DETAILS.accountName}<br />
                 Swift code: {COMPANY_DETAILS.swiftCode}
