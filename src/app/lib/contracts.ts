@@ -1,8 +1,9 @@
+import { emptyAcquisition, type AcquisitionAgreement } from './acquisitionAgreement';
 import { createClient } from '@supabase/supabase-js';
 import { adminApiRequest } from './adminApi';
 
 type ContractStatus = 'draft' | 'sent' | 'viewed' | 'signed' | 'cancelled';
-export type ContractType = 'vehicle-purchase' | 'deposit' | 'consignment';
+export type ContractType = 'vehicle-purchase' | 'deposit' | 'consignment' | 'vehicle-acquisition';
 
 export interface VehicleContract {
   id: string;
@@ -98,6 +99,7 @@ export interface VehicleContract {
     acknowledgementName: string;
     preOrderVehicle: string;
   };
+  acquisitionAgreement?: AcquisitionAgreement;
   consignmentAgreement?: {
     date: string;
     ownerName: string;
@@ -296,6 +298,7 @@ export function createEmptyContract(contractType: ContractType = 'vehicle-purcha
       acknowledgementName: '',
       preOrderVehicle: '',
     },
+    ...(contractType === 'vehicle-acquisition' ? { acquisitionAgreement: emptyAcquisition() } : {}),
     consignmentAgreement: {
       date: '',
       ownerName: '',
@@ -328,7 +331,7 @@ function rowToContract(row: ContractRow): VehicleContract {
     ...payload,
     id: row.id,
     signingToken: row.signing_token,
-    contractType: row.contract_type,
+    contractType: row.contract_type === 'vehicle-purchase' && payload.contractType === 'vehicle-acquisition' ? 'vehicle-acquisition' : row.contract_type,
     status: row.status,
     createdAt: row.created_at,
     sentAt: row.sent_at ?? undefined,
@@ -341,6 +344,7 @@ function rowToContract(row: ContractRow): VehicleContract {
     acknowledgements: { ...base.acknowledgements, ...payload.acknowledgements },
     signatures: { ...base.signatures, ...payload.signatures },
     depositAgreement: { ...base.depositAgreement!, ...payload.depositAgreement },
+    ...(payload.acquisitionAgreement ? { acquisitionAgreement: { ...emptyAcquisition(), ...payload.acquisitionAgreement } } : {}),
     consignmentAgreement: { ...base.consignmentAgreement!, ...payload.consignmentAgreement },
   };
 }
@@ -348,7 +352,8 @@ function rowToContract(row: ContractRow): VehicleContract {
 function contractToRow(contract: VehicleContract) {
   return {
     id: contract.id,
-    contract_type: contract.contractType,
+    // Acquisition is a purchase subtype in the existing database; its direction is retained in payload.
+    contract_type: contract.contractType === 'vehicle-acquisition' ? 'vehicle-purchase' : contract.contractType,
     status: contract.status,
     client_name: contract.client.name,
     client_email: contract.client.email,

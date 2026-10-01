@@ -1,0 +1,42 @@
+import type { ReactNode } from 'react';
+import type { VehicleContract } from '../lib/contracts';
+import { acquisitionBalance, acquisitionCents, acquisitionMoney, emptyAcquisition } from '../lib/acquisitionAgreement';
+import logo from '../../data/pic/logo.png';
+import './acquisition-document.css';
+
+function Field({ label, value }: { label: string; value?: string }) {
+  return <div className="acquisition-field"><span>{label}</span><div>{value?.trim() || '____________________'}</div></div>;
+}
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="acquisition-section"><h2>{title}</h2>{children}</section>;
+}
+const TERMS = [
+  ['Ownership & authority / 所有权与出售权', 'The seller warrants that they own the vehicle or have written authority to sell it. All finance, security interests and third-party claims must be disclosed. Except as expressly agreed in writing, the buyer receives title free of those interests on settlement.', '卖方保证为车辆合法所有人或取得书面出售授权，并披露所有贷款、担保和第三方权益。除双方另有书面约定，结算时车辆应不存在上述权益。'],
+  ['Condition & inspection / 车况与验车', 'The seller discloses known accident, structural, flood, mechanical and odometer issues in the schedule. The buyer may inspect the vehicle before settlement. Any inspection condition, deadline or agreed remedy must be recorded in the special conditions; changes to price or cancellation require agreement or a right under this contract or law.', '卖方在本合同中披露已知事故、结构、泡水、机械及里程异常。买方可在结算前验车。验车条件、期限及处理办法须写入特别约定；调价或取消须经双方同意，或依据合同或法律权利。'],
+  ['Payment & finance / 付款与贷款清偿', 'The total price includes any GST chargeable under the selected seller status. Only the deposit already paid and the agreed direct lender payout are deducted from the amount paid to the seller. Any lender payout requires a current written payout statement and arrangements to release the security. Neither party is required to settle with unresolved security interests.', '收购总价包含按所选卖方税务状态应收取的 GST。车主尾款仅扣除已付订金及约定的直接贷款清偿款。清偿贷款须取得有效结清函并安排解除担保；权益未解决前，任何一方均无需完成结算。'],
+  ['Handover, title & risk / 交车、所有权与风险', 'Unless otherwise stated in the special conditions, title and risk pass when the full price has been paid as agreed and the vehicle, keys and agreed documents have been handed over. The seller remains responsible for the vehicle until then. Both parties must promptly complete their required NZTA change-of-registered-person notifications; that registration does not establish legal ownership.', '除特别约定另有规定，约定款项全部付清且车辆、钥匙及文件完成交接时，所有权与风险转移。在此之前卖方负责保管车辆。双方须及时完成 NZTA 登记人变更通知，登记人记录本身不等同于法律所有权。'],
+  ['Charges, records & disputes / 费用、资料与争议', 'The seller is responsible for charges attributable to their use before handover; the buyer is responsible for their use afterwards, subject to law. Applicable WoF, licensing and RUC requirements must be met or any lawful alternative documented. Personal information may be used only as reasonably needed for identity, ownership and finance checks, settlement, statutory records and dispute resolution. New Zealand law applies. Parties should first try to resolve disputes in good faith; mandatory legal rights are not excluded.', '双方依法分别承担交车前后各自使用产生的费用。适用的 WoF、牌照及 RUC 要求应满足，或记录合法替代安排。个人资料仅用于合理必要的身份、权属与贷款核验、结算、法定存档及争议处理。本合同适用新西兰法律，争议先行友好协商，法定不可排除的权利不受影响。'],
+];
+export function AcquisitionContractDocument({ contract }: { contract: VehicleContract }) {
+  const a = contract.acquisitionAgreement ?? emptyAcquisition();
+  const v = contract.purchasedVehicle;
+  const balance = acquisitionBalance(a);
+  return <article className="acquisition-document">
+    <div className="acquisition-page">
+      <header className="acquisition-header"><img src={logo} alt="INNO GROUP" /><div><span>INNO GROUP LTD · NEW ZEALAND</span><h1>Vehicle Acquisition Agreement</h1><p>车辆收购合同 · INNO GROUP 为买方</p></div></header>
+      <div className="acquisition-meta"><span>Agreement / 合同编号: {contract.id.slice(0, 8).toUpperCase()}</span><span>Date / 日期: {a.date || '________________'}</span></div>
+      <Section title="01 · Parties / 买卖双方"><div className="acquisition-grid"><Field label="Buyer / 买方" value="INNO GROUP LTD" /><Field label="Buyer contact / 买方联系方式" value="+64 27 285 8065 · innogroup.shawn@gmail.com" /><Field label="Seller / 卖方姓名或公司名称" value={contract.client.name} /><Field label="Seller ID / 驾照或公司编号" value={contract.client.driversLicenceNo} /><Field label="Seller phone / 电话" value={contract.client.phone} /><Field label="Seller email / 邮箱" value={contract.client.email} /></div><Field label="Seller address / 卖方地址" value={contract.client.address} /></Section>
+      <Section title="02 · Vehicle / 收购车辆"><div className="acquisition-grid"><Field label="Make & model / 品牌及型号" value={[v.make, v.model].filter(Boolean).join(' ')} /><Field label="Year & colour / 年份及颜色" value={[v.year, v.colour].filter(Boolean).join(' · ')} /><Field label="VIN / 车架号" value={v.vinOrRegistration} /><Field label="Registration / 车牌号" value={a.registration} /><Field label="Odometer / 公里数" value={v.odometer ? `${v.odometer.replace(/\s*km$/i, '')} km` : ''} /><Field label="WoF details / WoF 信息" value={v.wofDetails} /></div></Section>
+      <Section title="03 · Agreed settlement / 收购款项（NZD）"><div className="acquisition-payment"><div><span>Purchase price / 收购总价</span><strong>{acquisitionMoney(acquisitionCents(a.purchasePrice))}</strong></div><div><span>Less deposit already paid / 减已付订金</span><strong>{acquisitionMoney(acquisitionCents(a.depositPaid))}</strong></div><div><span>Less direct finance payout / 减贷款清偿款</span><strong>{acquisitionMoney(acquisitionCents(a.financeSettlement))}</strong></div><div className="acquisition-total"><span>Balance payable to seller / 应付车主尾款</span><strong>{balance !== null && balance < 0 ? 'Check amounts / 请核对金额' : acquisitionMoney(balance)}</strong></div></div><Field label="Seller GST status / 卖方 GST 状态" value={a.gstStatus} /><div className="acquisition-grid"><Field label="Seller account holder / 收款账户名" value={a.sellerBankName} /><Field label="Seller bank account / 收款账号" value={a.sellerBankAccount} /><Field label="Finance company & reference / 贷款机构及结清编号" value={[a.financeCompany, a.financeReference].filter(Boolean).join(' · ')} /><Field label="Payment date / 付款日期" value={a.paymentDate} /></div></Section>
+      <Section title="04 · Handover / 交车安排"><div className="acquisition-grid"><Field label="Date & time / 交车日期及时间" value={a.handoverDate} /><Field label="Location / 交车地点" value={a.handoverLocation} /></div><Field label="Keys, accessories & documents / 钥匙、配件及文件" value={a.keysAndAccessories} /></Section>
+      <footer>INNO GROUP LTD · Vehicle Acquisition Agreement · Schedule / 交易明细</footer>
+    </div>
+    <div className="acquisition-page">
+      <header className="acquisition-subheader"><strong>Terms, disclosures & signatures / 条款、披露与签署</strong><span>{contract.id.slice(0, 8).toUpperCase()}</span></header>
+      <Section title="05 · Seller disclosures & special conditions / 卖方披露及特别约定"><Field label="Vehicle condition / 事故、故障及里程异常" value={a.disclosedCondition} /><Field label="Finance & security interests / 贷款、担保及第三方权益" value={a.securityInterests} /><Field label="Inspection & special conditions / 验车及其他约定" value={a.specialConditions} /></Section>
+      <Section title="06 · Terms / 合同条款"><div className="acquisition-terms">{TERMS.map(([title,en,zh])=><div key={title}><h3>{title}</h3><p>{en}</p><p>{zh}</p></div>)}</div></Section>
+      <Section title="07 · Agreement & signatures / 确认及签署"><p className="acquisition-sign-note">Both parties agree to the schedule and terms above. Signing alone does not confirm payment or handover. / 双方同意上述明细与条款，签署本身不代表已付款或已交车。</p><div className="acquisition-grid">{[{label:'Seller / 卖方',name:contract.signatures.purchaserName || contract.client.name,signature:contract.signatures.purchaser,date:contract.signedAt ? new Date(contract.signedAt).toLocaleString('en-NZ',{timeZone:'Pacific/Auckland'}) : ''},{label:'Buyer / 买方 · INNO GROUP LTD',name:contract.signatures.innoGroupName,signature:contract.signatures.innoGroup,date:''}].map(s=><div className="acquisition-signature" key={s.label}><strong>{s.label}</strong><div>{s.signature ? <img src={s.signature} alt={`${s.label} signature`} /> : <span>Signature / 签名: __________________</span>}</div><p>{s.name || 'Name / 姓名: __________________'}</p><p>Date / 日期: {s.date || '__________________'}</p></div>)}</div></Section>
+      <footer>INNO GROUP LTD · Vehicle Acquisition Agreement · Keep a copy signed by both parties / 双方各留存签署副本</footer>
+    </div>
+  </article>;
+}

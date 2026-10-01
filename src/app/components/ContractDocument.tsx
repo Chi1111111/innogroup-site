@@ -1,3 +1,4 @@
+import { AcquisitionContractDocument } from './AcquisitionContractDocument';
 import type { ReactNode } from 'react';
 import type { VehicleContract } from '../lib/contracts';
 import { formatDateTime, money } from '../lib/contracts';
@@ -104,6 +105,7 @@ export function ContractDocument({ contract }: { contract: VehicleContract }) {
     return <DepositContractDocument contract={contract} />;
   }
 
+  if (contract.contractType === 'vehicle-acquisition') return <AcquisitionContractDocument contract={contract} />;
   if (contract.contractType === 'consignment') {
     return <ConsignmentContractDocument contract={contract} />;
   }

@@ -1,3 +1,5 @@
+import { AcquisitionFields } from '../components/AcquisitionFields';
+import { ACQUISITION_ACKNOWLEDGEMENTS, acquisitionErrors, emptyAcquisition, type AcquisitionAgreement } from '../lib/acquisitionAgreement';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import emailjs from '@emailjs/browser';
 import { ContractDocument } from '../components/ContractDocument';
@@ -17,11 +19,13 @@ import { EMAILJS_CONFIG } from '../../config/emailConfig';
 const CONTRACT_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_CONTRACT_TEMPLATE_ID ?? EMAILJS_CONFIG.templateId;
 
 type WorkspaceTab = 'status' | 'library' | 'editor';
-type Section = 'client' | 'vehicle' | 'trade' | 'payment' | 'checks' | 'deposit' | 'consignment';
+type Section = 'client' | 'vehicle' | 'trade' | 'payment' | 'checks' | 'deposit' | 'consignment' | 'acquisition';
 type Notice = { type: 'success' | 'error' | 'info'; text: string } | null;
 
 const UI_LABELS: Record<string, string> = {
   Client: '客户',
+  Seller: '卖方资料',
+  Acquisition: '收购及交车',
   Password: '密码',
   'Deposit Form': '订金表格',
   Consignment: '寄售',
@@ -99,6 +103,7 @@ const CONTRACT_TYPES: Array<{
     description: '车辆信息、付款、确认事项和买方签名。',
     available: true,
   },
+  { id: 'vehicle-acquisition', name: '收车合同', description: 'INNO GROUP 向车主收车：收购价、贷款清偿、车主尾款、交车及双方签名。', available: true },
   {
     id: 'deposit',
     name: '订金协议',
@@ -283,6 +288,7 @@ function statusClass(status: VehicleContract['status']) {
 }
 
 function contractTitle(contract: VehicleContract) {
+  if (contract.contractType === 'vehicle-acquisition') return `收车合同 - ${[contract.purchasedVehicle.make, contract.purchasedVehicle.model].filter(Boolean).join(' ') || '待填写车辆'}`;
   if (contract.contractType === 'deposit') {
     const vehicle = contract.depositAgreement?.preOrderVehicle?.trim();
     return vehicle ? `订金协议 - ${vehicle}` : '订金协议';
@@ -364,6 +370,10 @@ export function AdminContracts() {
   };
 
   const save = async (status: VehicleContract['status'] = active.status) => {
+    if (status === 'sent') {
+      const errors = acquisitionErrors(active);
+      if (errors.length) { setNotice({ type: 'error', text: errors.join(' ') }); return null; }
+    }
     const next: VehicleContract = {
       ...active,
       status,
@@ -385,11 +395,13 @@ export function AdminContracts() {
   };
 
   const copyLink = async () => {
-    await navigator.clipboard.writeText(signingLink);
-    await save('sent');
+    const saved = await save('sent');
+    if (saved) await navigator.clipboard.writeText(signingLink);
   };
 
   const sendEmail = async () => {
+    const errors = acquisitionErrors(active);
+    if (errors.length) { setNotice({ type: 'error', text: errors.join(' ') }); return; }
     const emails = parseEmailRecipients(active.client.email);
     if (emails.length === 0) {
       setSection('client');
@@ -422,7 +434,7 @@ export function AdminContracts() {
               to_name: next.client.name || 'Customer',
               client_name: next.client.name || 'Customer',
               contract_title: contractTitle(next),
-              contract_type: next.contractType === 'deposit' ? 'Deposit Agreement' : next.contractType === 'consignment' ? 'Consignment Agreement' : 'Vehicle Agreement',
+              contract_type: next.contractType === 'vehicle-acquisition' ? 'Vehicle Acquisition Agreement' : next.contractType === 'deposit' ? 'Deposit Agreement' : next.contractType === 'consignment' ? 'Consignment Agreement' : 'Vehicle Agreement',
               signing_url: signingLink,
               company_name: 'Inno Group Ltd',
             },
@@ -481,6 +493,8 @@ export function AdminContracts() {
     },
   }));
 
+  const updateAcquisition = (key: keyof AcquisitionAgreement, value: string) => setActive(current => ({ ...current, acquisitionAgreement: { ...(current.acquisitionAgreement ?? emptyAcquisition()), [key]: value } }));
+  const isAcquisitionContract = active.contractType === 'vehicle-acquisition';
   const isDepositContract = active.contractType === 'deposit';
   const isConsignmentContract = active.contractType === 'consignment';
 
@@ -504,7 +518,7 @@ export function AdminContracts() {
         section === id ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'border border-slate-200 bg-white/80 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-950'
       }`}
     >
-      {label}
+      {uiLabel(label)}
     </button>
   );
 
@@ -635,6 +649,7 @@ export function AdminContracts() {
                   <button onClick={() => save()} disabled={isBusy} className="rounded-full bg-[#d2a968] px-5 py-2.5 text-sm font-semibold text-black shadow-lg shadow-[#d2a968]/20 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300">保存草稿</button>
                   <button onClick={sendEmail} disabled={isBusy} className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/15 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none">发送邮件</button>
                   <button onClick={copyLink} disabled={isBusy} className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/15 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-300">复制链接</button>
+                  <button type="button" onClick={() => window.print()} className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold">打印 / 导出 PDF</button>
                   <button onClick={remove} disabled={isBusy} className="rounded-full border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-700 transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">删除</button>
                 </div>
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-700">
@@ -649,9 +664,11 @@ export function AdminContracts() {
 
               <div className="rounded-[28px] border border-white/70 bg-white/85 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/5 backdrop-blur-xl">
                 <div className="flex flex-wrap gap-2">
-                  {sectionButton('client', 'Client')}
+                  {sectionButton('client', isAcquisitionContract ? 'Seller' : 'Client')}
                   {isDepositContract ? (
                     sectionButton('deposit', 'Deposit Form')
+                  ) : isAcquisitionContract ? (
+                    <>{sectionButton('vehicle', 'Vehicle')}{sectionButton('acquisition', 'Acquisition')}{sectionButton('checks', 'Checks')}</>
                   ) : isConsignmentContract ? (
                     <>
                       {sectionButton('consignment', 'Consignment')}
@@ -691,6 +708,7 @@ export function AdminContracts() {
                     <TextInput label="Inno Group signer" value={active.signatures.innoGroupName ?? ''} onChange={(v) => updateSig('innoGroupName', v)} />
                     <SignaturePad label="Inno Group signature" value={active.signatures.innoGroup} onChange={(v) => updateSig('innoGroup', v)} />
                   </>}
+                  {isAcquisitionContract && section === 'acquisition' && <AcquisitionFields value={active.acquisitionAgreement ?? emptyAcquisition()} onChange={updateAcquisition} />}
                   {isConsignmentContract && section === 'consignment' && <>
                     <TextInput label="Agreement date" value={active.consignmentAgreement?.date ?? ''} onChange={(v) => updateConsignment('date', v)} />
                     <TextInput label="Owner name" value={active.consignmentAgreement?.ownerName || active.client.name} onChange={(v) => { updateConsignment('ownerName', v); updateClient('name', v); }} />
@@ -712,10 +730,11 @@ export function AdminContracts() {
                     <SignaturePad label="Inno Group signature" value={active.signatures.innoGroup} onChange={(v) => updateSig('innoGroup', v)} />
                   </>}
                   {!isDepositContract && section === 'vehicle' && <>
+                    {isAcquisitionContract && <TextInput label="车牌号 / Registration" value={active.acquisitionAgreement?.registration ?? ''} onChange={v=>updateAcquisition('registration',v)} />}
                     <TextInput label="Make" value={active.purchasedVehicle.make} onChange={(v) => updateVehicle('make', v)} />
                     <TextInput label="Vehicle Year" value={active.purchasedVehicle.year} onChange={(v) => updateVehicle('year', v)} />
                     <TextInput label="Model" value={active.purchasedVehicle.model} onChange={(v) => updateVehicle('model', v)} />
-                    <TextInput label="VIN or Registration No." value={active.purchasedVehicle.vinOrRegistration} onChange={(v) => updateVehicle('vinOrRegistration', v)} />
+                    <TextInput label={isAcquisitionContract ? "VIN / 车架号" : "VIN or Registration No."} value={active.purchasedVehicle.vinOrRegistration} onChange={(v) => updateVehicle('vinOrRegistration', v)} />
                     <TextInput label="Odometer" value={active.purchasedVehicle.odometer} onChange={(v) => updateVehicle('odometer', v)} />
                     <TextInput label="Fuel Type" value={active.purchasedVehicle.fuelType} onChange={(v) => updateVehicle('fuelType', v)} />
                     <TextInput label="Colour" value={active.purchasedVehicle.colour} onChange={(v) => updateVehicle('colour', v)} />
@@ -724,7 +743,7 @@ export function AdminContracts() {
                     <TextInput label="First Registered NZ" value={active.purchasedVehicle.firstRegisteredNz} onChange={(v) => updateVehicle('firstRegisteredNz', v)} />
                     <TextInput label="Special Purpose" value={active.purchasedVehicle.specialPurpose} onChange={(v) => updateVehicle('specialPurpose', v)} />
                   </>}
-                  {!isDepositContract && !isConsignmentContract && section === 'trade' && <>
+                  {!isDepositContract && !isConsignmentContract && !isAcquisitionContract && section === 'trade' && <>
                     <Check label="Trade-in applies" checked={active.tradeIn.enabled} onChange={(v) => updateTrade('enabled', v)} />
                     <TextInput label="Registration No." value={active.tradeIn.registrationNo} onChange={(v) => updateTrade('registrationNo', v)} />
                     <TextInput label="Make" value={active.tradeIn.make} onChange={(v) => updateTrade('make', v)} />
@@ -734,7 +753,7 @@ export function AdminContracts() {
                     <TextInput label="Odometer" value={active.tradeIn.odometer} onChange={(v) => updateTrade('odometer', v)} />
                     <TextInput label="Net Allowance" value={active.tradeIn.netAllowance} onChange={(v) => updateTrade('netAllowance', v)} />
                   </>}
-                  {!isDepositContract && !isConsignmentContract && section === 'payment' && <>
+                  {!isDepositContract && !isConsignmentContract && !isAcquisitionContract && section === 'payment' && <>
                     <TextInput label="Sale Price inc GST" value={active.payment.salePriceIncGst} onChange={(v) => updatePayment('salePriceIncGst', v)} />
                     <TextInput label="Accessories" value={active.payment.accessoriesDescription} onChange={(v) => updatePayment('accessoriesDescription', v)} />
                     <TextInput label="Accessories Value" value={active.payment.accessoriesValueIncGst} onChange={(v) => updatePayment('accessoriesValueIncGst', v)} />
@@ -746,7 +765,13 @@ export function AdminContracts() {
                     <TextInput label="Finance By" value={active.payment.financeBy} onChange={(v) => updatePayment('financeBy', v)} />
                     <TextInput label="Finance Term Months" value={active.payment.financeTermMonths} onChange={(v) => updatePayment('financeTermMonths', v)} />
                   </>}
-                  {!isDepositContract && section === 'checks' && <>
+                  {isAcquisitionContract && section === 'checks' && <>
+                    <p className="text-sm text-slate-600 md:col-span-2">车主在签署页面确认收车条款。买方代表在此签署；签名不代表已付款。</p>
+                    <TextInput label="Inno Group Signer" value={active.signatures.innoGroupName ?? ''} onChange={v=>updateSig('innoGroupName',v)} />
+                    <SignaturePad label="Inno Group signature" value={active.signatures.innoGroup} onChange={v=>updateSig('innoGroup',v)} />
+                    <div className="space-y-2 md:col-span-2">{ACQUISITION_ACKNOWLEDGEMENTS.map(item=><p key={item.key} className="!text-xs">{active.acknowledgements[item.field] ? '✓' : '○'} {item.label}</p>)}</div>
+                  </>}
+                  {!isDepositContract && !isAcquisitionContract && section === 'checks' && <>
                     <Check label="Terms accepted" checked={active.acknowledgements.termsAccepted} onChange={(v) => updateAck('termsAccepted', v)} />
                     <Check label="CIN provided" checked={active.acknowledgements.cinProvided} onChange={(v) => updateAck('cinProvided', v)} />
                     <Check label="Document signing accepted" checked={active.acknowledgements.signDocumentsAccepted} onChange={(v) => updateAck('signDocumentsAccepted', v)} />

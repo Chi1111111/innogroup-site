@@ -1,0 +1,9 @@
+import { ACQUISITION_FIELDS, acquisitionBalance, acquisitionMoney, type AcquisitionAgreement } from '../lib/acquisitionAgreement';
+export function AcquisitionFields({ value, onChange }: { value: AcquisitionAgreement; onChange: (key: keyof AcquisitionAgreement, value: string) => void }) {
+  const balance = acquisitionBalance(value);
+  return <>
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 md:col-span-2"><p className="!text-sm !font-semibold">INNO GROUP LTD 向车主收购车辆 · 全部金额为 NZD</p><p className="mt-2 !text-sm">车主尾款 = 收购总价 − 已付订金 − 直接支付贷款机构金额</p><p className="mt-2 !text-xl !font-bold" role="status">应付车主尾款：{balance !== null && balance < 0 ? '金额不正确，请核对' : acquisitionMoney(balance)}</p></div>
+    {ACQUISITION_FIELDS.map(({key,label,multiline})=><label key={key} className={`space-y-1.5 ${multiline ? 'md:col-span-2' : ''}`}><span className="text-xs font-semibold text-slate-600">{label}</span>{multiline ? <textarea className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" rows={3} value={value[key]} onChange={e=>onChange(key,e.target.value)} /> : <input className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" value={value[key]} onChange={e=>onChange(key,e.target.value)} inputMode={['purchasePrice','depositPaid','financeSettlement'].includes(key) ? 'decimal' : undefined} />}</label>)}
+    <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-semibold text-slate-600">卖方 GST 状态 / Seller GST status</span><select className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" value={value.gstStatus} onChange={e=>onChange('gstStatus',e.target.value)}><option value="Private seller — no GST charged">私人卖方，不收取 GST</option><option value="GST-registered seller — agreed price includes GST">GST 注册卖方，约定总价已含 GST</option></select></label>
+  </>;
+}

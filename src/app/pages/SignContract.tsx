@@ -1,3 +1,4 @@
+import { ACQUISITION_ACKNOWLEDGEMENTS } from '../lib/acquisitionAgreement';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import {
   ArrowDown,
@@ -119,7 +120,7 @@ export function SignContract() {
   }, [contractId]);
 
   const signed = contract?.status === 'signed';
-  const acknowledgementItems = contract?.contractType === 'consignment' ? CONSIGNMENT_ACKNOWLEDGEMENTS : PURCHASE_ACKNOWLEDGEMENTS;
+  const acknowledgementItems = contract?.contractType === 'vehicle-acquisition' ? ACQUISITION_ACKNOWLEDGEMENTS : contract?.contractType === 'consignment' ? CONSIGNMENT_ACKNOWLEDGEMENTS : PURCHASE_ACKNOWLEDGEMENTS;
   const allAccepted = acknowledgementItems.every((item) => accepted[item.key]);
   const canSubmit = Boolean(purchaserName.trim()) && hasSignature && allAccepted && !signed;
   const completedSteps = [
@@ -132,6 +133,7 @@ export function SignContract() {
 
   const contractTitle = useMemo(() => {
     if (!contract) return 'Vehicle Purchase Agreement';
+    if (contract.contractType === 'vehicle-acquisition') return 'Vehicle Acquisition Agreement / 收车合同';
     if (contract.contractType === 'deposit') {
       const vehicle = contract.depositAgreement?.preOrderVehicle?.trim();
       return vehicle ? `Deposit Agreement - ${vehicle}` : 'Deposit Agreement';
@@ -544,7 +546,7 @@ export function SignContract() {
                   <div>
                     <h3 className="text-lg font-semibold text-emerald-950">Signing completed</h3>
                     <p className="mt-1 text-sm leading-6 text-emerald-800">
-                      Signed by {contract.signatures.purchaserName || contract.client.name || 'the purchaser'} on{' '}
+                      Signed by {contract.signatures.purchaserName || contract.client.name || (contract.contractType === 'vehicle-acquisition' ? 'the seller' : 'the purchaser')} on{' '}
                       {formatDateTime(contract.signedAt)}.
                     </p>
                   </div>
