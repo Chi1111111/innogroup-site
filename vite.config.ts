@@ -11,4 +11,17 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  // Local development reads the published inventory without downloading a snapshot.
+  server: {
+    proxy: {
+      '/data/japan-market': { target: 'https://www.innogroup.co.nz', changeOrigin: true },
+      '/data/jpauc-paged': { target: 'https://www.innogroup.co.nz', changeOrigin: true },
+    },
+  },
+  preview: {
+    proxy: {
+      '/data/japan-market': { target: 'https://www.innogroup.co.nz', changeOrigin: true },
+      '/data/jpauc-paged': { target: 'https://www.innogroup.co.nz', changeOrigin: true },
+    },
+  },
 });
