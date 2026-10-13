@@ -43,6 +43,8 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setVehicle(null);
+    setPricing(null);
     loadJapanMarketVehicle(vehicleId).then((result) => {
       if (!active) return;
       setVehicle(result?.vehicle ?? null);

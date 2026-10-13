@@ -11,6 +11,13 @@ type AdminApiEnvelope<T> = {
   error?: string;
 };
 
+export class AdminApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = 'AdminApiError';
+  }
+}
+
 function getSessionStorage() {
   return typeof window === 'undefined' ? null : window.sessionStorage;
 }
@@ -33,7 +40,7 @@ async function parseResponse<T>(response: Response) {
   const payload = await response.json().catch(() => ({})) as AdminApiEnvelope<T>;
   if (!response.ok) {
     if (response.status === 401) setAdminSessionToken(null);
-    throw new Error(payload.error || `Admin 服务暂时不可用（${response.status}）。`);
+    throw new AdminApiError(payload.error || `Admin 服务暂时不可用（${response.status}）。`, response.status);
   }
 
   return payload.data as T;

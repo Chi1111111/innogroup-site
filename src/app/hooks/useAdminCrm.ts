@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { loadCrmState, saveCrmState } from '../lib/crm';
 import { getErrorMessage } from '../lib/contracts';
 import { CRM_STORAGE_KEY, loadCrm, normalizeCrmState } from '../pages/adminCrmModel';
+import { AdminApiError } from '../lib/adminApi';
 
 // One queue across page mounts prevents an older write from finishing after a newer one.
 let saveQueue: Promise<void> = Promise.resolve();
@@ -14,6 +15,9 @@ export function useAdminCrm() {
   const [revision, setRevision] = useState(0);
   const lastSaved = useRef('');
   const sequence = useRef(0);
+  const cloudVersion = useRef<string | null>(null);
+  const blocked = useRef(false);
+  const [hasConflict, setHasConflict] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -21,8 +25,12 @@ export function useAdminCrm() {
     setSaveStatus('loading');
     setNotice('正在读取客户资料…');
     // Await writes from a previous visit before reading the server again.
-    void saveQueue.then(() => loadCrmState()).then((cloud) => {
+    void saveQueue.then(() => loadCrmState()).then((snapshot) => {
       if (!active) return;
+      const cloud = snapshot.state;
+      cloudVersion.current = snapshot.version;
+      blocked.current = false;
+      setHasConflict(false);
       const next = normalizeCrmState(cloud ?? loadCrm());
       lastSaved.current = cloud ? JSON.stringify(next) : '';
       setCrm(next);
@@ -38,7 +46,7 @@ export function useAdminCrm() {
   }, [revision]);
 
   useEffect(() => {
-    if (!hasLoadedCloudCrm) return;
+    if (!hasLoadedCloudCrm || blocked.current) return;
     const payload = JSON.stringify(crm);
     if (payload === lastSaved.current) return;
     let cacheFailed = false;
@@ -49,12 +57,18 @@ export function useAdminCrm() {
     let active = true;
     // Serialize writes. React cleanup alone does not cancel a request already sent.
     saveQueue = saveQueue.then(async () => {
-      await saveCrmState(crm);
+      if (blocked.current) throw new AdminApiError('云端资料已改变，请先导出本机更改并重新读取。', 409);
+      cloudVersion.current = await saveCrmState(crm, cloudVersion.current);
       if (!active || currentSequence !== sequence.current) return;
       lastSaved.current = payload;
       setSaveStatus('saved');
       setNotice(`云端已保存 ${new Date().toLocaleTimeString('en-NZ', { hour: '2-digit', minute: '2-digit' })}`);
     }).catch((error) => {
+      if (error instanceof AdminApiError && error.status === 409) {
+        blocked.current = true;
+        // Block all queued writes, even if the conflicting request's effect was cleaned up.
+        setHasConflict(true);
+      }
       if (!active || currentSequence !== sequence.current) return;
       setSaveStatus('error');
       setNotice(`保存失败，${cacheFailed ? '本机缓存也不可用，请勿关闭页面' : '更改已保存在本机'}：${getErrorMessage(error)}`);
@@ -73,8 +87,20 @@ export function useAdminCrm() {
   }, [saveStatus, hasLoadedCloudCrm]);
 
   const retry = () => {
+    if (blocked.current) return;
     if (hasLoadedCloudCrm) setCrm((current) => ({ ...current }));
     else setRevision((current) => current + 1);
   };
-  return { crm, setCrm, hasLoadedCloudCrm, cloudSyncNotice, saveStatus, retry };
+  const reloadAfterExport = () => {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(crm, null, 2)], { type: 'application/json' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `inno-crm-unsaved-${Date.now()}.json`;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setLoaded(false);
+    setRevision((current) => current + 1);
+  };
+  return { crm, setCrm, hasLoadedCloudCrm: hasLoadedCloudCrm && !hasConflict, cloudSyncNotice,
+    saveStatus, retry, hasConflict, reloadAfterExport };
 }

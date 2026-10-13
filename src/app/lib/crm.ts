@@ -45,10 +45,21 @@ export interface CrmState {
   loanCars: LoanCar[];
 }
 
-export async function loadCrmState(): Promise<CrmState | null> {
-  return adminApiRequest<CrmState | null>('crm.get');
+export interface CrmSnapshot {
+  state: CrmState | null;
+  version: string | null;
 }
 
-export async function saveCrmState(crm: CrmState): Promise<void> {
-  await adminApiRequest('crm.upsert', { payload: crm });
+export async function loadCrmState(): Promise<CrmSnapshot> {
+  const snapshot = await adminApiRequest<CrmSnapshot>('crm.get');
+  if (!snapshot || !Object.hasOwn(snapshot, 'version') || !Object.hasOwn(snapshot, 'state')) {
+    throw new Error('CRM 服务需要更新后才能安全保存，请联系管理员。');
+  }
+  return snapshot;
+}
+
+export async function saveCrmState(crm: CrmState, expectedVersion: string | null): Promise<string> {
+  const result = await adminApiRequest<{ version: string }>('crm.upsert', { payload: crm, expectedVersion });
+  if (!result?.version) throw new Error('保存结果缺少版本信息，请重新读取云端资料后核对。');
+  return result.version;
 }
