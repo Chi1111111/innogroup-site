@@ -162,7 +162,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'crm.get') {
       const [crmResult, newLeadResult] = await Promise.all([
-        client.from('crm_state').select('payload,updated_at').eq('id', 'main').maybeSingle(),
+        client.from('crm_state').select('payload').eq('id', 'main').maybeSingle(),
         client
           .from('website_leads')
           .select('*')
@@ -181,30 +181,43 @@ Deno.serve(async (req: Request) => {
 
       return jsonResponse(req, {
         data: {
-          version: crmResult.data?.updated_at ?? null,
-          state: !crmResult.data && incomingLeads.length === 0 ? null : {
-            ...payload,
-            leads: [...incomingLeads, ...existingLeads],
-            orders: Array.isArray(payload.orders) ? payload.orders : [],
-            loanCars: Array.isArray(payload.loanCars) ? payload.loanCars : [],
-          },
+          ...payload,
+          leads: [...incomingLeads, ...existingLeads],
+          orders: Array.isArray(payload.orders) ? payload.orders : [],
+          loanCars: Array.isArray(payload.loanCars) ? payload.loanCars : [],
         },
       });
     }
     if (action === 'crm.upsert') {
-      if (!Object.hasOwn(body, 'expectedVersion') ||
-          (body.expectedVersion !== null && typeof body.expectedVersion !== 'string')) {
-        return jsonResponse(req, { error: '请刷新页面读取最新客户资料后再保存。' }, 409);
-      }
-      const { data, error } = await client.rpc('save_crm_state', {
-        p_payload: body.payload,
-        p_expected_version: body.expectedVersion,
-      });
-      if (error?.code === '40001') {
-        return jsonResponse(req, { error: '另一台设备已修改客户资料，已停止保存。请导出本机更改，重新读取后核对。' }, 409);
-      }
+      const payload = asRecord(body.payload);
+      const leads = Array.isArray(payload.leads) ? payload.leads.map(asRecord) : [];
+      const websiteLeads = leads.filter((lead) => asText(lead.id).startsWith('web:'));
+      const syncedAt = new Date().toISOString();
+
+      const websiteLeadUpdates = await Promise.all(websiteLeads.map(async (lead) => {
+        const id = asText(lead.id).slice(4);
+        if (!id) return null;
+        return client.from('website_leads').update({
+          contact: asText(lead.contact),
+          channel: asText(lead.channel),
+          interest: asText(lead.interest),
+          budget: asText(lead.budget),
+          status: asText(lead.status) || '了解',
+          next_follow_up: asText(lead.nextFollowUp) || null,
+          notes: asText(lead.notes),
+          synced_to_crm_at: syncedAt,
+        }).eq('id', id);
+      }));
+      const leadUpdateError = websiteLeadUpdates.find((result) => result?.error)?.error;
+      if (leadUpdateError) throw leadUpdateError;
+
+      const { error } = await client.from('crm_state').upsert({
+        id: 'main',
+        payload,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
       if (error) throw error;
-      return jsonResponse(req, { data });
+      return jsonResponse(req, { data: { saved: true } });
     }
 
     if (action === 'japan.upsert') {

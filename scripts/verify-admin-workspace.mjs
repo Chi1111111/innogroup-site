@@ -7,7 +7,6 @@ const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:5173';
 if (!['127.0.0.1', 'localhost'].includes(new URL(origin).hostname)) throw new Error('Local server required');
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-await page.addInitScript(() => localStorage.setItem('inno-language', 'zh'));
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 let readFails = false;
@@ -16,26 +15,19 @@ let writes = 0;
 let concurrent = 0;
 let maxConcurrent = 0;
 let cloud = { leads: [], orders: [], loanCars: [] };
-let version = '2026-10-13T00:00:00.000Z';
 await page.route('**/*', async (route) => {
   const url = new URL(route.request().url());
-  if (url.pathname.startsWith('/data/japan-market/')) return route.fulfill({ json: {
-    vehicles: [], count: 0, runs: [], refreshedAt: '2026-10-13T00:00:00Z',
-    pricing: {}, withFobPrice: 0, withPhotos: 0, photoCount: 0,
-  } });
   if (url.pathname.endsWith('/functions/v1/admin-api')) {
-    const { action, payload, expectedVersion } = route.request().postDataJSON();
+    const { action, payload } = route.request().postDataJSON();
     if (action === 'session.verify') return route.fulfill({ json: { data: { valid: true } } });
-    if (action === 'crm.get') return readFails ? route.fulfill({ status: 503, json: { error: '模拟读取失败' } }) : route.fulfill({ json: { data: { state: cloud, version } } });
+    if (action === 'crm.get') return readFails ? route.fulfill({ status: 503, json: { error: '模拟读取失败' } }) : route.fulfill({ json: { data: cloud } });
     if (action === 'crm.upsert') {
       writes++; concurrent++; maxConcurrent = Math.max(maxConcurrent, concurrent);
       await new Promise((resolve) => setTimeout(resolve, 80));
       concurrent--;
       if (saveFails) return route.fulfill({ status: 503, json: { error: '模拟保存失败' } });
-      if (expectedVersion !== version) return route.fulfill({ status: 409, json: { error: '另一台设备已修改客户资料，请先导出本机更改。' } });
       cloud = payload;
-      version = new Date(Date.parse(version) + 1).toISOString();
-      return route.fulfill({ json: { data: { version } } });
+      return route.fulfill({ json: { data: null } });
     }
     return route.fulfill({ json: { data: [] } });
   }
@@ -51,7 +43,7 @@ try {
   await page.getByRole('heading', { name: '今天，从这里开始。' }).waitFor();
   await page.screenshot({ path: 'tmp/admin-review/dashboard-desktop.png', fullPage: true });
   assert.equal(await page.getByRole('navigation', { name: '后台主导航' }).count(), 1);
-  for (const [path, heading] of [['crm', 'CRM 客户管理'], ['contracts', '合同管理后台'], ['invoices', '发票管理'], ['weekly-reports', '周报管理'], ['partners', '合作伙伴'], ['japan-market', '采集与图片']]) {
+  for (const [path, heading] of [['crm', 'CRM 客户管理'], ['contracts', '合同管理后台'], ['invoices', '发票管理'], ['weekly-reports', '周报管理'], ['partners', '合作伙伴'], ['japan-market', 'Japan Market 采集中心']]) {
     await page.goto(`${origin}/admin/${path}`);
     await page.getByRole('heading', { name: heading, exact: true }).waitFor();
     assert.equal(await page.getByRole('navigation', { name: '后台主导航' }).count(), 1);
@@ -82,19 +74,6 @@ try {
   await page.getByRole('status').filter({ hasText: '云端已保存' }).waitFor();
   assert.equal(cloud.leads[0].name, '测试客户');
   assert.equal(maxConcurrent, 1);
-  // Simulate a second device committing after this page's last read.
-  cloud = { ...cloud, leads: [{ ...cloud.leads[0], name: '另一台设备的客户' }] };
-  version = new Date(Date.parse(version) + 1).toISOString();
-  await form.getByLabel('客户姓名', { exact: true }).fill('本机未保存客户');
-  await form.getByRole('button', { name: /添加|保存|新增/ }).click();
-  await page.getByRole('button', { name: '导出本机更改并重新读取' }).waitFor();
-  assert.equal(cloud.leads[0].name, '另一台设备的客户');
-  assert.equal(await page.locator('fieldset').evaluate(el => el.disabled), true);
-  const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: '导出本机更改并重新读取' }).click();
-  assert.match((await download).suggestedFilename(), /inno-crm-unsaved/);
-  await page.waitForFunction(() => !document.querySelector('fieldset')?.disabled);
-  assert.equal(cloud.leads.length, 1);
   await page.screenshot({ path: 'tmp/admin-review/crm-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   for (const route of ['crm', 'contracts', 'invoices', 'weekly-reports', 'partners', 'japan-market']) {
@@ -119,8 +98,4 @@ try {
   await page.getByRole('heading', { name: '登录管理中心' }).waitFor();
   assert.deepEqual(errors, []);
   console.log('PASS all admin routes, auth gate/logout, navigation, print layout, mobile menu, CRM read protection and save retry.');
-} catch (error) {
-  console.error('Mock state:', { writes, version, maxConcurrent });
-  console.error('Visible notices:', await page.locator('[role="alert"], [role="status"]').allTextContents());
-  throw error;
 } finally { await browser.close(); }

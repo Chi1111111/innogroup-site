@@ -41,7 +41,7 @@ import {
 import { ComboField, Field, OrderVehiclePhotos, StatButton } from './adminCrmFields';
 
 export function AdminCrm() {
-  const { crm, setCrm, hasLoadedCloudCrm, cloudSyncNotice, saveStatus, retry, hasConflict, reloadAfterExport } = useAdminCrm();
+  const { crm, setCrm, hasLoadedCloudCrm, cloudSyncNotice, saveStatus, retry } = useAdminCrm();
   const [searchParams, setSearchParams] = useSearchParams();
   const [leadDraft, setLeadDraft] = useState(EMPTY_LEAD);
   const viewParam = searchParams.get('view');
@@ -379,9 +379,7 @@ export function AdminCrm() {
             ) : null}
             <div role={saveStatus === 'error' ? 'alert' : 'status'} className={`text-sm font-medium ${saveStatus === 'error' ? 'text-red-700' : 'text-slate-600'}`}>
               {cloudSyncNotice}
-              {hasConflict
-                ? <button type="button" onClick={reloadAfterExport} className="ml-3 underline">导出本机更改并重新读取</button>
-                : saveStatus === 'error' && <button type="button" onClick={retry} className="ml-3 underline">重试</button>}
+              {saveStatus === 'error' && <button type="button" onClick={retry} className="ml-3 underline">重试</button>}
             </div>
             <label className="flex w-full max-w-sm items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:w-96">
               <Search size={17} className="text-slate-400" />
