@@ -1,0 +1,70 @@
+.price-calculator { padding: 52px 16px 60px; border-block: 1px solid #16151412; background: #ffffff70; }
+.calculator-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px 48px; margin-bottom: 26px; }
+.calculator-heading h2 { margin-top: 16px; font-size: clamp(28px, 3vw, 40px); line-height: 1.15; }
+.calculator-heading > p { max-width: 430px; color: var(--muted-foreground); font-size: 14px; line-height: 1.8; }
+.calculator-panel { padding: 30px; border: 1px solid #16151417; border-radius: 18px; background: #ffffffbf; box-shadow: 0 12px 34px #211b0c05; }
+.calculator-fields { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) 170px; align-items: start; gap: 24px; }
+.calculator-field { min-width: 0; }
+.calculator-field label { display: block; margin-bottom: 9px; font-size: 12px; line-height: 1.5; font-weight: 700; }
+.calculator-input { position: relative; }
+.calculator-input > svg, .calculator-input > span { position: absolute; left: 17px; top: 50%; transform: translateY(-50%); color: var(--muted-foreground); pointer-events: none; }
+.calculator-input > span { font-size: 17px; }
+.calculator-input input { width: 100%; min-width: 0; height: 54px; padding: 12px 15px 12px 44px; border: 1px solid #16151421; border-radius: 10px; background: #fbf8f2; color: var(--foreground); font: 550 17px/1.5 var(--font-sans); transition: border-color 180ms, box-shadow 180ms; }
+.calculator-input input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px #c7a24a20; }
+.calculator-input input[aria-invalid='true'] { border-color: var(--destructive); }
+.calculator-field > p { margin-top: 9px; color: var(--muted-foreground); font-size: 12px; line-height: 1.7; }
+.calculator-actions { display: flex; flex-direction: column; gap: 9px; padding-top: 27px; }
+.calculator-actions button { width: 100%; min-height: 54px; padding: 12px 16px; font-size: 14px; }
+.calculator-actions .button-secondary { min-height: 36px; padding-block: 6px; font-size: 12px; }
+.calculator-error { margin-top: 16px; padding: 10px 14px; border: 1px solid #cf3d4533; border-radius: 8px; background: #cf3d4508; color: #ac2e35; font-size: 13px; }
+.calculator-results { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 32px; margin-top: 28px; padding-top: 28px; border-top: 1px solid #16151417; align-items: start; }
+.calculator-total { padding: 30px 24px; border: 1px solid #c7a24a40; border-radius: 12px; background: #f6f1e8; }
+.calculator-total-icon { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 24px; border-radius: 12px; background: var(--accent); color: #9a772d; }
+.calculator-total h3 { font-size: 15px; line-height: 1.5; letter-spacing: -.01em; }
+.calculator-total .calculator-amount { margin-top: 12px; font-size: clamp(28px, 3.1vw, 44px); font-weight: 650; line-height: 1.15; letter-spacing: -.045em; color: #967538; overflow-wrap: anywhere; }
+.calculator-total > p:last-child { margin-top: 10px; font-size: 12px; color: var(--muted-foreground); }
+.calculator-breakdown summary { display: flex; align-items: center; justify-content: space-between; gap: 15px; min-height: 44px; font-size: 15px; font-weight: 650; list-style: none; cursor: pointer; }
+.calculator-breakdown summary::-webkit-details-marker { display: none; }
+.calculator-breakdown summary > svg { color: #967538; transition: transform 180ms; }
+.calculator-breakdown[open] summary > svg { transform: rotate(180deg); }
+.calculator-breakdown summary:focus-visible { outline: 2px solid #a78028; outline-offset: 4px; }
+.calculator-breakdown dl { margin-top: 7px; }
+.calculator-breakdown dl > div { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-block: 12px; border-top: 1px solid #16151412; font-size: 13px; }
+.calculator-breakdown dt { color: var(--muted-foreground); }
+.calculator-breakdown dt small { display: block; font-size: 10px; margin-top: 3px; }
+.calculator-breakdown dd { flex-shrink: 0; font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; }
+.calculator-breakdown .calculator-breakdown-total { margin-top: 3px; border-color: #c7a24a66; padding-top: 15px; font-weight: 700; }
+.calculator-breakdown-total dt { color: var(--foreground); }
+.calculator-breakdown-total dd { color: #967538; }
+.calculator-notice { display: flex; align-items: flex-start; gap: 9px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #16151412; color: var(--muted-foreground); font-size: 12px; line-height: 1.8; }
+.calculator-notice > svg { flex-shrink: 0; margin-top: 3px; color: #a17e30; }
+.calculator-notice strong { color: #675735; }
+@media (max-width: 980px) {
+  .calculator-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .calculator-heading > p { max-width: 580px; }
+  .calculator-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 22px; }
+  .calculator-actions { grid-column: 1 / -1; flex-direction: row; padding-top: 0; }
+  .calculator-actions button { width: auto; min-width: 170px; }
+  .calculator-results { gap: 24px; }
+}
+@media (max-width: 599px) {
+  .price-calculator { padding-block: 36px 40px; }
+  .calculator-heading { margin-bottom: 22px; }
+  .calculator-heading h2 { margin-top: 14px; font-size: 30px; }
+  .calculator-heading > p { font-size: 13px; }
+  .calculator-panel { padding: 22px 18px; border-radius: 14px; }
+  .calculator-fields, .calculator-results { grid-template-columns: minmax(0, 1fr); }
+  .calculator-fields { gap: 20px; }
+  .calculator-actions { gap: 10px; }
+  .calculator-actions button { flex: 1; min-width: 0; padding-inline: 10px; }
+  .calculator-actions .button-secondary { flex: 0 0 auto; padding-inline: 16px; }
+  .calculator-results { gap: 18px; margin-top: 24px; padding-top: 24px; }
+  .calculator-total { padding: 22px; }
+  .calculator-total-icon { margin-bottom: 18px; }
+  .calculator-total .calculator-amount { font-size: 36px; }
+  .calculator-breakdown dl > div { font-size: 12px; gap: 12px; }
+  .calculator-breakdown dd { max-width: 49%; overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .calculator-input input, .calculator-breakdown summary > svg { transition: none; }
+}

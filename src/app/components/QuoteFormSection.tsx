@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ArrowRight, Upload, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { Link } from 'react-router';
@@ -20,9 +20,10 @@ const CONTACT_FORM_RECIPIENT = 'innogroup.shawn@gmail.com';
 
 interface QuoteFormSectionProps {
   focusedImport?: boolean;
+  beforeForm?: ReactNode;
 }
 
-export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProps = {}) {
+export function QuoteFormSection({ focusedImport = false, beforeForm }: QuoteFormSectionProps = {}) {
   const { text } = useLanguage();
   const [briefStep, setBriefStep] = useState(focusedImport ? 2 : 1);
   const [formData, setFormData] = useState({
@@ -269,6 +270,7 @@ export function QuoteFormSection({ focusedImport = false }: QuoteFormSectionProp
 
   return (
     <section className="relative overflow-hidden bg-[#151C26] px-4 py-16 text-[#F3F0E9] sm:py-20 lg:py-24">
+      {beforeForm}
       <div className="relative mx-auto grid max-w-[1440px] gap-12 lg:grid-cols-[0.4fr_0.6fr] lg:items-start xl:gap-16">
         <div className="relative max-w-xl pt-2">
           <div className="absolute -left-7 top-3 hidden h-32 w-px bg-[#C6A54A]/60 lg:block" />

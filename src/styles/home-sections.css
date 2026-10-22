@@ -1,0 +1,37 @@
+.home-sourcing { padding: 0 16px 52px; }
+.home-sourcing-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #16151414; border-radius: 18px; background: #ffffff70; }
+.home-sourcing-option { display: flex; align-items: flex-start; gap: 18px; padding: 32px 36px; }
+.home-sourcing-option + .home-sourcing-option { border-left: 1px solid #16151414; }
+.home-sourcing-icon { display: grid; place-items: center; flex: 0 0 42px; height: 42px; border-radius: 12px; color: #a17e30; background: var(--accent); }
+.home-sourcing-copy { display: flex; flex-direction: column; align-items: flex-start; height: 100%; min-width: 0; }
+.home-sourcing-copy h2 { font-size: clamp(23px, 2.1vw, 30px); line-height: 1.2; }
+.home-sourcing-copy p { max-width: 480px; font-size: 14px; line-height: 1.8; color: var(--muted-foreground); margin: 12px 0 20px; }
+.home-sourcing-copy a { margin-top: auto; min-height: 44px; font-size: 13px; padding: 11px 17px; }
+.home-assurances { max-width: 1440px; margin: 0 auto 48px; padding-bottom: 32px; border-bottom: 1px solid #f3f0e926; }
+.home-assurances-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px 28px; margin-bottom: 25px; }
+.home-assurances-heading h2 { display: flex; align-items: center; gap: 9px; color: #c6a54a; font-size: 13px; line-height: 1.5; letter-spacing: .06em; white-space: nowrap; }
+.home-assurances-heading p { color: #f3f0e99e; font-size: 13px; }
+.home-assurances-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 26px; }
+.home-assurance { display: flex; gap: 11px; align-items: flex-start; }
+.home-assurance > svg { color: #c6a54a; flex-shrink: 0; margin-top: 2px; }
+.home-assurance h3 { font-size: 15px; line-height: 1.5; color: #f3f0e9; letter-spacing: -.01em; }
+.home-assurance p { margin-top: 7px; font-size: 12px; line-height: 1.8; color: #f3f0e9a6; }
+@media (max-width: 980px) {
+  .home-sourcing-option { padding: 26px; gap: 14px; }
+  .home-assurances-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .home-assurances-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+}
+@media (max-width: 599px) {
+  .home-sourcing { padding-bottom: 36px; }
+  .home-sourcing-strip { grid-template-columns: 1fr; }
+  .home-sourcing-option { padding: 24px 20px; }
+  .home-sourcing-option + .home-sourcing-option { border-left: 0; border-top: 1px solid #16151414; }
+  .home-sourcing-icon { flex-basis: 34px; height: 34px; border-radius: 9px; }
+  .home-sourcing-icon svg { width: 18px; }
+  .home-sourcing-copy h2 { font-size: 22px; }
+  .home-sourcing-copy p { font-size: 13px; }
+  .home-assurances { margin-bottom: 32px; padding-bottom: 28px; }
+  .home-assurances-grid { gap: 22px 18px; }
+  .home-assurance { flex-direction: column; gap: 8px; }
+  .home-assurance h3 { font-size: 14px; }
+}

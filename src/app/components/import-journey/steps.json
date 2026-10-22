@@ -1,0 +1,588 @@
+[
+  {
+    "name": {
+      "en": "Find",
+      "zh": "选车"
+    },
+    "location": {
+      "en": "OVERSEAS SOURCING",
+      "zh": "海外采购"
+    },
+    "note": {
+      "en": "A shortlist comes before a commitment.",
+      "zh": "先有候选，再作决定。"
+    },
+    "car": [
+      570,
+      441,
+      0.87
+    ],
+    "eyebrow": {
+      "en": "THE IMPORT JOURNEY",
+      "zh": "看懂车辆进口"
+    },
+    "title": {
+      "en": [
+        "From overseas.",
+        "To your driveway."
+      ],
+      "zh": [
+        "从海外，",
+        "到你的车位。"
+      ]
+    },
+    "intro": {
+      "en": "How does importing a car actually work? Follow one car from the first shortlist to a New Zealand handover.",
+      "zh": "一辆海外的车，是怎样来到你手里的？跟着这辆车，从最初的车源筛选，一路看到新西兰交付。"
+    },
+    "points": [
+      {
+        "title": {
+          "en": "FIRST, SOURCING",
+          "zh": "先从选车开始"
+        },
+        "text": {
+          "en": "First, we find and compare overseas candidates.",
+          "zh": "第一步，寻找并比较海外候选车辆。"
+        }
+      },
+      {
+        "title": {
+          "en": "WHAT YOU WILL UNDERSTAND",
+          "zh": "你会看明白"
+        },
+        "text": {
+          "en": "Where the car comes from—and what happens next.",
+          "zh": "车从哪里来，接下来要做什么。"
+        }
+      }
+    ],
+    "takeaway": {
+      "en": "Scroll to follow the story. Explore the details whenever you like.",
+      "zh": "往下看，了解整个过程。想多了解的地方，再点开。"
+    },
+    "detailTitle": {
+      "en": "Where do the cars come from?",
+      "zh": "车辆从哪里找？"
+    },
+    "details": [
+      {
+        "title": {
+          "en": "Overseas stock and sourcing channels",
+          "zh": "海外现货与采购渠道"
+        },
+        "text": {
+          "en": "We source through Japanese dealer stock and auctions, selected Chinese manufacturers and suppliers, and Macau market opportunities. We also continue to explore other overseas channels suited to right-hand-drive vehicles. The appropriate source depends on the vehicle, your budget and the information available.",
+          "zh": "我们的采购渠道包括日本车商库存与拍卖、精选中国主机厂及供应商，以及澳门市场车源；同时持续拓展其他适合右舵市场的海外渠道。具体渠道会根据车型、预算和可取得的资料匹配。"
+        }
+      },
+      {
+        "title": {
+          "en": "A candidate is not a confirmed purchase",
+          "zh": "候选车辆不等于已确认购买"
+        },
+        "text": {
+          "en": "A listing is a starting point. Its availability and details need to be checked before a purchase commitment.",
+          "zh": "车源介绍只是起点。决定购买前，还需要再次确认是否可采购及具体车辆信息。"
+        }
+      }
+    ]
+  },
+  {
+    "name": {
+      "en": "Review",
+      "zh": "审核"
+    },
+    "location": {
+      "en": "VEHICLE & DOCUMENT REVIEW",
+      "zh": "车辆与文件审核"
+    },
+    "note": {
+      "en": "Availability. Condition. Documents.",
+      "zh": "车源、车况、文件。"
+    },
+    "car": [
+      570,
+      441,
+      0.87
+    ],
+    "eyebrow": {
+      "en": "BEFORE YOU DECIDE",
+      "zh": "决定购买之前"
+    },
+    "title": {
+      "en": [
+        "Look beyond",
+        "the listing."
+      ],
+      "zh": [
+        "不只看照片，",
+        "还要看清细节。"
+      ]
+    },
+    "intro": {
+      "en": "Availability is checked again. We review the available condition information, photos and key documents, and explain any known concerns or gaps.",
+      "zh": "再次核对车源状态，查看可取得的车况资料、照片和关键文件，把已知问题与尚未确认的信息说明白。"
+    },
+    "points": [
+      {
+        "title": {
+          "en": "WHAT HAPPENS HERE",
+          "zh": "这一站，会做什么"
+        },
+        "text": {
+          "en": "Review the evidence and clarify questions.",
+          "zh": "核对资料，解释需要注意的地方。"
+        }
+      },
+      {
+        "title": {
+          "en": "WHAT YOU WILL UNDERSTAND",
+          "zh": "你会看明白"
+        },
+        "text": {
+          "en": "What is known about the car—and what is not yet verified.",
+          "zh": "已知车况是什么，哪些事项仍未核实。"
+        }
+      }
+    ],
+    "takeaway": {
+      "en": "A listing or report does not answer every question. Unknowns should stay visible.",
+      "zh": "车源介绍或报告不是全部答案，未确认事项应明确保留。"
+    },
+    "detailTitle": {
+      "en": "What is reviewed before purchase?",
+      "zh": "购买前会看哪些资料？"
+    },
+    "details": [
+      {
+        "title": {
+          "en": "Availability and identity",
+          "zh": "车源状态与车辆信息"
+        },
+        "text": {
+          "en": "Reconfirm the listing and cross-check the model, specification and recorded mileage against the supplied information.",
+          "zh": "再次确认车源，并将车型、版本、配置和记录里程与所提供资料交叉核对。"
+        }
+      },
+      {
+        "title": {
+          "en": "Condition and documents",
+          "zh": "车况与文件"
+        },
+        "text": {
+          "en": "Review the available photos, condition notes and relevant documents. The depth of review depends on the source and what can actually be obtained.",
+          "zh": "查看可用照片、车况记录及相关文件。审核范围取决于具体渠道和实际能取得的资料。"
+        }
+      },
+      {
+        "title": {
+          "en": "Anything still unclear",
+          "zh": "尚未明确的事项"
+        },
+        "text": {
+          "en": "Known concerns, missing information and questions that require further checking should be discussed before you decide.",
+          "zh": "已知问题、缺失资料及需进一步核实的事项，应在作出购买决定前说明。"
+        }
+      }
+    ]
+  },
+  {
+    "name": {
+      "en": "Costs",
+      "zh": "费用"
+    },
+    "location": {
+      "en": "ITEMISED COST EXPLANATION",
+      "zh": "分项费用说明"
+    },
+    "note": {
+      "en": "Included. Estimated. Still to confirm.",
+      "zh": "包含什么，估算什么，还有什么待确认。"
+    },
+    "car": [
+      443,
+      444,
+      0.81
+    ],
+    "eyebrow": {
+      "en": "THE WHOLE PICTURE",
+      "zh": "看懂费用全貌"
+    },
+    "title": {
+      "en": [
+        "More than",
+        "the car price."
+      ],
+      "zh": [
+        "不只看车价，",
+        "还要看总费用。"
+      ]
+    },
+    "intro": {
+      "en": "The source-market price is only one part. An itemised estimate explains the expected vehicle, transport, local and service costs—and what is not included.",
+      "zh": "海外车价只是其中一部分。分项估算应说明车辆、运输、本地办理和服务等预计费用，也要写清不包含的项目。"
+    },
+    "points": [
+      {
+        "title": {
+          "en": "WHAT HAPPENS HERE",
+          "zh": "这一站，会做什么"
+        },
+        "text": {
+          "en": "Break down the expected costs and their scope.",
+          "zh": "拆开说明费用，以及每一项的范围。"
+        }
+      },
+      {
+        "title": {
+          "en": "WHAT YOU WILL UNDERSTAND",
+          "zh": "你会看明白"
+        },
+        "text": {
+          "en": "Which amounts are confirmed, estimated or still to be determined.",
+          "zh": "哪些金额已确认，哪些是估算，哪些仍待确定。"
+        }
+      }
+    ],
+    "takeaway": {
+      "en": "Understand the cost scope before agreeing to the purchase arrangements.",
+      "zh": "先了解费用范围，再决定是否同意购买安排。"
+    },
+    "detailTitle": {
+      "en": "What should a cost breakdown show?",
+      "zh": "一份费用明细应该讲清什么？"
+    },
+    "details": [
+      {
+        "title": {
+          "en": "Vehicle and overseas arrangements",
+          "zh": "车辆与海外安排"
+        },
+        "text": {
+          "en": "The vehicle amount and the sourcing or overseas charges included in the proposed arrangement.",
+          "zh": "车辆金额，以及所提出安排中包含的采购或海外相关费用。"
+        }
+      },
+      {
+        "title": {
+          "en": "Transport, local items and service",
+          "zh": "运输、本地项目与服务"
+        },
+        "text": {
+          "en": "The applicable freight, taxes, local processing, checks, registration and service items should be identified—not hidden inside an unexplained total.",
+          "zh": "适用的运输、税费、本地处理、检查、注册和服务项目应逐项说明，而不是只给一个无法解释的总数。"
+        }
+      },
+      {
+        "title": {
+          "en": "Estimates and exclusions",
+          "zh": "估算与不包含项目"
+        },
+        "text": {
+          "en": "Identify variable amounts, allowances, exclusions and anything needing a vehicle-specific confirmation. This walkthrough is not a quotation or calculator.",
+          "zh": "标明浮动金额、预留估算、不包含项目及需按具体车辆确认的事项。本流程展示不是报价，也不进行费用计算。"
+        }
+      }
+    ]
+  },
+  {
+    "name": {
+      "en": "Shipping",
+      "zh": "运输"
+    },
+    "location": {
+      "en": "OVERSEAS → NEW ZEALAND",
+      "zh": "海外 → 新西兰"
+    },
+    "note": {
+      "en": "The route, the handover and the next update.",
+      "zh": "运输路线、交接，以及下一步信息。"
+    },
+    "car": [
+      589,
+      376,
+      0.53
+    ],
+    "eyebrow": {
+      "en": "AFTER PURCHASE ARRANGEMENTS ARE AGREED",
+      "zh": "购买安排确认之后"
+    },
+    "title": {
+      "en": [
+        "From the port.",
+        "Across the water."
+      ],
+      "zh": [
+        "从海外港口，",
+        "驶向新西兰。"
+      ]
+    },
+    "intro": {
+      "en": "Once the purchase arrangements are agreed, the vehicle moves through export handover and shipping. We explain the available shipment information and the next local steps.",
+      "zh": "购买安排确认后，车辆进入出口交接和运输阶段。我们说明可取得的运输信息，并衔接后续本地环节。"
+    },
+    "points": [
+      {
+        "title": {
+          "en": "WHAT HAPPENS HERE",
+          "zh": "这一站，会做什么"
+        },
+        "text": {
+          "en": "Coordinate the handover, transport and arrival arrangements.",
+          "zh": "协调交接、运输与到港衔接。"
+        }
+      },
+      {
+        "title": {
+          "en": "WHAT YOU WILL UNDERSTAND",
+          "zh": "你会看明白"
+        },
+        "text": {
+          "en": "What stage comes next and how timing updates are communicated.",
+          "zh": "接下来是什么环节，以及如何了解时间变化。"
+        }
+      }
+    ],
+    "takeaway": {
+      "en": "Shipping dates are estimates until the relevant arrangements are confirmed.",
+      "zh": "相关安排确认前，船期与到港时间应按预计理解。"
+    },
+    "detailTitle": {
+      "en": "What happens between the ports?",
+      "zh": "两个港口之间，有哪些环节？"
+    },
+    "details": [
+      {
+        "title": {
+          "en": "Export handover",
+          "zh": "出口交接"
+        },
+        "text": {
+          "en": "Confirm the vehicle collection, handover information and paperwork for the particular route.",
+          "zh": "按具体运输线路确认接车、交接资料及所需文件。"
+        }
+      },
+      {
+        "title": {
+          "en": "Shipping information",
+          "zh": "运输信息"
+        },
+        "text": {
+          "en": "Explain the available shipment details and communicate material changes to the expected schedule.",
+          "zh": "说明可取得的运输资料，并沟通预计时间的重要变化。"
+        }
+      },
+      {
+        "title": {
+          "en": "Arrival coordination",
+          "zh": "到港衔接"
+        },
+        "text": {
+          "en": "Arrange the next local steps using the actual arrival and release information. The illustration is not a live vessel or order tracker.",
+          "zh": "根据实际到港与放行信息安排后续本地环节。画面是流程示意，不是实时船舶或订单追踪。"
+        }
+      }
+    ]
+  },
+  {
+    "name": {
+      "en": "Local steps",
+      "zh": "本地办理"
+    },
+    "location": {
+      "en": "NEW ZEALAND PREPARATION",
+      "zh": "新西兰本地准备"
+    },
+    "note": {
+      "en": "The checks, any work and the preparation.",
+      "zh": "检查、所需处理与交付准备。"
+    },
+    "car": [
+      554,
+      443,
+      0.87
+    ],
+    "eyebrow": {
+      "en": "HERE, BUT NOT FINISHED",
+      "zh": "抵达，不等于完成"
+    },
+    "title": {
+      "en": [
+        "Landed here.",
+        "Prepared for handover."
+      ],
+      "zh": [
+        "抵达之后，",
+        "还有本地准备。"
+      ]
+    },
+    "intro": {
+      "en": "Arrival is not the finish line. Local processing, applicable checks, any required work and registration need to be addressed before an agreed handover.",
+      "zh": "到港并不等于可以直接交车。还需要衔接本地处理、适用检查、可能需要的整改，以及注册和交付准备。"
+    },
+    "points": [
+      {
+        "title": {
+          "en": "WHAT HAPPENS HERE",
+          "zh": "这一站，会做什么"
+        },
+        "text": {
+          "en": "Coordinate the local steps and explain issues that need attention.",
+          "zh": "协调本地环节，说明需要处理的事项。"
+        }
+      },
+      {
+        "title": {
+          "en": "WHAT YOU WILL UNDERSTAND",
+          "zh": "你会看明白"
+        },
+        "text": {
+          "en": "What is ready, what remains outstanding and any related costs.",
+          "zh": "哪些事项已具备条件，哪些仍待处理，以及相关费用。"
+        }
+      }
+    ],
+    "takeaway": {
+      "en": "Further checks or work may be needed; a pass is not assumed.",
+      "zh": "可能需要进一步检查或处理，不预先假定车辆通过。"
+    },
+    "detailTitle": {
+      "en": "Why is arrival not the last step?",
+      "zh": "为什么到港还不能直接交车？"
+    },
+    "details": [
+      {
+        "title": {
+          "en": "Local processing and checks",
+          "zh": "本地处理与检查"
+        },
+        "text": {
+          "en": "The relevant release, collection and inspection arrangements depend on the actual vehicle and its requirements.",
+          "zh": "放行、提车和检查安排取决于具体车辆及适用要求。"
+        }
+      },
+      {
+        "title": {
+          "en": "Any additional work",
+          "zh": "可能需要的额外处理"
+        },
+        "text": {
+          "en": "If checks identify issues, the required work, timing and related charges need to be explained and addressed.",
+          "zh": "检查发现问题时，需要说明并处理相应工作、时间安排及相关费用。"
+        }
+      },
+      {
+        "title": {
+          "en": "Preparation for handover",
+          "zh": "交付前准备"
+        },
+        "text": {
+          "en": "Complete the applicable registration and preparation steps, then confirm when and how the handover will take place.",
+          "zh": "按实际情况完成注册和准备环节，再确认何时、怎样交付。"
+        }
+      }
+    ]
+  },
+  {
+    "name": {
+      "en": "Handover",
+      "zh": "交付"
+    },
+    "location": {
+      "en": "THE HANDOVER",
+      "zh": "车辆交付"
+    },
+    "note": {
+      "en": "Your car, your paperwork, your point of contact.",
+      "zh": "车辆、文件，以及联系渠道。"
+    },
+    "car": [
+      558,
+      442,
+      0.89
+    ],
+    "eyebrow": {
+      "en": "THE NEXT CHAPTER IS YOURS",
+      "zh": "下一段旅程，属于你"
+    },
+    "title": {
+      "en": [
+        "Your car.",
+        "The keys.",
+        "A clear handover."
+      ],
+      "zh": [
+        "车辆与钥匙。",
+        "交代清楚，",
+        "再出发。"
+      ]
+    },
+    "intro": {
+      "en": "Review the vehicle, relevant paperwork and agreed items together. Get the practical information you need, with a clear local point of contact for questions.",
+      "zh": "一起确认车辆、相关文件和约定事项，了解实用的交付信息，并保留清楚的本地联系渠道。"
+    },
+    "points": [
+      {
+        "title": {
+          "en": "WHAT HAPPENS HERE",
+          "zh": "这一站，会做什么"
+        },
+        "text": {
+          "en": "Explain the handover details and how to reach us afterwards.",
+          "zh": "说明交付事项，以及之后怎样联系。"
+        }
+      },
+      {
+        "title": {
+          "en": "WHAT YOU WILL UNDERSTAND",
+          "zh": "你会看明白"
+        },
+        "text": {
+          "en": "What you are receiving and who to contact with questions.",
+          "zh": "交付内容是什么，有问题时可以找谁。"
+        }
+      }
+    ],
+    "takeaway": {
+      "en": "A local point of contact, during the journey and after handover.",
+      "zh": "从进口过程到交付之后，都知道可以联系谁。"
+    },
+    "detailTitle": {
+      "en": "What is covered at handover?",
+      "zh": "交付时会说明哪些事情？"
+    },
+    "details": [
+      {
+        "title": {
+          "en": "Vehicle and paperwork",
+          "zh": "车辆与文件"
+        },
+        "text": {
+          "en": "Go through the vehicle, relevant documents and items agreed as part of the handover.",
+          "zh": "共同确认车辆、相关文件及约定的交付事项。"
+        }
+      },
+      {
+        "title": {
+          "en": "Practical details",
+          "zh": "实用信息"
+        },
+        "text": {
+          "en": "Explain useful controls and the ownership or service information relevant to the particular car.",
+          "zh": "介绍实用操作，以及适用于这辆车的用车或服务信息。"
+        }
+      },
+      {
+        "title": {
+          "en": "A local point of contact",
+          "zh": "本地联系渠道"
+        },
+        "text": {
+          "en": "Keep INNO’s contact details accessible for follow-up questions. Any specific warranty or service coverage should be explained separately.",
+          "zh": "保留 INNO 的联系方式，便于后续提问。具体保修或服务覆盖范围应另行说明。"
+        }
+      }
+    ]
+  }
+]
