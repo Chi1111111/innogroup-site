@@ -69,7 +69,7 @@ export function SelectedVehicles() {
       <section className="relative overflow-hidden bg-[#0d0e10] px-4 py-16 text-white sm:py-24">
         <div className="absolute -right-28 -top-28 h-[480px] w-[480px] rounded-full bg-primary/15 blur-[110px]" />
         <div className="section-shell relative grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-          <div>
+          <div className="motion-intro">
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-primary">INNO SELECT · COLLECTION</p>
             <h1 className="mt-5 max-w-5xl !text-white">{text({ en: 'Selected Vehicle Collection', zh: '甄选车型库' })}</h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-white/65">
@@ -138,7 +138,7 @@ export function SelectedVehicles() {
               {filteredVehicles.map(({ vehicle, issueNumber, publishedAt }) => {
                 const isCollector = collectionType(vehicle) === 'collector';
                 return (
-                  <article key={vehicle.slug} className="group overflow-hidden rounded-[24px] border border-black/8 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.06)]">
+                  <article key={vehicle.slug} className="motion-card group overflow-hidden rounded-[24px] border border-black/8 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.06)]">
                     <Link to={`/weekly-report/issue-${issueNumber}/${vehicle.slug}`} className="relative block aspect-[16/10] overflow-hidden bg-[#111214]">
                       <img src={getJapanSpecialOrderImages(vehicle)[0]} alt={text({ en: vehicle.title, zh: vehicle.zhTitle })} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />

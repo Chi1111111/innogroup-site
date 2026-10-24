@@ -128,7 +128,8 @@ async function approvedCatalog(body: Record<string,unknown> = {}, signal?: Abort
   signal?.addEventListener('abort', abort, { once: true });
   const timer = setTimeout(abort, 30_000);
   try {
-  const response=await fetch(`${base}/functions/v1/japan-photo-review`,{signal:controller.signal,method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_ANON_KEY as string},body:JSON.stringify({action:'catalog',...body})});
+  const endpoint = import.meta.env.DEV ? '/functions/v1/japan-photo-review' : `${base}/functions/v1/japan-photo-review`;
+  const response=await fetch(endpoint,{signal:controller.signal,method:'POST',headers:{'Content-Type':'application/json',apikey:import.meta.env.VITE_SUPABASE_ANON_KEY as string},body:JSON.stringify({action:'catalog',...body})});
   if(!response.ok)throw new Error('Japan Market is temporarily unavailable.');
   return await response.json() as JapanMarketDetailPayload & JapanMarketPage & {hasMore:boolean};
   } finally {

@@ -6,7 +6,7 @@ import { StickyCTA } from './components/StickyCTA';
 import { SEO } from './components/SEO';
 import { SiteTranslatorProvider } from './components/SiteTranslator';
 import { isWorkflowPath } from './lib/routePaths';
-import { PageMotion } from './components/PageMotion';
+import { PageMotion, RouteProgress } from './components/PageMotion';
 
 export function Root() {
   const location = useLocation();
@@ -17,6 +17,7 @@ export function Root() {
       <div className="min-h-screen bg-background">
         <SEO />
         <ScrollToTop />
+        <RouteProgress />
         {isWorkflowRoute ? null : <Navbar />}
         {isWorkflowRoute ? <Outlet /> : <PageMotion key={location.pathname}><Outlet /></PageMotion>}
         {isWorkflowRoute ? null : <Footer />}

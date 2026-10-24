@@ -20,3 +20,11 @@ it('does not replace a failed page with misleading partial inventory',async()=>{
   vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:false}));
   await expect(loadJapanMarketPage({page:3})).rejects.toThrow('temporarily unavailable');
 });
+it.each([true, false])('keeps catalog requests read-only with DEV=%s', async (development) => {
+  vi.stubEnv('DEV', development);
+  const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ vehicles: [car], count: 1, page: 1, facets: [] }) });
+  vi.stubGlobal('fetch', fetcher);
+  await loadJapanMarketPage({ page: 1 });
+  expect(fetcher.mock.calls[0][0]).toBe(development ? '/functions/v1/japan-photo-review' : 'https://example.supabase.co/functions/v1/japan-photo-review');
+  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ action: 'catalog-page', page: 1 });
+});

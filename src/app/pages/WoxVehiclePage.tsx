@@ -1,3 +1,5 @@
+import { MotionImage } from '../components/MotionImage';
+import { MotionCollapse } from '../components/MotionCollapse';
 import { useEffect, useState } from 'react';
 import emailjs from '@emailjs/browser';
 import {
@@ -90,11 +92,11 @@ function WoxHero({
                 className="flex aspect-[16/9] w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-[18px] bg-gradient-to-br from-white to-[#ebe7df]"
                 aria-label={`Open larger ${vehicle.name} ${activePhoto.title} image`}
               >
-                <img
+                <MotionImage
                   key={activePhoto.image}
                   src={activePhoto.image}
                   alt={`${vehicle.name} ${activePhoto.title}`}
-                  className="h-full w-full animate-scaleIn object-contain"
+                  className="h-full w-full object-contain"
                 />
               </button>
               <button
@@ -190,7 +192,7 @@ function WoxHero({
             >
               <X className="h-6 w-6" />
             </button>
-            <img
+            <MotionImage
               src={activePhoto.image}
               alt={`Large ${vehicle.name} ${activePhoto.title}`}
               className="max-h-[88vh] max-w-[94vw] object-contain"
@@ -281,6 +283,8 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
             <button
               type="button"
               onClick={() => setOpenGroup(openGroup === 0 ? -1 : 0)}
+              aria-expanded={openGroup === 0}
+              aria-controls={`wox-confirmation-${vehicle.slug}`}
               className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
             >
               <span className="font-bold text-foreground">
@@ -288,7 +292,7 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
               </span>
               <ChevronDown className={`h-5 w-5 text-primary ${openGroup === 0 ? 'rotate-180' : ''}`} />
             </button>
-            {openGroup === 0 && (
+            <MotionCollapse open={openGroup === 0} id={`wox-confirmation-${vehicle.slug}`}>
               <div className="grid gap-3 border-t border-black/6 p-5 sm:grid-cols-2">
                 {vehicle.confirmationItems.map((item) => (
                   <div key={item} className="flex items-start gap-3">
@@ -297,7 +301,7 @@ function WoxDetails({ vehicle, selected }: { vehicle: WoxVehicle; selected: WoxV
                   </div>
                 ))}
               </div>
-            )}
+            </MotionCollapse>
           </div>
         </div>
       </section>

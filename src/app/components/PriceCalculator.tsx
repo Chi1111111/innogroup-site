@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Calculator, ChevronDown, TrendingUp, Info } from 'lucide-react';
 import { useLanguage } from './SiteTranslator';
+import { useMotionFeedback } from './useMotionFeedback';
 import { formatQuoteEstimate, type QuoteEstimate } from '../lib/quoteEstimate';
 import '../../styles/price-calculator.css';
 
@@ -16,6 +17,7 @@ export function PriceCalculator({ onEnquire }: { onEnquire?: (message: string) =
   const [rateStatus, setRateStatus] = useState<'loading' | 'live' | 'fallback'>('loading');
   const [estimate, setEstimate] = useState<QuoteEstimate | null>(null);
   const landedPrice = estimate?.landedPriceNZD ?? null;
+  const totalMotion = useMotionFeedback<HTMLParagraphElement>(landedPrice);
   const [validationError, setValidationError] = useState('');
 
   // Breakdown values
@@ -209,7 +211,7 @@ export function PriceCalculator({ onEnquire }: { onEnquire?: (message: string) =
               <div className="calculator-total" role="status" aria-live="polite" aria-atomic="true">
                 <span className="calculator-total-icon"><Calculator size={23} aria-hidden="true" /></span>
                 <h3>{text({ en: 'Estimated Landed Price', zh: '预计新西兰落地价' })}</h3>
-                <p className="calculator-amount">{formatCurrency(landedPrice, 'NZD').split(' ')[0]}</p>
+                <p ref={totalMotion} className="calculator-amount">{formatCurrency(landedPrice, 'NZD').split(' ')[0]}</p>
                 <p className="calculator-currency">{text({ en: 'New Zealand dollars · NZD', zh: '纽币 · NZD' })}</p>
                 {onEnquire && estimate ? <div className="calculator-enquire">
                   <button type="button" className="button-primary" onClick={() => onEnquire(formatQuoteEstimate(estimate, language))}>

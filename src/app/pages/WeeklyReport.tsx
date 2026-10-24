@@ -1,3 +1,4 @@
+import { MotionImage } from '../components/MotionImage';
 import { formatWeeklyMileage, formatWeeklyPrice } from '../lib/weeklyVehicleDisplay';
 import { WeeklyVehicleFacts } from '../components/WeeklyVehicleFacts';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -118,7 +119,7 @@ function WeeklyVehicleCard({
   const { text } = useLanguage();
 
   return (
-    <button type="button" onClick={onOpen} className="group relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden rounded-[24px] border border-black/8 bg-black text-left shadow-[0_18px_55px_rgba(0,0,0,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(0,0,0,0.14)]">
+    <button data-reveal type="button" onClick={onOpen} className="motion-card group relative aspect-[4/3] sm:aspect-[16/10] overflow-hidden rounded-[24px] border border-black/8 bg-black text-left shadow-[0_18px_55px_rgba(0,0,0,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(0,0,0,0.14)]">
         <img src={getJapanSpecialOrderImages(vehicle)[0]} alt={text({ en: vehicle.title, zh: vehicle.zhTitle })} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] group-hover:opacity-85" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/5 to-black/20" />
         <span className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] ${arrived ? 'bg-sky-700 text-white' : 'bg-[#101113]/90 text-primary'}`}>
@@ -246,7 +247,7 @@ function VehicleDetailModal({
           <div className="min-h-0 overflow-x-hidden overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
             <div className="min-w-0 overflow-hidden bg-[#111214] p-4 sm:p-6">
               <button type="button" onClick={() => setPreviewImage(activeImage)} className="group relative block w-full overflow-hidden rounded-2xl bg-black">
-                <img src={activeImage} alt={text({ en: vehicle.title, zh: vehicle.zhTitle })} className="h-[min(58vh,560px)] w-full object-contain transition duration-300 group-hover:scale-[1.01] group-hover:opacity-90" />
+                <MotionImage src={activeImage} alt={text({ en: vehicle.title, zh: vehicle.zhTitle })} className="h-[min(58vh,560px)] w-full object-contain transition duration-300 group-hover:scale-[1.01] group-hover:opacity-90" />
                 <span className="absolute bottom-4 right-4 rounded-full bg-black/70 px-3 py-2 text-xs font-bold text-white opacity-0 backdrop-blur transition group-hover:opacity-100">{text({ en: 'View large image', zh: '查看大图' })}</span>
               </button>
               {images.length > 1 ? (
@@ -418,7 +419,7 @@ export function WeeklyReport() {
           </div>
 
           {latestReport ? (
-            <article className="overflow-hidden rounded-[30px] border border-black/8 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.08)]">
+            <article data-reveal className="overflow-hidden rounded-[30px] border border-black/8 bg-white shadow-[0_24px_70px_rgba(0,0,0,0.08)]">
               <div className="bg-[#111214] p-6 text-white sm:p-8">
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -468,7 +469,7 @@ export function WeeklyReport() {
                 {previousReports.map((report) => {
                   const cover = report.vehicles[0] ? getJapanSpecialOrderImages(report.vehicles[0])[0] : '';
                   return (
-                    <button key={report.issueNumber} type="button" onClick={() => setSelectedReport(report)} className="group overflow-hidden rounded-[22px] border border-black/8 bg-[#f8f4ec] text-left hover:border-primary/45">
+                    <button data-reveal key={report.issueNumber} type="button" onClick={() => setSelectedReport(report)} className="group overflow-hidden rounded-[22px] border border-black/8 bg-[#f8f4ec] text-left hover:border-primary/45">
                       <div className="relative aspect-[16/10] overflow-hidden bg-[#111214]">{cover ? <img src={cover} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-75 transition group-hover:scale-[1.03]" /> : null}<div className="absolute inset-0 bg-gradient-to-t from-black/85 to-transparent" /><div className="absolute bottom-4 left-4"><p className="text-xs font-bold text-primary">INNO SELECT · WEEKLY</p><h3 className="mt-1 !text-xl !text-white">Issue {report.issueNumber}</h3></div></div>
                       <div className="p-5"><p className="text-xs text-foreground/45">{report.publishedAt}</p><p className="mt-3 line-clamp-2 text-sm leading-6">{text({ en: report.marketSummary, zh: report.zhMarketSummary })}</p></div>
                     </button>

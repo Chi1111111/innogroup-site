@@ -1,3 +1,4 @@
+import { MotionImage } from '../components/MotionImage';
 import { formatWeeklyMileage, formatWeeklyPrice } from '../lib/weeklyVehicleDisplay';
 import {
   ArrowLeft,
@@ -90,7 +91,7 @@ export function WeeklyVehicleDetail() {
         <section className="overflow-hidden rounded-[28px] border border-black/6 bg-white shadow-[0_28px_80px_rgba(55,42,18,0.12)] lg:grid lg:grid-cols-[minmax(0,1.06fr)_minmax(390px,0.94fr)]">
           <div className="flex min-w-0 flex-col bg-[#ebe6dd] p-4 sm:p-7 lg:p-8">
             <div className="relative flex min-h-[360px] flex-1 items-center justify-center overflow-hidden rounded-[20px] bg-white/60 sm:min-h-[500px] lg:min-h-[590px]">
-              <img
+              <MotionImage
                 src={activeImage}
                 alt={`${text({ en: vehicle.title, zh: vehicle.zhTitle })} ${activeImageIndex + 1}`}
                 className="h-full max-h-[640px] w-full object-contain"

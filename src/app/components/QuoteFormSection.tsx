@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, Upload, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, LoaderCircle, Upload, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { Link } from 'react-router';
 import { EMAILJS_CONFIG } from '../../config/emailConfig';
@@ -29,6 +29,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
   const { text } = useLanguage();
   const estimateField = useRef<HTMLTextAreaElement>(null);
   const formPanel = useRef<HTMLDivElement>(null);
+  const submitFeedback = useRef<HTMLDivElement>(null);
   const [estimateNote, setEstimateNote] = useState<string | null>(null);
   const [briefStep, setBriefStep] = useState(focusedImport ? 2 : 1);
   const [formData, setFormData] = useState({
@@ -46,10 +47,16 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
 
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ completed: number; total: number } | null>(null);
   const [contactError, setContactError] = useState('');
   const imagePreviews = useMemo(() => uploadedImages.map((image) => URL.createObjectURL(image)), [uploadedImages]);
 
   useEffect(() => () => imagePreviews.forEach((preview) => URL.revokeObjectURL(preview)), [imagePreviews]);
+
+  useEffect(() => {
+    if (submitStatus) submitFeedback.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  }, [submitStatus]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -119,6 +126,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!formData.phone.trim() && !formData.email.trim()) {
       setContactError(text({ en: 'Add a phone number or email address so we can reply.', zh: '请填写电话号码或邮箱，方便我们回复。' }));
       setBriefStep(3);
@@ -126,6 +134,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
     }
 
     setContactError('');
+    setSubmitStatus(null);
     setIsSubmitting(true);
 
     try {
@@ -133,6 +142,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
       let photoHtml = '';
 
       if (formData.inquiryType === 'sell' && uploadedImages.length > 0) {
+        setUploadProgress({ completed: 0, total: uploadedImages.length });
         photoInfo = `Customer uploaded ${uploadedImages.length} photo(s):\n\n`;
         photoHtml = `<div style="margin: 20px 0;">
           <h3 style="color: #d4af37; margin-bottom: 15px;">Customer Uploaded Photos (${uploadedImages.length})</h3>`;
@@ -144,10 +154,13 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
           } catch (error) {
             console.error(`Failed to upload image ${index + 1}:`, error);
             return { success: false, fileName: file.name, index };
+          } finally {
+            setUploadProgress((progress) => progress ? { ...progress, completed: progress.completed + 1 } : null);
           }
         });
 
         const uploadResults = await Promise.all(uploadPromises);
+        setUploadProgress(null);
 
         uploadResults.forEach((result) => {
           if (result.success) {
@@ -213,10 +226,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
         : formData.sourceType === 'china' ? 'china'
         : formData.sourceType === 'japan' ? 'japan' : 'local');
 
-      alert(text({
-        en: "Thank you. Your enquiry has been sent to Inno Group. We'll usually reply within one business day.",
-        zh: '谢谢，您的咨询已发送给 Inno Group。我们通常会在一个工作日内回复。',
-      }));
+      setSubmitStatus('success');
 
       setFormData({
         inquiryType: 'buy',
@@ -235,12 +245,10 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
       setBriefStep(focusedImport ? 2 : 1);
     } catch (error) {
       console.error('Error sending email:', error);
-      alert(text({
-        en: 'We could not send the enquiry. Please try again, or contact us by phone or WhatsApp.',
-        zh: '咨询暂时无法发送，请重试，或通过电话、WhatsApp 联系我们。',
-      }));
+      setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
@@ -275,6 +283,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
   const selectedModels = formData.brand ? carModels[formData.brand] ?? [] : [];
 
   const chooseBriefType = (type: 'buy-local' | 'import-japan' | 'import-china' | 'sell') => {
+    setSubmitStatus(null);
     if (type !== 'import-japan') setEstimateNote(null);
     setFormData((current) => ({
       ...current,
@@ -336,7 +345,20 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
 
         <div className="w-full lg:min-w-[650px]">
           <div ref={formPanel} className="scroll-mt-24 rounded-xl border border-[#F7F4EE]/10 bg-[#F7F4EE] p-6 text-[#151C26] sm:p-8 lg:p-10">
-            <form onSubmit={handleSubmit}>
+            {submitStatus ? <div ref={submitFeedback} className={`motion-feedback mb-6 flex scroll-mt-24 items-start gap-3 rounded-xl border p-4 text-sm leading-7 ${submitStatus === 'success' ? 'border-primary/30 bg-primary/10' : 'border-red-200 bg-red-50 text-red-700'}`} role={submitStatus === 'success' ? 'status' : 'alert'}>
+              {submitStatus === 'success' ? <CheckCircle2 className="mt-1 h-5 w-5 text-primary" aria-hidden="true" /> : null}
+              <p>{text(submitStatus === 'success' ? {
+                en: "Thank you. Your enquiry has been sent to Inno Group. We'll usually reply within one business day.",
+                zh: '谢谢，您的咨询已发送给 Inno Group。我们通常会在一个工作日内回复。',
+              } : {
+                en: 'We could not send the enquiry. Your details are kept. Please try again, or contact us by phone or WhatsApp.',
+                zh: '咨询暂时无法发送，填写的信息已保留。请重试，或通过电话、WhatsApp 联系我们。',
+              })}</p>
+            </div> : null}
+            <div className="motion-form-progress" role="progressbar" aria-label={text({ en: 'Enquiry progress', zh: '咨询填写进度' })} aria-valuemin={0} aria-valuemax={totalSteps} aria-valuenow={displayedStep}>
+              <span style={{ width: `${displayedStep / totalSteps * 100}%` }} />
+            </div>
+            <form onSubmit={handleSubmit} aria-busy={isSubmitting}>
               {estimateNote !== null && formData.inquiryType === 'buy' && formData.sourceType === 'japan' ? <div className="mb-8 rounded-xl border border-[#C6A54A]/40 bg-[#eee6d8]/60 p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-4">
                   <label htmlFor="quote-estimate" className="text-sm font-bold text-[#151C26]">{text({ en: 'Your estimate', zh: '你的估价说明' })}</label>
@@ -347,7 +369,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
                 <p id="quote-estimate-help" className="mb-3 text-sm leading-6 text-[#151C26]/70">{text({ en: 'Added from the calculator. Edit or remove it before submitting. Your other details are kept.', zh: '已带入计算器估价，可修改或移除后再提交。你填写的其他信息会保留。' })}</p>
                 <textarea ref={estimateField} id="quote-estimate" name="estimateNote" value={estimateNote} onChange={(event) => setEstimateNote(event.target.value)} rows={6} aria-describedby="quote-estimate-help" className={fieldClass} />
               </div> : null}
-              <div key={briefStep} className="animate-fadeIn">
+              <div key={briefStep} className="motion-step">
                 <div className="mb-8 flex items-center justify-between border-b border-[#151C26]/10 pb-5">
                   <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#151C26]/48">
                     {String(displayedStep).padStart(2, '0')} / {String(totalSteps).padStart(2, '0')}
@@ -636,12 +658,12 @@ export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRe
                     >
                       <span>
                         {isSubmitting
-                          ? text({ en: 'Sending…', zh: '正在发送…' })
+                          ? uploadProgress ? text({ en: `Preparing photos ${uploadProgress.completed}/${uploadProgress.total}…`, zh: `正在处理照片 ${uploadProgress.completed}/${uploadProgress.total}…` }) : text({ en: 'Sending…', zh: '正在发送…' })
                           : formData.inquiryType === 'sell'
                             ? text({ en: 'Request My Valuation', zh: '提交估价需求' })
                             : text({ en: 'Request My Options', zh: '提交车辆需求' })}
                       </span>
-                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                      {isSubmitting ? <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" /> : <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />}
                     </button>
 
                     <p className="mt-5 text-center text-xs font-medium text-[#151C26]/45">

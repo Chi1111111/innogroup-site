@@ -8,7 +8,7 @@ export function Contact() {
   return (
     <div className="pt-20">
       <section className="bg-gradient-to-br from-primary/5 via-white to-primary/10 px-4 py-20">
-        <div className="mx-auto max-w-7xl space-y-6 text-center">
+        <div className="motion-intro mx-auto max-w-7xl space-y-6 text-center">
           <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-6 py-3">
             <Mail className="h-5 w-5 text-primary" />
             <span className="font-semibold text-primary">{text({ en: 'Get In Touch', zh: '联系咨询' })}</span>
@@ -27,7 +27,7 @@ export function Contact() {
 
       <section className="bg-white px-4 py-16">
         <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+          <div className="motion-stagger grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/5 to-transparent p-6 text-center transition-all hover:border-primary/30">
               <div className="rounded-xl bg-primary/10 p-3">
                 <Phone className="h-6 w-6 text-primary" />

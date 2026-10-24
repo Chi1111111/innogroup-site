@@ -1,3 +1,5 @@
+import { MotionImage } from '../components/MotionImage';
+import { MotionCollapse } from '../components/MotionCollapse';
 import { useEffect, useState } from 'react';
 import emailjs from '@emailjs/browser';
 import { ArrowLeft, ArrowRight, BatteryCharging, Check, ChevronDown, Mail, X } from 'lucide-react';
@@ -177,11 +179,11 @@ function BawM8HeroConfigurator({
                 className="flex aspect-[16/9] w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-[18px] bg-gradient-to-br from-white to-[#ebe7df]"
                 aria-label={`Open larger BAW M8 ${activePhoto.title} image`}
               >
-                <img
+                <MotionImage
                   key={activePhoto.image}
                   src={activePhoto.image}
                   alt={`BAW M8 ${activePhoto.title}`}
-                  className="h-full w-full animate-scaleIn object-contain p-2"
+                  className="h-full w-full object-contain p-2"
                 />
               </button>
               <button
@@ -300,7 +302,7 @@ function BawM8HeroConfigurator({
             >
               <X className="h-6 w-6" />
             </button>
-            <img
+            <MotionImage
               src={activePhoto.image}
               alt={`Large BAW M8 ${activePhoto.title}`}
               className="max-h-[88vh] max-w-[94vw] object-contain"
@@ -398,12 +400,14 @@ function BawM8Options() {
                 <button
                   type="button"
                   onClick={() => setOpenGroup(isOpen ? -1 : index)}
+                  aria-expanded={isOpen}
+                  aria-controls={`baw-options-${index}`}
                   className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
                 >
                   <span className="font-bold text-foreground">{group.title}</span>
                   <ChevronDown className={`h-5 w-5 text-primary ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {isOpen && (
+                <MotionCollapse open={isOpen} id={`baw-options-${index}`}>
                   <div className="grid gap-3 border-t border-black/6 p-5 sm:grid-cols-2">
                     {group.items.map((item) => (
                       <div key={item} className="flex items-start gap-3">
@@ -412,7 +416,7 @@ function BawM8Options() {
                       </div>
                     ))}
                   </div>
-                )}
+                </MotionCollapse>
               </div>
             );
           })}

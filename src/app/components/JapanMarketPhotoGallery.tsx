@@ -1,3 +1,4 @@
+import { MotionImage } from './MotionImage';
 import { ChevronLeft, ChevronRight, Expand, Images, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { type JapanMarketVehicle, vehicleFullName } from '../../data/japanMarket';
@@ -70,7 +71,7 @@ export function JapanMarketPhotoGallery({ vehicle }: { vehicle: JapanMarketVehic
   return (
     <div className="min-w-0 max-w-full">
       <div className="group relative aspect-[16/10] w-full overflow-hidden rounded-3xl bg-[#17191c]">
-        <img
+        <MotionImage
           src={activePhoto}
           alt={`${vehicleName} — ${text({ en: `photo ${activeIndex + 1} of ${photos.length}`, zh: `第 ${activeIndex + 1} 张，共 ${photos.length} 张` })}`}
           referrerPolicy="no-referrer"
@@ -117,7 +118,7 @@ export function JapanMarketPhotoGallery({ vehicle }: { vehicle: JapanMarketVehic
       {lightboxOpen ? (
         <div role="dialog" aria-modal="true" aria-label={text({ en: `${vehicleName} photo gallery`, zh: `${vehicleName} 车辆图库` })} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4 sm:p-8">
           <button type="button" onClick={() => setLightboxOpen(false)} aria-label={text({ en: 'Close gallery', zh: '关闭图库' })} className="absolute right-5 top-5 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><X className="h-6 w-6" /></button>
-          <img src={activePhoto} alt={`${vehicleName} — ${activeIndex + 1} / ${photos.length}`} referrerPolicy="no-referrer" className="max-h-full max-w-full object-contain" onError={() => markPhotoFailed(activePhoto)} />
+          <MotionImage src={activePhoto} alt={`${vehicleName} — ${activeIndex + 1} / ${photos.length}`} referrerPolicy="no-referrer" className="max-h-full max-w-full object-contain" onError={() => markPhotoFailed(activePhoto)} />
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white">{activeIndex + 1} / {photos.length}</div>
           {photos.length > 1 ? (
             <>

@@ -8,6 +8,7 @@ import { formatBodyType, formatFuelType, loadJapanMarketPage, type JapanMarketPa
 import { EMPTY_FILTERS, PAGE_SIZE, PRICE_OPTIONS, PRIMARY_MAKES, SORT_OPTIONS, marketSearchParams, readMarketFilters, type MarketFilters } from './japanMarketSearch';
 import { newZealandDay } from '../../data/japanMarketFeatured';
 import '../../styles/japan-market.css';
+import { useMotionFeedback } from '../components/useMotionFeedback';
 
 export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { initialMakeSlug?: string; initialModelSlug?: string }) {
   const { language, text } = useLanguage();
@@ -21,6 +22,7 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
   const [isLoading, setIsLoading] = useState(true);
   const [retry, setRetry] = useState(0);
   const [layout, setLayout] = useState<'list' | 'grid'>('list');
+  const listingMotion = useMotionFeedback<HTMLDivElement>(layout);
   const [mobileOpen, setMobileOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const results = useRef<HTMLDivElement>(null);
@@ -31,7 +33,7 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
   useEffect(() => {
     let active=true;
     const controller=new AbortController();
-    setError('');setIsLoading(true);setPayload(null);
+    setError('');setIsLoading(true);
     const timer=setTimeout(()=>{
       loadJapanMarketPage(JSON.parse(requestKey),controller.signal)
         .then(data=>{if(active){setPayload(data);setFacets(data.facets);if(data.page!==requestedPage){const clean=new URLSearchParams(params);if(data.page>1)clean.set('page',String(data.page));else clean.delete('page');setParams(clean,{replace:true});}}})
@@ -82,7 +84,7 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
   return <main className="japan-market">
     <section className="jm-search-header"><div className="jm-shell">
       <nav aria-label={text({ en: 'Breadcrumb', zh: '当前位置' })} className="jm-breadcrumb"><Link to="/">{text({ en: 'Home', zh: '首页' })}</Link><ChevronRight size={14} /><span>Japan Market</span></nav>
-      <div className="jm-heading-row"><div><p className="jm-eyebrow">JAPAN → NEW ZEALAND</p><h1>{text({ en: 'Find your car in Japan.', zh: '日本好车，直接找。' })}</h1></div><p className="jm-source-note">{text({ en: 'Japan inventory. Confirmed FOB prices in NZD.', zh: '日本车源 · 明确的 FOB 离岸价' })}</p></div>
+      <div className="jm-heading-row motion-intro"><div><p className="jm-eyebrow">JAPAN → NEW ZEALAND</p><h1>{text({ en: 'Find your car in Japan.', zh: '日本好车，直接找。' })}</h1></div><p className="jm-source-note">{text({ en: 'Japan inventory. Confirmed FOB prices in NZD.', zh: '日本车源 · 明确的 FOB 离岸价' })}</p></div>
       <div className="jm-search-row">
         <div className="jm-search-input"><Search size={22} /><input aria-label={text({ en: 'Search make or model', zh: '搜索品牌或车型' })} value={filters.q} onChange={(e) => update({ q: e.target.value })} placeholder={text({ en: 'Make, model or keyword — e.g. Toyota Alphard', zh: '搜索品牌、车型或关键词，例如 Toyota Alphard' })} />{filters.q && <button type="button" onClick={() => update({ q: '' })} aria-label={text({ en: 'Clear search', zh: '清除搜索' })}><X size={18} /></button>}</div>
         <a className="jm-sourcing-link" href="#market-help">{text({ en: 'Need help finding a car?', zh: '需要帮忙找车？' })}<ArrowRight size={17} /></a>
@@ -97,13 +99,14 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
         </div>
         <div className="jm-results-toolbar"><button type="button" className="jm-filter-trigger" onClick={() => setMobileOpen(true)} aria-haspopup="dialog"><SlidersHorizontal size={18} />{text({ en: 'Filters', zh: '筛选' })}{tags.length > 0 && <span>{tags.length}</span>}</button><p className="jm-price-disclaimer">{text({ en: 'All prices in NZD · FOB', zh: '价格单位：纽币 · FOB 离岸价' })}</p><label className="jm-sort"><span>{text({ en: 'Sort', zh: '排序' })}</span><select aria-label={text({ en: 'Sort by', zh: '排序方式' })} value={filters.sort} onChange={(e) => update({ sort: e.target.value })}>{SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{text(option)}</option>)}</select></label></div>
         {tags.length > 0 && <div className="jm-active-filters" aria-label={text({ en: 'Active filters', zh: '已选筛选条件' })}>{tags.map((tag, i) => <button type="button" key={`${tag.label}-${i}`} onClick={() => update(tag.patch)} aria-label={`${text({ en: 'Remove', zh: '移除' })} ${tag.label}`}>{tag.label}<X size={14} /></button>)}<button type="button" className="jm-clear-all" onClick={clear}>{text({ en: 'Clear all', zh: '全部清除' })}</button></div>}
-        {error && payload && <p role="alert">{text({ en: 'Some listings could not be loaded. Showing the vehicles received so far.', zh: '部分车源加载失败，当前显示已收到的车辆。' })} <button type="button" onClick={() => setRetry((n) => n + 1)}>{text({ en: 'Try again', zh: '重试' })}</button></p>}
+        <div className="jm-results-feedback" data-loading={isLoading} role="status" aria-live="polite">{isLoading ? text({ en: payload ? 'Updating results…' : 'Loading vehicles…', zh: payload ? '正在更新车源…' : '正在加载车辆…' }) : ''}{isLoading && <span className="motion-loading-line" aria-hidden="true" />}</div>
+        {error && payload && <p role="alert">{text({ en: 'Results could not be updated. Your previous results are still shown.', zh: '车源暂时未能更新，当前保留上次的查询结果。' })} <button type="button" onClick={() => setRetry((n) => n + 1)}>{text({ en: 'Try again', zh: '重试' })}</button></p>}
         {error && !payload ? <div className="jm-empty" role="alert"><RefreshCw size={30} /><h2>{text({ en: 'Listings could not be loaded', zh: '暂时无法加载车源' })}</h2><p>{text({ en: 'Please try again in a moment.', zh: '请稍后重试。' })}</p><button type="button" className="jm-primary" onClick={() => setRetry((n) => n + 1)}>{text({ en: 'Try again', zh: '重新加载' })}</button></div>
           : !payload ? <div aria-label={text({ en: 'Loading vehicles', zh: '正在加载车辆' })} className="jm-loading">{[1, 2, 3].map((n) => <div key={n} />)}</div>
           : filtered.length === 0 ? <div className="jm-empty"><Search size={32} /><h2>{text(payload?.totalCount===0?{en:'No vehicles available yet',zh:'暂无已上架车辆'}:{ en: 'No cars match these filters', zh: '没有符合条件的车辆' })}</h2><p>{text(payload?.totalCount===0?{en:'New listings will appear here once their photos have been reviewed.',zh:'车辆照片审核完成后，将自动展示在这里。'}:{ en: 'Try a wider budget or remove a filter to see more cars.', zh: '试试扩大预算或移除部分筛选条件。' })}</p><button type="button" className="jm-primary" onClick={clear}>{text({ en: 'Clear filters', zh: '清除筛选' })}</button><Link to="/vehicles/find-my-car#find-car-form">{text({ en: 'Ask Inno to find a car', zh: '让 Inno 帮你找车' })}<ArrowRight size={16} /></Link></div>
-          : <><div className={`jm-listings jm-listings-${layout}`} aria-busy={isLoading}>{filtered.map((vehicle, i) => <JapanMarketListingCard key={vehicle.id} vehicle={vehicle} priority={i === 0} />)}</div>
+          : <><div ref={listingMotion} className={`jm-listings jm-listings-${layout}`} aria-busy={isLoading}>{filtered.map((vehicle, i) => <JapanMarketListingCard key={vehicle.id} vehicle={vehicle} priority={i === 0} />)}</div>
             <div className="jm-pagination"><p>{text({ en: `Showing ${start + 1}–${Math.min(start + PAGE_SIZE, total)} of ${total.toLocaleString('en-NZ')}`, zh: `第 ${start + 1}–${Math.min(start + PAGE_SIZE, total)} 台，共 ${total.toLocaleString('en-NZ')} 台` })}</p>
-              {pages > 1 && <nav aria-label={text({ en: 'Results pages', zh: '结果分页' })}><button type="button" disabled={page === 1} onClick={() => changePage(page - 1)} aria-label={text({ en: 'Previous page', zh: '上一页' })}><ChevronLeft size={18} /></button>{pageNumbers.map((n, i) => <span key={n}>{i > 0 && n - pageNumbers[i - 1] > 1 && <span className="jm-page-gap">…</span>}<button type="button" aria-current={n === page ? 'page' : undefined} onClick={() => changePage(n)}>{n}</button></span>)}<button type="button" disabled={page === pages} onClick={() => changePage(page + 1)} aria-label={text({ en: 'Next page', zh: '下一页' })}><ChevronRight size={18} /></button></nav>}
+              {pages > 1 && <nav aria-label={text({ en: 'Results pages', zh: '结果分页' })}><button type="button" disabled={isLoading || page === 1} onClick={() => changePage(page - 1)} aria-label={text({ en: 'Previous page', zh: '上一页' })}><ChevronLeft size={18} /></button>{pageNumbers.map((n, i) => <span key={n}>{i > 0 && n - pageNumbers[i - 1] > 1 && <span className="jm-page-gap">…</span>}<button type="button" disabled={isLoading} aria-current={n === page ? 'page' : undefined} onClick={() => changePage(n)}>{n}</button></span>)}<button type="button" disabled={isLoading || page === pages} onClick={() => changePage(page + 1)} aria-label={text({ en: 'Next page', zh: '下一页' })}><ChevronRight size={18} /></button></nav>}
             </div></>}
         <details className="jm-about-data"><summary>{text({ en: 'About these listings & FOB prices', zh: '车源及 FOB 报价说明' })}</summary><p>{text({ en: 'Only vehicles with a valid FOB quote and approved photos are listed. Recommended vehicles rotate daily using New Zealand time. Freight, insurance, New Zealand taxes, compliance, registration and Inno services are quoted separately. Availability and prices are reconfirmed before purchase.', zh: '仅展示具备有效 FOB 报价且照片已通过检查的车辆。推荐车辆按新西兰时间每日轮换。运费、保险、新西兰税费、合规、注册和 Inno 服务费另计。购买前会再次确认库存及报价。' })}</p></details>
         <section className="jm-help" id="market-help"><div><p className="jm-eyebrow">INNO SOURCING</p><h2>{text({ en: 'Your next car, made easier.', zh: '选车这件事，交给懂你的人。' })}</h2><p>{text({ en: 'Tell us the model and budget. We’ll help you find it in Japan.', zh: '告诉我们车型与预算，我们从日本帮你寻找。' })}</p></div><Link to="/vehicles/find-my-car#find-car-form">{text({ en: 'Request a vehicle', zh: '提交找车需求' })}<ArrowRight size={18} /></Link></section>

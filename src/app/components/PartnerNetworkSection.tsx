@@ -28,7 +28,7 @@ export function PartnerNetworkSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="motion-stagger grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
           {partnerPlaceholders.map((partner) => (
             <div
               key={partner.id}

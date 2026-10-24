@@ -1,43 +1,104 @@
-:root { --motion-ease: cubic-bezier(.22, 1, .36, 1); }
+:root {
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
+  --motion-fast: 180ms;
+  --motion-ui: 220ms;
+  --motion-reveal: 420ms;
+}
 
-/* Opacity only: fixed dialogs and sticky filters keep their viewport anchors. */
-.page-motion { animation: page-arrive 300ms ease-out both; }
-@keyframes page-arrive { from { opacity: .35; } to { opacity: 1; } }
+/* Opacity keeps fixed dialogs, sticky filters and the import journey anchored. */
+.page-motion { animation: page-arrive var(--motion-ui) ease-out backwards; }
+@keyframes page-arrive { from { opacity: .65; } to { opacity: 1; } }
 @keyframes content-arrive {
-  from { opacity: 0; transform: translateY(22px); }
+  from { opacity: .25; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.hero-copy > * { animation: content-arrive 700ms var(--motion-ease) backwards; }
-.hero-copy > :nth-child(2) { animation-delay: 80ms; }
-.hero-copy > :nth-child(3) { animation-delay: 160ms; }
-.hero-copy > :nth-child(4) { animation-delay: 240ms; }
-.hero-aside { animation: content-arrive 800ms var(--motion-ease) 200ms backwards; }
+@keyframes motion-soft-enter { from { opacity: .3; } to { opacity: 1; } }
 
-.page-motion :is(.section-card, .section-card-dark, .jm-listing) {
-  transition: translate 320ms var(--motion-ease), border-color 250ms ease,
-    background-color 250ms ease, box-shadow 320ms ease;
+/* Legacy sections now use the same viewport observer instead of playing offscreen. */
+.page-motion .animate-slideUp { animation: none; }
+.page-motion :is(.animate-fadeIn, .animate-scaleIn) {
+  animation: motion-soft-enter var(--motion-ui) var(--motion-ease) backwards;
 }
-.page-motion .jm-photo img { transition: transform 650ms var(--motion-ease); }
+.hero-copy > * { animation: content-arrive var(--motion-reveal) var(--motion-ease) backwards; }
+.hero-copy > :nth-child(2) { animation-delay: 45ms; }
+.hero-copy > :nth-child(3) { animation-delay: 90ms; }
+.hero-copy > :nth-child(4) { animation-delay: 135ms; }
+.hero-aside { animation: motion-soft-enter var(--motion-reveal) var(--motion-ease) 100ms backwards; }
+
+.page-motion :is(.section-card, .section-card-dark, .jm-listing, .motion-card) {
+  transition: translate var(--motion-ui) var(--motion-ease), border-color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease, box-shadow var(--motion-ui) ease;
+}
+.page-motion :is(.jm-photo, .motion-card) img { transition: transform var(--motion-reveal) var(--motion-ease), opacity var(--motion-ui) ease; }
+#root .page-motion :is(button, .button-primary, .button-secondary, .button-secondary-dark),
+#root header :is(button, a) { transition-duration: var(--motion-fast); }
 header nav .group > a > svg,
-header nav .group > button > svg { transition: transform 250ms var(--motion-ease); }
+header nav .group > button > svg { transition: transform var(--motion-ui) var(--motion-ease); }
 header nav .group:is(:hover, :focus-within) > :is(a, button) > svg { transform: rotate(180deg); }
 
-.sticky-motion {
-  transition: opacity 240ms ease, translate 360ms var(--motion-ease), visibility 360ms;
+.motion-step { animation: content-arrive var(--motion-ui) var(--motion-ease) backwards; }
+.motion-form-progress { height: 2px; overflow: hidden; background: rgb(21 28 38 / 9%); margin-bottom: 24px; }
+.motion-form-progress > span { display: block; height: 100%; background: var(--primary); transition: width 300ms var(--motion-ease); }
+.motion-feedback { animation: motion-soft-enter var(--motion-ui) ease-out; }
+.motion-feedback svg { flex: none; }
+.motion-collapse { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows 280ms var(--motion-ease), visibility 280ms; }
+.motion-collapse[data-open='true'] { grid-template-rows: 1fr; visibility: visible; }
+.motion-collapse > div { min-height: 0; overflow: hidden; }
+.calculator-results { animation: motion-soft-enter 280ms var(--motion-ease); }
+.calculator-breakdown dl > div { animation: motion-soft-enter 300ms var(--motion-ease) backwards; }
+.calculator-breakdown dl > div:nth-child(2) { animation-delay: 40ms; }
+.calculator-breakdown dl > div:nth-child(3) { animation-delay: 80ms; }
+.calculator-breakdown dl > div:nth-child(n+4) { animation-delay: 120ms; }
+
+.route-progress { position: fixed; inset: 0 0 auto; height: 3px; z-index: 150; overflow: hidden; pointer-events: none; background: rgb(199 162 74 / 18%); }
+.motion-loading-line { display: block; width: 35%; height: 100%; background: var(--primary); animation: motion-loading 1.15s ease-in-out infinite; }
+@keyframes motion-loading { from { transform: translateX(-110%); } to { transform: translateX(390%); } }
+.jm-results-feedback { position: relative; min-height: 28px; margin-block: 4px 12px; overflow: hidden; color: #64787b; font-size: 12px; }
+.jm-results-feedback .motion-loading-line { position: absolute; bottom: 0; height: 2px; }
+.jm-results-feedback[data-loading='false'] { visibility: hidden; }
+.jm-listings { transition: opacity var(--motion-ui) ease; }
+.jm-listings[aria-busy='true'] { opacity: .55; }
+.jm-listings[aria-busy='true'] .jm-listing { translate: none !important; }
+
+/* Native disclosure semantics stay intact, with a height transition where supported. */
+.page-motion details[open] > :not(summary) { animation: motion-soft-enter var(--motion-ui) ease-out; }
+@supports (interpolate-size: allow-keywords) {
+  .page-motion details { interpolate-size: allow-keywords; }
+  .page-motion details::details-content {
+    block-size: 0;
+    opacity: 0;
+    overflow: clip;
+    transition: block-size 280ms var(--motion-ease), opacity var(--motion-ui) ease, content-visibility 280ms allow-discrete;
+  }
+  .page-motion details[open]::details-content { block-size: auto; opacity: 1; }
 }
-.sticky-motion[data-visible='false'] { opacity: 0; translate: 0 16px; visibility: hidden; pointer-events: none; }
+.page-motion dialog[open] { animation: motion-soft-enter var(--motion-ui) ease-out; }
+.page-motion dialog[open]::backdrop { animation: motion-soft-enter var(--motion-ui) ease-out; }
+
+.sticky-motion { transition: opacity var(--motion-ui) ease, translate var(--motion-ui) var(--motion-ease), visibility var(--motion-ui); }
+.sticky-motion[data-visible='false'] { opacity: 0; translate: 0 12px; visibility: hidden; pointer-events: none; }
 .sticky-motion[data-visible='true'] { opacity: 1; translate: 0 0; visibility: visible; }
-.quick-actions-enter { animation: content-arrive 260ms var(--motion-ease) backwards; }
+.quick-actions-enter { animation: content-arrive var(--motion-ui) var(--motion-ease) backwards; }
 
 @media (hover: hover) and (pointer: fine) {
-  .page-motion :is(a.section-card, .section-card:has(a), .jm-listing):hover {
-    translate: 0 -4px;
+  .page-motion :is(a.section-card, .section-card:has(a), .jm-listing, .motion-card:has(a), a.motion-card):hover {
+    translate: 0 -3px;
     box-shadow: 0 16px 36px rgb(16 17 19 / 9%);
   }
-  .page-motion .jm-photo:hover img { transform: scale(1.035); }
+  .page-motion .jm-photo:hover img { transform: scale(1.025); }
+}
+@media (max-width: 767px) {
+  :root { --motion-reveal: 300ms; }
+  .motion-step { animation-name: motion-soft-enter; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .page-motion, .hero-copy > *, .hero-aside, .quick-actions-enter { animation: none; }
-  .page-motion :is(.section-card, .section-card-dark, .jm-listing), .sticky-motion { translate: none !important; }
+  .page-motion, .page-motion *, .page-motion *::before, .page-motion *::after,
+  .page-motion details::details-content, .route-progress *, .hero-copy > *, .hero-aside, .quick-actions-enter {
+    animation: none !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  .page-motion :is(.section-card, .section-card-dark, .jm-listing, .motion-card), .sticky-motion { translate: none !important; }
   .page-motion .jm-photo img { transform: none !important; }
+  .motion-loading-line { width: 100%; transform: none; }
 }

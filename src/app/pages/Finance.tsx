@@ -2,6 +2,7 @@ import { ArrowRight, Calculator, HandCoins } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useLanguage } from '../components/SiteTranslator';
+import { useMotionFeedback } from '../components/useMotionFeedback';
 
 export function Finance() {
   const { text } = useLanguage();
@@ -15,12 +16,13 @@ export function Finance() {
     : (principal * monthlyRate * Math.pow(1 + monthlyRate, term)) /
       (Math.pow(1 + monthlyRate, term) - 1);
   const weeklyPayment = monthlyPayment * 12 / 52;
+  const paymentMotion = useMotionFeedback<HTMLParagraphElement>(weeklyPayment);
 
   return (
     <div className="pt-20">
       <section className="bg-[#101113] px-4 py-20 text-white sm:py-28">
         <div className="section-shell grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div className="max-w-3xl">
+          <div className="motion-intro max-w-3xl">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">Vehicle Finance</p>
             <h1 className="mt-6 text-white">
               {text({ en: 'Understand the weekly cost before you apply.', zh: '申请之前，先了解大概每周需要还多少。' })}
@@ -132,7 +134,7 @@ export function Finance() {
 
               <div className="rounded-xl bg-[#111214] p-6 text-center text-white">
                 <p className="text-sm text-white/55">{text({ en: 'Illustrative weekly payment', zh: '示例每周还款' })}</p>
-                <p className="mt-2 text-4xl font-bold text-white">${weeklyPayment.toFixed(2)}</p>
+                <p ref={paymentMotion} className="mt-2 text-4xl font-bold text-white tabular-nums" role="status" aria-live="polite">${weeklyPayment.toFixed(2)}</p>
                 <p className="mt-3 text-xs text-white/45">{text({ en: 'Example only — not an offer of finance.', zh: '仅供示例参考，不构成贷款要约。' })}</p>
               </div>
             </div>
