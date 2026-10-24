@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Calculator, ChevronDown, TrendingUp, Info } from 'lucide-react';
+import { ArrowRight, Calculator, ChevronDown, TrendingUp, Info } from 'lucide-react';
 import { useLanguage } from './SiteTranslator';
+import { formatQuoteEstimate, type QuoteEstimate } from '../lib/quoteEstimate';
 import '../../styles/price-calculator.css';
 
 const FALLBACK_NZD_TO_JPY_RATE = 86.5;
 const RATE_ADJUSTMENT = 5;
 const NZD_TO_JPY_RATE_URL = 'https://api.frankfurter.dev/v2/rates?base=NZD&quotes=JPY';
 
-export function PriceCalculator() {
-  const { text } = useLanguage();
+export function PriceCalculator({ onEnquire }: { onEnquire?: (message: string) => void }) {
+  const { text, language } = useLanguage();
   const [vehiclePrice, setVehiclePrice] = useState('');
   const [exchangeRate, setExchangeRate] = useState(FALLBACK_NZD_TO_JPY_RATE.toString());
   const [rateDate, setRateDate] = useState('');
   const [rateStatus, setRateStatus] = useState<'loading' | 'live' | 'fallback'>('loading');
-  const [landedPrice, setLandedPrice] = useState<number | null>(null);
+  const [estimate, setEstimate] = useState<QuoteEstimate | null>(null);
+  const landedPrice = estimate?.landedPriceNZD ?? null;
   const [validationError, setValidationError] = useState('');
 
   // Breakdown values
@@ -49,6 +51,7 @@ export function PriceCalculator() {
 
         if (isMounted) {
           setExchangeRate(calculatorRate.toFixed(2));
+          setEstimate((current) => current?.exchangeRate === Number(calculatorRate.toFixed(2)) ? current : null);
           setRateDate(data[0]?.date ?? '');
           setRateStatus('live');
         }
@@ -103,12 +106,12 @@ export function PriceCalculator() {
       total: total
     });
 
-    setLandedPrice(total);
+    setEstimate({ vehiclePriceJPY: x, exchangeRate: y, rateDate, rateStatus, landedPriceNZD: total });
   };
 
   const resetCalculator = () => {
     setVehiclePrice('');
-    setLandedPrice(null);
+    setEstimate(null);
     setValidationError('');
   };
 
@@ -158,7 +161,7 @@ export function PriceCalculator() {
                     value={vehiclePrice}
                     onChange={(event) => {
                       setVehiclePrice(event.target.value);
-                      setLandedPrice(null);
+                      setEstimate(null);
                       if (validationError) setValidationError('');
                     }}
                     placeholder="3000000"
@@ -207,7 +210,13 @@ export function PriceCalculator() {
                 <span className="calculator-total-icon"><Calculator size={23} aria-hidden="true" /></span>
                 <h3>{text({ en: 'Estimated Landed Price', zh: '预计新西兰落地价' })}</h3>
                 <p className="calculator-amount">{formatCurrency(landedPrice, 'NZD').split(' ')[0]}</p>
-                <p>{text({ en: 'New Zealand dollars · NZD', zh: '纽币 · NZD' })}</p>
+                <p className="calculator-currency">{text({ en: 'New Zealand dollars · NZD', zh: '纽币 · NZD' })}</p>
+                {onEnquire && estimate ? <div className="calculator-enquire">
+                  <button type="button" className="button-primary" onClick={() => onEnquire(formatQuoteEstimate(estimate, language))}>
+                    {text({ en: 'Enquire with this estimate', zh: '按此估价咨询' })}<ArrowRight size={17} aria-hidden="true" />
+                  </button>
+                  <p>{text({ en: 'Review and edit the estimate in your enquiry before sending.', zh: '估价将带入咨询表单，可查看、修改后再提交。' })}</p>
+                </div> : null}
               </div>
               <details className="calculator-breakdown" open>
                 <summary>{text({ en: 'Cost Breakdown', zh: '费用明细' })}<ChevronDown size={18} aria-hidden="true" /></summary>

@@ -83,6 +83,8 @@ export function ImportJourney({ introduction, network }: { introduction: ReactNo
             ))}
           </div>
 
+          <div className="import-visual-column">
+            <ImportOrigins stage={stage} />
           <aside className="import-visual" aria-label={text({ en: 'Illustrated import process', zh: '车辆进口流程动画' })}>
             <div className="import-scene-top">
               <span className="import-location"><i aria-hidden="true" />{text(current.location)}</span>
@@ -91,24 +93,24 @@ export function ImportJourney({ introduction, network }: { introduction: ReactNo
                 {text(motion ? { en: 'Motion on', zh: '动态开启' } : { en: 'Motion off', zh: '动态关闭' })}
               </button>
             </div>
-            <ImportOrigins stage={stage} />
             <div className="import-scene-frame">
               <span className="import-scene-number" aria-hidden="true">{String(stage + 1).padStart(2, '0')}</span>
               <Scene />
-              <button type="button" className="import-hotspot" aria-haspopup="dialog" aria-expanded={detailStage !== null} aria-controls="import-detail-dialog" onClick={revealDetail}>
-                <span><Plus size={18} aria-hidden="true" /></span><span>{text(current.detailTitle)}</span>
+              <button type="button" className="import-hotspot" aria-label={`${text({ en: 'View details', zh: '查看详情' })}: ${text(current.detailTitle)}`} aria-haspopup="dialog" aria-expanded={detailStage !== null} aria-controls="import-detail-dialog" onClick={revealDetail}>
+                <span><Plus size={18} aria-hidden="true" /></span><span><span className="import-hotspot-question">{text(current.detailTitle)}</span><span className="import-hotspot-short">{text({ en: 'View details', zh: '查看详情' })}</span></span>
               </button>
             </div>
             <button type="button" className="import-file" aria-controls={`import-step-${nextStage + 1}`} aria-label={nextStepLabel} title={nextStepLabel} onClick={() => navigate.current(nextStage)}>
               <span className="import-folder" aria-hidden="true"><span className="import-paper" /><FolderOpen size={48} strokeWidth={1} /></span>
               <span className="import-file-copy"><small>{text({ en: 'YOUR IMPORT FILE', zh: '你的进口档案' })}</small><span>{text(current.note)}</span><span className="import-file-progress" aria-hidden="true">{steps.map((step, index) => <i key={step.name.en} data-seen={index <= stage} data-current={index === stage} />)}</span></span>
-              <ArrowRight size={17} aria-hidden="true" />
+              <span className="import-file-next"><span>{nextStepLabel}</span><ArrowRight size={17} aria-hidden="true" /></span>
             </button>
             <nav className="import-steps" aria-label={text({ en: 'Jump to an import step', zh: '直接查看进口步骤' })}>
               {steps.map((step, index) => <a key={step.name.en} href={`#import-step-${index + 1}`} aria-current={stage === index ? 'step' : undefined} data-past={index < stage} onClick={(event) => { event.preventDefault(); navigate.current(index); }}><span>{String(index + 1).padStart(2, '0')}</span><span>{text(step.name)}</span></a>)}
             </nav>
             <div className="import-scene-foot"><span>{text({ en: 'One car. Every step, explained.', zh: '一辆车，每一步都清楚。' })}</span><span>{String(stage + 1).padStart(2, '0')} / 06</span></div>
           </aside>
+          </div>
         </div>
         {network}
       </div>

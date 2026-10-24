@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ArrowRight, BatteryCharging, Clock3, FileCheck2, ReceiptText, Search, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router';
 import { Hero } from '../components/Hero';
@@ -31,6 +32,7 @@ const buyerAssurances = [
 
 export function Home() {
   const { text } = useLanguage();
+  const [estimateRequest, setEstimateRequest] = useState<{ message: string } | null>(null);
 
   return (
     <>
@@ -67,10 +69,10 @@ export function Home() {
         </div>
       </section>
 
-      <div id="calculator" className="scroll-mt-20"><PriceCalculator /></div>
+      <div id="calculator" className="scroll-mt-20"><PriceCalculator onEnquire={(message) => setEstimateRequest({ message })} /></div>
 
       <div id="quote" className="scroll-mt-20">
-        <QuoteFormSection beforeForm={
+        <QuoteFormSection estimateRequest={estimateRequest} beforeForm={
           <div id="partners" className="home-assurances">
             <div className="home-assurances-heading">
               <h2><ShieldCheck size={17} aria-hidden="true" />{text({ en: 'Before you commit', zh: '确认购买之前' })}</h2>

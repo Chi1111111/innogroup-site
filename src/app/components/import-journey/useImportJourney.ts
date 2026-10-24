@@ -209,6 +209,7 @@ export function useImportJourney(language: 'en' | 'zh') {
     const resize = new ResizeObserver(queueMeasure);
     resize.observe(story);
     resize.observe(rail);
+    resize.observe(container.querySelector('.import-origins')!);
     chapters.forEach((chapter) => resize.observe(chapter.querySelector('.import-chapter-body')!));
     const intersection = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;

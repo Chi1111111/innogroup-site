@@ -40,11 +40,11 @@ export function Hero() {
           <span className="import-title-accent">{text({ en: 'A clearer way to import.', zh: '进口更简单。' })}</span>
         </h1>
         <p className="import-intro">{text({
-          en: 'Search live Japan stock, review our weekly shortlist, or tell us the exact vehicle you want. Inno coordinates the process through to New Zealand delivery.',
-          zh: '你可以搜索日本实时车源、查看每周精选，或直接告诉我们想要的车型。Inno 从找车到新西兰交付全程协助。',
+          en: 'Find a car through our Japan auction and dealer network, review our weekly shortlist, or tell us the exact vehicle you want. Inno coordinates the process through to New Zealand delivery.',
+          zh: '通过我们的日本拍卖与车商渠道寻找车辆、查看每周精选，或直接告诉我们想要的车型。Inno 从找车到新西兰交付全程协助。',
         })}</p>
         <div className="import-primary-actions">
-          <a href="#quote" className="button-primary">{text({ en: 'Choose How to Start', zh: '选择找车方式' })}<ArrowRight size={17} /></a>
+          <a href="#quote" className="button-primary">{text({ en: 'Tell Us What You Need', zh: '告诉我们你的需求' })}<ArrowRight size={17} /></a>
           <Link to="/weekly-report" className="import-action">{text({ en: 'View Weekly Finds', zh: '查看每周精选' })}<ArrowRight size={16} /></Link>
         </div>
         <aside className="import-starting-points" aria-label={text({ en: 'Start with what you know', zh: '从你现在的需求开始' })}>

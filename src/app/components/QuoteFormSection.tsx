@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArrowRight, Upload, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { Link } from 'react-router';
@@ -7,6 +7,7 @@ import { uploadImageToCloudinary } from '../../config/cloudinaryConfig';
 import { tradeMeMakes, tradeMeVehicleCatalog } from '../../data/tradeMeVehicleCatalog';
 import { useLanguage } from './SiteTranslator';
 import { trackLeadSubmitted } from '../lib/leadTracking';
+import { combineQuoteMessage } from '../lib/quoteEstimate';
 
 const carBrands = [...tradeMeMakes];
 const carModels = tradeMeVehicleCatalog;
@@ -21,10 +22,14 @@ const CONTACT_FORM_RECIPIENT = 'innogroup.shawn@gmail.com';
 interface QuoteFormSectionProps {
   focusedImport?: boolean;
   beforeForm?: ReactNode;
+  estimateRequest?: { message: string } | null;
 }
 
-export function QuoteFormSection({ focusedImport = false, beforeForm }: QuoteFormSectionProps = {}) {
+export function QuoteFormSection({ focusedImport = false, beforeForm, estimateRequest }: QuoteFormSectionProps = {}) {
   const { text } = useLanguage();
+  const estimateField = useRef<HTMLTextAreaElement>(null);
+  const formPanel = useRef<HTMLDivElement>(null);
+  const [estimateNote, setEstimateNote] = useState<string | null>(null);
   const [briefStep, setBriefStep] = useState(focusedImport ? 2 : 1);
   const [formData, setFormData] = useState({
     inquiryType: 'buy',
@@ -84,6 +89,34 @@ export function QuoteFormSection({ focusedImport = false, beforeForm }: QuoteFor
     setBriefStep(enquiryType === 'finance' ? 3 : 2);
   }, []);
 
+  useEffect(() => {
+    if (!estimateRequest) return;
+    setEstimateNote(estimateRequest.message);
+    setFormData((current) => ({ ...current, inquiryType: 'buy', sourceType: 'japan' }));
+    setBriefStep(2);
+    // Only an explicit calculator action applies a new estimate; existing fields stay intact.
+    const frame = requestAnimationFrame(() => {
+      estimateField.current?.focus({ preventScroll: true });
+      formPanel.current?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+        block: 'start',
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [estimateRequest]);
+
+  useLayoutEffect(() => {
+    const field = estimateField.current;
+    if (!field) return;
+    const resize = () => {
+      field.style.height = 'auto';
+      field.style.height = `${field.scrollHeight}px`;
+    };
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+    return () => window.removeEventListener('resize', resize);
+  }, [estimateNote]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.phone.trim() && !formData.email.trim()) {
@@ -99,7 +132,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm }: QuoteFor
       let photoInfo = '';
       let photoHtml = '';
 
-      if (uploadedImages.length > 0) {
+      if (formData.inquiryType === 'sell' && uploadedImages.length > 0) {
         photoInfo = `Customer uploaded ${uploadedImages.length} photo(s):\n\n`;
         photoHtml = `<div style="margin: 20px 0;">
           <h3 style="color: #d4af37; margin-bottom: 15px;">Customer Uploaded Photos (${uploadedImages.length})</h3>`;
@@ -161,7 +194,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm }: QuoteFor
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
-        message: formData.message || 'No additional details provided',
+        message: combineQuoteMessage(formData.message, formData.inquiryType === 'buy' && formData.sourceType === 'japan' ? estimateNote : null),
         photoInfo,
         photoHtml,
       };
@@ -198,6 +231,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm }: QuoteFor
         message: '',
       });
       setUploadedImages([]);
+      setEstimateNote(null);
       setBriefStep(focusedImport ? 2 : 1);
     } catch (error) {
       console.error('Error sending email:', error);
@@ -241,6 +275,7 @@ export function QuoteFormSection({ focusedImport = false, beforeForm }: QuoteFor
   const selectedModels = formData.brand ? carModels[formData.brand] ?? [] : [];
 
   const chooseBriefType = (type: 'buy-local' | 'import-japan' | 'import-china' | 'sell') => {
+    if (type !== 'import-japan') setEstimateNote(null);
     setFormData((current) => ({
       ...current,
       inquiryType: type === 'sell' ? 'sell' : 'buy',
@@ -300,8 +335,18 @@ export function QuoteFormSection({ focusedImport = false, beforeForm }: QuoteFor
         </div>
 
         <div className="w-full lg:min-w-[650px]">
-          <div className="rounded-xl border border-[#F7F4EE]/10 bg-[#F7F4EE] p-6 text-[#151C26] sm:p-8 lg:p-10">
+          <div ref={formPanel} className="scroll-mt-24 rounded-xl border border-[#F7F4EE]/10 bg-[#F7F4EE] p-6 text-[#151C26] sm:p-8 lg:p-10">
             <form onSubmit={handleSubmit}>
+              {estimateNote !== null && formData.inquiryType === 'buy' && formData.sourceType === 'japan' ? <div className="mb-8 rounded-xl border border-[#C6A54A]/40 bg-[#eee6d8]/60 p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <label htmlFor="quote-estimate" className="text-sm font-bold text-[#151C26]">{text({ en: 'Your estimate', zh: '你的估价说明' })}</label>
+                  <button type="button" onClick={() => setEstimateNote(null)} className="flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[#675735]">
+                    <X size={15} aria-hidden="true" />{text({ en: 'Remove estimate', zh: '移除估价' })}
+                  </button>
+                </div>
+                <p id="quote-estimate-help" className="mb-3 text-sm leading-6 text-[#151C26]/70">{text({ en: 'Added from the calculator. Edit or remove it before submitting. Your other details are kept.', zh: '已带入计算器估价，可修改或移除后再提交。你填写的其他信息会保留。' })}</p>
+                <textarea ref={estimateField} id="quote-estimate" name="estimateNote" value={estimateNote} onChange={(event) => setEstimateNote(event.target.value)} rows={6} aria-describedby="quote-estimate-help" className={fieldClass} />
+              </div> : null}
               <div key={briefStep} className="animate-fadeIn">
                 <div className="mb-8 flex items-center justify-between border-b border-[#151C26]/10 pb-5">
                   <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#151C26]/48">
