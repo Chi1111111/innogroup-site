@@ -1,10 +1,12 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { Root } from './Root';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     Component: Root,
+    ErrorBoundary: RouteErrorBoundary,
     hydrateFallbackElement: <div className="min-h-screen bg-[#F7F4EE]" aria-label="Loading page" />,
     children: [
       { path: 'japan-market', lazy: async () => ({ Component: (await import('./pages/JapanMarket')).JapanMarket }) },
