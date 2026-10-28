@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { BrandLogo } from './BrandLogo';
 import { LanguageSwitcher, useLanguage } from './SiteTranslator';
+import { primaryPhone, primaryPhoneHref } from '../../config/contactDetails';
 
 export function Footer() {
   const { text } = useLanguage();
@@ -73,7 +74,7 @@ export function Footer() {
             <ul className="space-y-4 text-white/62">
               <li>
                 <strong className="text-white">{text({ en: 'Phone', zh: '电话' })}</strong><br />
-                <a href="tel:+64288530725" className="transition-colors hover:text-primary">+64 28 8530 7225</a><br />
+                <a href={primaryPhoneHref} className="transition-colors hover:text-primary">{primaryPhone}</a><br />
                 <a href="tel:+64272858065" className="transition-colors hover:text-primary">+64 27 285 8065</a>
               </li>
               <li>

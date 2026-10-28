@@ -1,9 +1,11 @@
 import { vehicleQualityIssue } from './japanMarketQuality.mjs';
+import { normalizeVehicleIdentity, vehicleModelLabel, type VehicleIdentity } from './japanMarketNaming';
+export { vehicleModelLabel } from './japanMarketNaming';
 
 export type JapanMarketFuelType = 'Petrol' | 'Hybrid' | 'PHEV' | 'EV' | 'Diesel' | 'Other';
 export type JapanMarketBodyType = 'Sedan' | 'SUV' | 'Hatchback' | 'Wagon' | 'Coupe' | 'Van / MPV' | 'Sports' | 'Other';
 
-export interface JapanMarketVehicleSummary {
+export interface JapanMarketVehicleSummary extends VehicleIdentity {
   id: string;
   source?: string;
   sourceCode?: string;
@@ -110,12 +112,16 @@ export function publicJapanMarketPrice<T extends JapanMarketVehicleSummary>(vehi
     fobPriceEstimated: false, estimatedNzdPrice: null };
 }
 
+export function publicJapanMarketVehicle<T extends JapanMarketVehicleSummary>(vehicle: T): T {
+  return normalizeVehicleIdentity(publicJapanMarketPrice(vehicle));
+}
+
 async function fetchMarketPayload(path: string) {
   const response = await fetch(path, { headers: { Accept: 'application/json' } });
   if (!response.ok) throw new Error('Japan Market vehicles are temporarily unavailable.');
   const payload = await response.json() as JapanMarketPayload;
   if (!Array.isArray(payload.vehicles)) throw new Error('Invalid Japan Market data.');
-  const vehicles = payload.vehicles.filter((vehicle) => !vehicleQualityIssue(vehicle)).map(publicJapanMarketPrice);
+  const vehicles = payload.vehicles.filter((vehicle) => !vehicleQualityIssue(vehicle)).map(publicJapanMarketVehicle);
   return { ...payload, vehicles, count: path.endsWith('/index.json') ? vehicles.length : payload.count };
 }
 
@@ -140,15 +146,17 @@ async function approvedCatalog(body: Record<string,unknown> = {}, signal?: Abort
 export async function loadJapanMarketPage(filters:Record<string,unknown>={},signal?:AbortSignal):Promise<JapanMarketPage> {
   const result=await approvedCatalog({...filters,action:'catalog-page'},signal);
   if(!Array.isArray(result.vehicles) || !Number.isSafeInteger(result.count) || result.count<0 || !Array.isArray(result.facets))throw new Error('Invalid catalog page.');
-  const vehicles=result.vehicles.map(publicJapanMarketPrice);
-  if(vehicles.some(vehicle=>vehicleQualityIssue(vehicle)||vehicle.fobPriceNzd==null))throw new Error('Invalid priced vehicle in catalog.');
+  if(result.vehicles.some(vehicle=>vehicleQualityIssue(vehicle)||publicJapanMarketPrice(vehicle).fobPriceNzd==null))throw new Error('Invalid priced vehicle in catalog.');
+  const vehicles=result.vehicles.map(publicJapanMarketVehicle);
+  // Facets remain source values: the existing catalog API matches them exactly.
+  // Display corrections must not silently change filter requests or page counts.
   return {...result,vehicles};
 }
 export async function loadJapanMarketData(onProgress?: (data: JapanMarketPayload) => void, signal?: AbortSignal): Promise<JapanMarketPayload> {
   const first=await approvedCatalog({}, signal);
   const vehicles=[...first.vehicles];
   const snapshot = () => {
-    const valid = vehicles.filter(v=>!vehicleQualityIssue(v)).map(publicJapanMarketPrice);
+    const valid = vehicles.filter(v=>!vehicleQualityIssue(v)).map(publicJapanMarketVehicle);
     return {...first, vehicles:valid, count:valid.length};
   };
   onProgress?.(snapshot());
@@ -161,25 +169,27 @@ export function loadJapanMarketFeatured() { return loadJapanMarketPage(); }
 export async function loadJapanMarketVehicle(id:string):Promise<JapanMarketVehicleResult|null>{
  const result=await approvedCatalog({id});
  const vehicle=result.vehicles[0];
- return vehicle&&!vehicleQualityIssue(vehicle)&&publicJapanMarketPrice(vehicle).fobPriceNzd!=null?{refreshedAt:result.refreshedAt,pricing:result.pricing,vehicle:publicJapanMarketPrice(vehicle)}:null;
+ return vehicle&&!vehicleQualityIssue(vehicle)&&publicJapanMarketPrice(vehicle).fobPriceNzd!=null?{refreshedAt:result.refreshedAt,pricing:result.pricing,vehicle:publicJapanMarketVehicle(vehicle)}:null;
 }
 
-export function vehicleName(vehicle: JapanMarketVehicleSummary) {
-  return `${vehicle.make} ${vehicle.model}`;
+export function vehicleName(vehicle: JapanMarketVehicleSummary, language: 'en' | 'zh' = 'en') {
+  const identity = normalizeVehicleIdentity(vehicle);
+  return identity.model ? `${identity.make} ${identity.model}` : `${identity.make} · ${vehicleModelLabel(identity, language)}`;
 }
 
 export function vehicleVariant(vehicle: JapanMarketVehicleSummary) {
   const variant = vehicle.variant.trim();
   if (!variant) return '';
   const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-  const model = normalize(vehicle.model);
-  const normalizedVariant = normalize(variant);
+  const identity = normalizeVehicleIdentity(vehicle);
+  const model = normalize(identity.model);
+  const normalizedVariant = normalize(normalizeVehicleIdentity({ make: identity.make, model: variant }).model);
   return model === normalizedVariant || model.endsWith(` ${normalizedVariant}`) ? '' : variant;
 }
 
-export function vehicleFullName(vehicle: JapanMarketVehicleSummary) {
+export function vehicleFullName(vehicle: JapanMarketVehicleSummary, language: 'en' | 'zh' = 'en') {
   const variant = vehicleVariant(vehicle);
-  return `${vehicle.year} ${vehicleName(vehicle)}${variant ? ` ${variant}` : ''}`;
+  return `${vehicle.year} ${vehicleName(vehicle, language)}${variant ? ` ${variant}` : ''}`;
 }
 
 export function japanMarketVehiclePath(vehicle: JapanMarketVehicleSummary) {

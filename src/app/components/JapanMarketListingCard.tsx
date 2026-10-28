@@ -3,21 +3,22 @@ import { ArrowUpRight, CarFront, Images, MapPin } from 'lucide-react';
 import { Link } from 'react-router';
 import { formatBodyType, formatFuelType, formatMileage, formatNzd, formatTransmission, japanMarketVehiclePath, vehicleName, vehicleVariant, type JapanMarketVehicleSummary } from '../../data/japanMarket';
 import { useLanguage } from './SiteTranslator';
+import type { MarketReturnLocation } from '../lib/japanMarketNavigation';
 
-export function JapanMarketListingCard({ vehicle: v, priority = false }: { vehicle: JapanMarketVehicleSummary; priority?: boolean }) {
+export function JapanMarketListingCard({ vehicle: v, priority = false, returnState, onOpen }: { vehicle: JapanMarketVehicleSummary; priority?: boolean; returnState?: { japanMarketReturn: MarketReturnLocation }; onOpen?: () => void }) {
   const { language, text } = useLanguage();
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const hasImage = v.imageUrl && failedImage !== v.imageUrl;
   const variant = vehicleVariant(v);
   return <article className="jm-listing" data-vehicle-id={v.id}>
-    <Link to={japanMarketVehiclePath(v)} className="jm-photo" aria-label={text({ en: `View ${v.year} ${vehicleName(v)}`, zh: `查看 ${v.year} ${vehicleName(v)}` })}>
+    <Link to={japanMarketVehiclePath(v)} state={returnState} onClick={onOpen} onAuxClick={onOpen} className="jm-photo" aria-label={text({ en: `View ${v.year} ${vehicleName(v)}`, zh: `查看 ${v.year} ${vehicleName(v, 'zh')}` })}>
       {hasImage ? <img src={v.imageUrl!} alt={`${v.year} ${vehicleName(v)}`} loading={priority ? 'eager' : 'lazy'} fetchPriority={priority ? 'high' : 'auto'} referrerPolicy="no-referrer" onError={() => setFailedImage(v.imageUrl!)} />
         : <span className="jm-photo-empty"><CarFront size={42} strokeWidth={1.3} /><span>{text({ en: 'Photo unavailable', zh: '暂无照片' })}</span></span>}
       {!!v.photoCount && hasImage && <span className="jm-photo-count"><Images size={15} />{v.photoCount}</span>}
     </Link>
     <div className="jm-car-info">
       <div className="jm-car-heading"><span className="jm-car-year">{v.year}</span><span>{formatBodyType(v.bodyType, language)}</span></div>
-      <h2><Link to={japanMarketVehiclePath(v)}>{vehicleName(v)}</Link></h2><p className="jm-variant">{variant || text({ en: 'Japanese dealer listing', zh: '日本经销商车源' })}</p>
+      <h2><Link to={japanMarketVehiclePath(v)} state={returnState} onClick={onOpen} onAuxClick={onOpen}>{vehicleName(v, language)}</Link></h2><p className="jm-variant">{variant || text({ en: 'Japanese dealer listing', zh: '日本经销商车源' })}</p>
       <dl className="jm-specs">
         <div><dt>{text({ en: 'Mileage', zh: '里程' })}</dt><dd>{formatMileage(v.mileage, language)}</dd></div>
         <div><dt>{text({ en: 'Fuel', zh: '燃料' })}</dt><dd>{formatFuelType(v.fuelType, language)}</dd></div>
@@ -28,7 +29,7 @@ export function JapanMarketListingCard({ vehicle: v, priority = false }: { vehic
       </div>
     </div>
     <div className="jm-car-price"><span className="jm-price-label">{v.fobPriceEstimated ? text({ en: 'Estimated FOB (NZD)', zh: 'FOB 参考价（NZD）' }) : text({ en: 'FOB price (NZD)', zh: 'FOB 离岸价（NZD）' })}</span><strong>{formatNzd(v.fobPriceNzd, language)}</strong><span className="jm-price-note">{text({ en: 'Availability & final cost to confirm', zh: '库存及最终费用需确认' })}</span>
-      <Link to={japanMarketVehiclePath(v)} className="jm-details-link">{text({ en: 'View vehicle', zh: '查看车辆' })}<ArrowUpRight size={18} /></Link>
+      <Link to={japanMarketVehiclePath(v)} state={returnState} onClick={onOpen} onAuxClick={onOpen} className="jm-details-link">{text({ en: 'View vehicle', zh: '查看车辆' })}<ArrowUpRight size={18} /></Link>
     </div>
   </article>;
 }

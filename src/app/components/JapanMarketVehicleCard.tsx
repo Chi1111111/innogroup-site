@@ -21,7 +21,7 @@ export function JapanMarketVehicleVisual({ vehicle, className = '', onImageError
       {vehicle.imageUrl ? (
         <img
           src={vehicle.imageUrl}
-          alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+          alt={`${vehicle.year} ${vehicleName(vehicle, language)}`}
           loading="lazy"
           referrerPolicy="no-referrer"
           className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
@@ -68,7 +68,7 @@ export function JapanMarketVehicleCard({ vehicle, compact = false, onImageError 
       <JapanMarketVehicleVisual vehicle={vehicle} onImageError={onImageError} className={compact ? 'aspect-[16/10]' : 'aspect-[4/3]'} />
       <div className="flex flex-1 flex-col p-5">
         <p className="text-sm font-bold text-foreground/48">{vehicle.year}</p>
-        <h3 className="mt-4 line-clamp-2 text-xl leading-snug">{vehicleName(vehicle)}</h3>
+        <h3 className="mt-4 line-clamp-2 text-xl leading-snug">{vehicleName(vehicle, language)}</h3>
         {variant ? <p className="mt-1 line-clamp-1 text-sm text-foreground/48">{variant}</p> : null}
         <div className="mt-5 space-y-2 border-t border-black/7 pt-4 text-sm text-foreground/65">
           <p className="flex items-center justify-between gap-3"><span>{formatMileage(vehicle.mileage, language)}</span><span className="text-xs font-semibold text-foreground/52">{condition}</span></p>

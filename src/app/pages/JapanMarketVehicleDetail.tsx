@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
 import { ArrowLeft, ArrowRight, Clock3, MessageCircle, ShieldCheck } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { JapanMarketEnquiryForm } from '../components/JapanMarketEnquiryForm';
 import { JapanMarketPhotoGallery } from '../components/JapanMarketPhotoGallery';
 import { useLanguage } from '../components/SiteTranslator';
@@ -15,9 +15,11 @@ import {
   type JapanMarketPricing,
   type JapanMarketVehicle,
   vehicleFullName,
+  vehicleModelLabel,
   vehicleVariant,
 } from '../../data/japanMarket';
 import { SEO_CONFIG } from '../../config/seo';
+import { marketReturnFromState } from '../lib/japanMarketNavigation';
 
 function setHeadMeta(name: string, content: string, attribute: 'name' | 'property' = 'name') {
   let meta = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${name}"]`);
@@ -35,6 +37,20 @@ function removeHeadMeta(name: string, attribute: 'name' | 'property' = 'name') {
 
 export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
   const { language, text } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const returnLocation = marketReturnFromState(location.state);
+  const backToMarket = (event: MouseEvent<HTMLAnchorElement>) => {
+    // Preserve native new-tab/modifier behavior. Router state survives detail reloads.
+    if (!returnLocation || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigate(-1);
+  };
+  const returnLink = {
+    to: returnLocation?.href || '/japan-market',
+    state: returnLocation ? { japanMarketRestoreKey: returnLocation.key } : undefined,
+    onClick: backToMarket,
+  };
   const [pricing, setPricing] = useState<JapanMarketPricing | null>(null);
   const [vehicle, setVehicle] = useState<JapanMarketVehicle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,7 +103,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
       '@type': 'Vehicle',
       name: vehicleFullName(vehicle),
       brand: { '@type': 'Brand', name: vehicle.make },
-      model: vehicle.model,
+      model: vehicle.model || undefined,
       vehicleModelDate: String(vehicle.year),
       mileageFromOdometer: { '@type': 'QuantitativeValue', value: vehicle.mileage, unitCode: 'KMT' },
       color: vehicle.colour,
@@ -100,12 +116,12 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
   }, [vehicle]);
 
   if (loading) return <main className="min-h-[70vh] pt-20"><div className="section-shell px-4 py-20"><div className="h-96 animate-pulse rounded-3xl bg-black/5" /></div></main>;
-  if (!vehicle || !pricing) return <main className="min-h-[70vh] pt-20"><div className="section-shell px-4 py-24 text-center"><p className="section-kicker">Japan Market</p><h1 className="mt-6">{text({ en: 'Vehicle unavailable', zh: '暂时无法查看该车辆' })}</h1><p className="mx-auto mt-4 max-w-xl">{text({ en: 'Browse other Japan Market vehicles or ask us to source something similar.', zh: '您可以继续浏览其他日本车源，或让我们寻找相似车辆。' })}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link to="/japan-market" className="button-primary">{text({ en: 'Browse Japan Market', zh: '浏览日本市场' })}</Link><Link to="/vehicles/find-my-car" className="button-secondary">{text({ en: 'Request a Vehicle', zh: '提交找车需求' })}</Link></div></div></main>;
+  if (!vehicle || !pricing) return <main className="min-h-[70vh] pt-20"><div className="section-shell px-4 py-24 text-center"><p className="section-kicker">Japan Market</p><h1 className="mt-6">{text({ en: 'Vehicle unavailable', zh: '暂时无法查看该车辆' })}</h1><p className="mx-auto mt-4 max-w-xl">{text({ en: 'Browse other Japan Market vehicles or ask us to source something similar.', zh: '您可以继续浏览其他日本车源，或让我们寻找相似车辆。' })}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Link {...returnLink} className="button-primary">{text({ en: 'Browse Japan Market', zh: '浏览日本市场' })}</Link><Link to="/vehicles/find-my-car" className="button-secondary">{text({ en: 'Request a Vehicle', zh: '提交找车需求' })}</Link></div></div></main>;
 
   const specs = [
     [text({ en: 'Year', zh: '年份' }), vehicle.year],
     [text({ en: 'Make', zh: '品牌' }), vehicle.make],
-    [text({ en: 'Model', zh: '车型' }), vehicle.model],
+    [text({ en: 'Model', zh: '车型' }), vehicleModelLabel(vehicle, language)],
     [text({ en: 'Variant', zh: '版本' }), vehicleVariant(vehicle) || text({ en: 'Not listed', zh: '暂无信息' })],
     [text({ en: 'Mileage', zh: '公里数' }), formatMileage(vehicle.mileage, language)],
     [text({ en: 'Fuel Type', zh: '燃料类型' }), formatFuelType(vehicle.fuelType, language)],
@@ -130,7 +146,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
 
   return (
     <main className="pb-24 pt-20 md:pb-0">
-      <section className="border-b border-black/8 px-4 py-8"><div className="section-shell"><Link to="/japan-market" className="inline-flex items-center gap-2 text-sm font-bold text-foreground/60 hover:text-foreground"><ArrowLeft className="h-4 w-4" />{text({ en: 'Back to Japan Market', zh: '返回日本市场' })}</Link></div></section>
+      <section className="border-b border-black/8 px-4 py-8"><div className="section-shell"><Link {...returnLink} className="inline-flex items-center gap-2 text-sm font-bold text-foreground/60 hover:text-foreground"><ArrowLeft className="h-4 w-4" />{text({ en: 'Back to Japan Market', zh: '返回日本市场' })}</Link></div></section>
       <section className="px-4 py-10 sm:py-14">
         <div className="section-shell">
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -138,7 +154,7 @@ export function JapanMarketVehicleDetail({ vehicleId }: { vehicleId: string }) {
               <JapanMarketPhotoGallery vehicle={vehicle} />
               <div className="mt-8">
                 <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">{vehicle.id}</p>
-                <h1 className="mt-4 text-4xl sm:text-5xl">{vehicleFullName(vehicle)}</h1>
+                <h1 className="mt-4 text-4xl sm:text-5xl">{vehicleFullName(vehicle, language)}</h1>
                 <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 rounded-2xl border border-black/8 bg-white/55 px-5 py-4 text-sm">
                   <span className="inline-flex items-center gap-2 font-bold text-foreground">
                     <span className={`h-2.5 w-2.5 rounded-full ${vehicle.status === 'Available' ? 'bg-emerald-500' : 'bg-amber-500'}`} />

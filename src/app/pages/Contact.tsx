@@ -1,6 +1,7 @@
 import { Mail, Phone, MapPin, Clock, MessageCircle } from 'lucide-react';
 import { QuoteFormSection } from '../components/QuoteFormSection';
 import { useLanguage } from '../components/SiteTranslator';
+import { primaryPhone, primaryPhoneHref } from '../../config/contactDetails';
 
 export function Contact() {
   const { text } = useLanguage();
@@ -35,10 +36,10 @@ export function Contact() {
               <div>
                 <h3 className="mb-3 text-base font-bold text-foreground">{text({ en: 'Phone', zh: '电话' })}</h3>
                 <a
-                  href="tel:+64288530725"
+                  href={primaryPhoneHref}
                   className="mb-1 block text-muted-foreground transition-colors hover:text-primary"
                 >
-                  +64 28 8530 7225
+                  {primaryPhone}
                 </a>
                 <a
                   href="tel:+64272858065"

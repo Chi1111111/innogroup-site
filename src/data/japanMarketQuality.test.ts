@@ -33,7 +33,7 @@ it('filters legacy polluted snapshots and fixes the displayed count', async () =
   const { loadJapanMarketData } = await import('./japanMarket');
   const data = await loadJapanMarketData();
   expect(data.count).toBe(1);
-  expect(data.vehicles).toEqual([{...valid,fobPriceNzd:null,fobPriceEstimated:false,estimatedNzdPrice:null}]);
+  expect(data.vehicles).toEqual([{...valid,sourceMake:valid.make,sourceModel:valid.model,fobPriceNzd:null,fobPriceEstimated:false,estimatedNzdPrice:null}]);
 });
 
 it('does not expose a polluted vehicle through its detail URL', async () => {

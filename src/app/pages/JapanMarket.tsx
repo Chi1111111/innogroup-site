@@ -9,6 +9,7 @@ import { EMPTY_FILTERS, PAGE_SIZE, PRICE_OPTIONS, PRIMARY_MAKES, SORT_OPTIONS, m
 import { newZealandDay } from '../../data/japanMarketFeatured';
 import '../../styles/japan-market.css';
 import { useMotionFeedback } from '../components/useMotionFeedback';
+import { useJapanMarketNavigation } from '../hooks/useJapanMarketNavigation';
 
 export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { initialMakeSlug?: string; initialModelSlug?: string }) {
   const { language, text } = useLanguage();
@@ -21,8 +22,7 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [retry, setRetry] = useState(0);
-  const [layout, setLayout] = useState<'list' | 'grid'>('list');
-  const listingMotion = useMotionFeedback<HTMLDivElement>(layout);
+  const [loadedRequestKey, setLoadedRequestKey] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const results = useRef<HTMLDivElement>(null);
@@ -30,13 +30,15 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
   const filters = useMemo(() => readMarketFilters(params, facets, initialMakeSlug, initialModelSlug, false), [params,facets,initialMakeSlug,initialModelSlug]);
   const requestedPage = Math.max(1,Math.min(1000000,Math.trunc(Number(params.get('page')))||1));
   const requestKey = JSON.stringify({...filters,rotationDay,page:requestedPage,makeSlug:filters.make?'':initialMakeSlug,modelSlug:filters.model?'':initialModelSlug});
+  const { layout, setLayout, remember, linkState } = useJapanMarketNavigation(Boolean(payload) && !isLoading && loadedRequestKey === requestKey);
+  const listingMotion = useMotionFeedback<HTMLDivElement>(layout);
   useEffect(() => {
     let active=true;
     const controller=new AbortController();
     setError('');setIsLoading(true);
     const timer=setTimeout(()=>{
       loadJapanMarketPage(JSON.parse(requestKey),controller.signal)
-        .then(data=>{if(active){setPayload(data);setFacets(data.facets);if(data.page!==requestedPage){const clean=new URLSearchParams(params);if(data.page>1)clean.set('page',String(data.page));else clean.delete('page');setParams(clean,{replace:true});}}})
+        .then(data=>{if(active){setPayload(data);setFacets(data.facets);setLoadedRequestKey(requestKey);if(data.page!==requestedPage){const clean=new URLSearchParams(params);if(data.page>1)clean.set('page',String(data.page));else clean.delete('page');setParams(clean,{replace:true});}}})
         .catch(()=>{if(active)setError('unavailable');})
         .finally(()=>{if(active)setIsLoading(false);});
     },200);
@@ -58,11 +60,13 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
     return () => { element?.close(); document.body.style.overflow = overflow; };
   }, [mobileOpen]);
   const update = (patch: Partial<MarketFilters>) => {
+    remember();
     const next = marketSearchParams({ ...filters, ...patch });
     navigate({ pathname: '/japan-market', search: next.toString() ? `?${next}` : '' }, { replace: true });
   };
   const clear = () => update(EMPTY_FILTERS);
   const changePage = (next: number) => {
+    remember();
     navigate({ pathname: '/japan-market', search: `?${marketSearchParams(filters, next)}` });
     results.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
   };
@@ -104,7 +108,7 @@ export function JapanMarket({ initialMakeSlug = '', initialModelSlug = '' }: { i
         {error && !payload ? <div className="jm-empty" role="alert"><RefreshCw size={30} /><h2>{text({ en: 'Listings could not be loaded', zh: '暂时无法加载车源' })}</h2><p>{text({ en: 'Please try again in a moment.', zh: '请稍后重试。' })}</p><button type="button" className="jm-primary" onClick={() => setRetry((n) => n + 1)}>{text({ en: 'Try again', zh: '重新加载' })}</button></div>
           : !payload ? <div aria-label={text({ en: 'Loading vehicles', zh: '正在加载车辆' })} className="jm-loading">{[1, 2, 3].map((n) => <div key={n} />)}</div>
           : filtered.length === 0 ? <div className="jm-empty"><Search size={32} /><h2>{text(payload?.totalCount===0?{en:'No vehicles available yet',zh:'暂无已上架车辆'}:{ en: 'No cars match these filters', zh: '没有符合条件的车辆' })}</h2><p>{text(payload?.totalCount===0?{en:'New listings will appear here once their photos have been reviewed.',zh:'车辆照片审核完成后，将自动展示在这里。'}:{ en: 'Try a wider budget or remove a filter to see more cars.', zh: '试试扩大预算或移除部分筛选条件。' })}</p><button type="button" className="jm-primary" onClick={clear}>{text({ en: 'Clear filters', zh: '清除筛选' })}</button><Link to="/vehicles/find-my-car#find-car-form">{text({ en: 'Ask Inno to find a car', zh: '让 Inno 帮你找车' })}<ArrowRight size={16} /></Link></div>
-          : <><div ref={listingMotion} className={`jm-listings jm-listings-${layout}`} aria-busy={isLoading}>{filtered.map((vehicle, i) => <JapanMarketListingCard key={vehicle.id} vehicle={vehicle} priority={i === 0} />)}</div>
+          : <><div ref={listingMotion} className={`jm-listings jm-listings-${layout}`} aria-busy={isLoading}>{filtered.map((vehicle, i) => <JapanMarketListingCard key={vehicle.id} vehicle={vehicle} priority={i === 0} returnState={linkState} onOpen={remember} />)}</div>
             <div className="jm-pagination"><p>{text({ en: `Showing ${start + 1}–${Math.min(start + PAGE_SIZE, total)} of ${total.toLocaleString('en-NZ')}`, zh: `第 ${start + 1}–${Math.min(start + PAGE_SIZE, total)} 台，共 ${total.toLocaleString('en-NZ')} 台` })}</p>
               {pages > 1 && <nav aria-label={text({ en: 'Results pages', zh: '结果分页' })}><button type="button" disabled={isLoading || page === 1} onClick={() => changePage(page - 1)} aria-label={text({ en: 'Previous page', zh: '上一页' })}><ChevronLeft size={18} /></button>{pageNumbers.map((n, i) => <span key={n}>{i > 0 && n - pageNumbers[i - 1] > 1 && <span className="jm-page-gap">…</span>}<button type="button" disabled={isLoading} aria-current={n === page ? 'page' : undefined} onClick={() => changePage(n)}>{n}</button></span>)}<button type="button" disabled={isLoading || page === pages} onClick={() => changePage(page + 1)} aria-label={text({ en: 'Next page', zh: '下一页' })}><ChevronRight size={18} /></button></nav>}
             </div></>}
